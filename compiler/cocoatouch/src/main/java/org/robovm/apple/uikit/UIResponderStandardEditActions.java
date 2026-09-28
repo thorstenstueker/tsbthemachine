@@ -1,0 +1,199 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.uikit;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.foundation.*;
+import org.robovm.apple.coreanimation.*;
+import org.robovm.apple.coregraphics.*;
+import org.robovm.apple.coreimage.*;
+import org.robovm.apple.coretext.*;
+import org.robovm.apple.corelocation.*;
+import org.robovm.apple.usernotifications.*;
+/*</imports>*/
+
+/*<javadoc>*/
+
+/*</javadoc>*/
+/*<annotations>*//*</annotations>*/
+/*<visibility>*/public/*</visibility>*/ interface /*<name>*/UIResponderStandardEditActions/*</name>*/ 
+    /*<implements>*/extends NSObjectProtocol/*</implements>*/ {
+
+    /*<ptr>*/
+    /*</ptr>*/
+    /*<bind>*/
+    /*</bind>*/
+    /*<constants>*//*</constants>*/
+    /*<properties>*/
+    
+    /*</properties>*/
+    /*<methods>*/
+    @Method(selector = "cut:")
+    void cut(NSObject sender);
+    @Method(selector = "copy:")
+    void copy(NSObject sender);
+    @Method(selector = "paste:")
+    void paste(NSObject sender);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Method(selector = "pasteAndMatchStyle:")
+    void pasteAndMatchStyle(NSObject sender);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Method(selector = "pasteAndGo:")
+    void pasteAndGo(NSObject sender);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Method(selector = "pasteAndSearch:")
+    void pasteAndSearch(NSObject sender);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "newFromPasteboard:")
+    void newFromPasteboard(NSObject sender);
+    @Method(selector = "select:")
+    void select(NSObject sender);
+    @Method(selector = "selectAll:")
+    void selectAll(NSObject sender);
+    @Method(selector = "delete:")
+    void delete(NSObject sender);
+    @Method(selector = "makeTextWritingDirectionLeftToRight:")
+    void makeTextWritingDirectionLeftToRight(NSObject sender);
+    @Method(selector = "makeTextWritingDirectionRightToLeft:")
+    void makeTextWritingDirectionRightToLeft(NSObject sender);
+    @Method(selector = "toggleBoldface:")
+    void toggleBoldface(NSObject sender);
+    @Method(selector = "toggleItalics:")
+    void toggleItalics(NSObject sender);
+    @Method(selector = "toggleUnderline:")
+    void toggleUnderline(NSObject sender);
+    @Method(selector = "increaseSize:")
+    void increaseSize(NSObject sender);
+    @Method(selector = "decreaseSize:")
+    void decreaseSize(NSObject sender);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "alignLeft:")
+    void alignLeft(NSObject sender);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "alignCenter:")
+    void alignCenter(NSObject sender);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "alignJustified:")
+    void alignJustified(NSObject sender);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "alignRight:")
+    void alignRight(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "find:")
+    void find(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "findAndReplace:")
+    void findAndReplace(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "findNext:")
+    void findNext(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "findPrevious:")
+    void findPrevious(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "useSelectionForFind:")
+    void useSelectionForFind(NSObject sender);
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Method(selector = "updateTextAttributesWithConversionHandler:")
+    void updateTextAttributes(@Block Block1<NSDictionary<NSString, ?>, NSDictionary<NSString, ?>> conversionHandler);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Method(selector = "print:")
+    void print(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "rename:")
+    void rename(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "duplicate:")
+    void duplicate(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "move:")
+    void move(NSObject sender);
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Method(selector = "export:")
+    void export(NSObject sender);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Method(selector = "toggleSidebar:")
+    void toggleSidebar(NSObject sender);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "toggleInspector:")
+    void toggleInspector(NSObject sender);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "performClose:")
+    void performClose(NSObject sender);
+    /**
+     * @since Available in iOS 18.2 and later.
+     */
+    @Method(selector = "showWritingTools:")
+    void showWritingTools(NSObject sender);
+    /*</methods>*/
+    /*<adapter>*/
+    /*</adapter>*/
+}

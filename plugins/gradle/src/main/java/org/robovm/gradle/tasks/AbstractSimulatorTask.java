@@ -1,0 +1,85 @@
+/*
+ * Copyright (C) 2015 RoboVM AB.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.gradle.tasks;
+
+import org.apache.tools.ant.types.Commandline;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.UntrackedTask;
+import org.gradle.api.tasks.options.Option;
+import org.robovm.compiler.AppCompiler;
+import org.robovm.compiler.config.Arch;
+import org.robovm.compiler.config.Config;
+import org.robovm.compiler.config.OS;
+import org.robovm.compiler.target.ios.simulator.DeviceType;
+import org.robovm.compiler.target.ios.simulator.IOSSimulatorLaunchParameters;
+import org.robovm.gradle.RoboVMGradleException;
+
+import java.io.File;
+import java.util.Arrays;
+
+/**
+ *
+ */
+@UntrackedTask(because = "caching not implemented")
+public abstract class AbstractSimulatorTask extends AbstractRoboVMTask {
+    private String[] args;
+
+    @Option(option = "args", description = "Command line arguments passed to app.")
+    public void setArgs(String args) {
+        this.args = Commandline.translateCommandline(args);
+    }
+
+    protected void launch(DeviceType type) {
+        try {
+            AppCompiler compiler = build(getOs(), getArch(), getTargetType());
+
+            if (extension.isSkipLaunch()) {
+                return;
+            }
+
+            Config config = compiler.getConfig();
+            IOSSimulatorLaunchParameters launchParameters = (IOSSimulatorLaunchParameters) config.getTarget().createLaunchParameters();
+            launchParameters.setDeviceType(type);
+            if (args != null) {
+                launchParameters.setArguments(Arrays.asList(args));
+            }
+
+            // redirect stdout and stderr to gradle console, ignoring parent in chain
+            // as not returning the process but just running it synchronously
+            launchParameters.getStdoutChain().registerLink((p) -> System.out );
+            launchParameters.getStderrChain().registerLink((p) -> System.err );
+
+            compiler.launch(launchParameters);
+        } catch (Throwable t) {
+            throw new RoboVMGradleException("Failed to launch simulator", t);
+        }
+    }
+
+    @Internal
+    protected abstract String getTargetType();
+
+    @Internal
+    protected abstract OS getOs();
+    
+    @Internal
+    protected abstract Arch getArch();
+
+    protected DeviceType getDeviceType(DeviceType.DeviceFamily family) {
+        String deviceName = (String) project.getProperties().get("robovm.device.name");
+        String sdkVersion = (String) project.getProperties().get("robovm.sdk.version");
+        return DeviceType.getBestDeviceType(getArch(), family, deviceName, sdkVersion);
+    }
+}

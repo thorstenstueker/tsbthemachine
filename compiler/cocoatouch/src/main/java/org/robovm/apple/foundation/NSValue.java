@@ -1,0 +1,220 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.foundation;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.corefoundation.*;
+import org.robovm.apple.uikit.*;
+import org.robovm.apple.coretext.*;
+import org.robovm.apple.coreanimation.*;
+import org.robovm.apple.coregraphics.*;
+import org.robovm.apple.coremedia.*;
+import org.robovm.apple.security.*;
+import org.robovm.apple.dispatch.*;
+/*</imports>*/
+import org.robovm.apple.corelocation.CLLocationCoordinate2D;
+
+/*<javadoc>*/
+
+/*</javadoc>*/
+/*<annotations>*/@Library("Foundation") @NativeClass @WeaklyLinked/*</annotations>*/
+/*<visibility>*/public/*</visibility>*/ class /*<name>*/NSValue/*</name>*/ 
+    extends /*<extends>*/NSObject/*</extends>*/ 
+    /*<implements>*/implements NSSecureCoding/*</implements>*/ {
+
+    /*<ptr>*/public static class NSValuePtr extends Ptr<NSValue, NSValuePtr> {}/*</ptr>*/
+    /*<bind>*/static { ObjCRuntime.bind(NSValue.class); }/*</bind>*/
+    /*<constants>*//*</constants>*/
+    /*<constructors>*/
+    protected NSValue(Handle h, long handle) { super(h, handle); }
+    protected NSValue(SkipInit skipInit) { super(skipInit); }
+    @Method(selector = "initWithCoder:")
+    public NSValue(NSCoder coder) { super((SkipInit) null); initObject(init(coder)); }
+    /*</constructors>*/
+    /*<properties>*/
+    @Property(selector = "objCType")
+    public native @org.robovm.rt.bro.annotation.Marshaler(StringMarshalers.AsAsciiZMarshaler.class) String getObjCType();
+    @Property(selector = "nonretainedObjectValue")
+    public native NSObject objectValue();
+    @Property(selector = "pointerValue")
+    public native @Pointer long pointerValue();
+    @Property(selector = "rangeValue")
+    public native @ByVal NSRange rangeValue();
+    @Property(selector = "supportsSecureCoding")
+    public static native boolean supportsSecureCoding();
+    /*</properties>*/
+    /*<members>*//*</members>*/
+
+    public static NSValue valueOf(VoidPtr value, String type) {
+        BytePtr p = type == null ? null : BytePtr.toBytePtrAsciiZ(type);
+        return valueOf(value, p);
+    }
+
+    public VoidPtr getValue() {
+        VoidPtr ptr = new VoidPtr();
+        getValue(ptr);
+        return ptr;
+    }
+    
+    /* UIKit Extensions */
+    @WeaklyLinked
+    public CGPoint pointValue() {
+        return org.robovm.apple.uikit.NSValueExtensions.getPointValue(this);
+    }
+    @WeaklyLinked
+    public CGSize sizeValue() {
+        return org.robovm.apple.uikit.NSValueExtensions.getSizeValue(this);
+    }
+    @WeaklyLinked
+    public CGRect rectValue() {
+        return org.robovm.apple.uikit.NSValueExtensions.getRectValue(this);
+    }
+    @WeaklyLinked
+    public CGAffineTransform affineTransformValue() {
+        return org.robovm.apple.uikit.NSValueExtensions.getAffineTransformValue(this);
+    }
+    @WeaklyLinked
+    public UIEdgeInsets edgeInsetsValue() {
+        return org.robovm.apple.uikit.NSValueExtensions.getEdgeInsetsValue(this);
+    }
+    /**
+     * @since Available in iOS 5.0 and later.
+     */
+    @WeaklyLinked
+    public UIOffset offsetValue() {
+        return org.robovm.apple.uikit.NSValueExtensions.getOffsetValue(this);
+    }
+
+    @WeaklyLinked
+    public static NSValue valueOf(CGPoint point) {
+        return org.robovm.apple.uikit.NSValueExtensions.create(point);
+    }
+    @WeaklyLinked
+    public static NSValue valueOf(CGSize size) {
+        return org.robovm.apple.uikit.NSValueExtensions.create(size);
+    }
+    @WeaklyLinked
+    public static NSValue valueOf(CGRect rect) {
+        return org.robovm.apple.uikit.NSValueExtensions.create(rect);
+    }
+    @WeaklyLinked
+    public static NSValue valueOf(CGAffineTransform transform) {
+        return org.robovm.apple.uikit.NSValueExtensions.create(transform);
+    }
+    @WeaklyLinked
+    public static NSValue valueOf(UIEdgeInsets insets) {
+        return org.robovm.apple.uikit.NSValueExtensions.create(insets);
+    }
+    /**
+     * @since Available in iOS 5.0 and later.
+     */
+    @WeaklyLinked
+    public static NSValue valueOf(UIOffset insets) {
+        return org.robovm.apple.uikit.NSValueExtensions.create(insets);
+    }
+    
+    /* AVFoundation extensions */
+    /**
+     * @since Available in iOS 4.0 and later.
+     */
+    @WeaklyLinked
+    public CMTime timeValue() {
+        return org.robovm.apple.avfoundation.NSValueExtensions.getCMTimeValue(this);
+    }
+    /**
+     * @since Available in iOS 4.0 and later.
+     */
+    @WeaklyLinked
+    public CMTimeRange timeRangeValue() {
+        return org.robovm.apple.avfoundation.NSValueExtensions.getCMTimeRangeValue(this);
+    }
+    /**
+     * @since Available in iOS 4.0 and later.
+     */
+    @WeaklyLinked
+    public CMTimeMapping timeMappingValue() {
+        return org.robovm.apple.avfoundation.NSValueExtensions.getCMTimeMappingValue(this);
+    }
+    /**
+     * @since Available in iOS 4.0 and later.
+     */
+    @WeaklyLinked
+    public static NSValue valueOf(CMTime time) {
+        return org.robovm.apple.avfoundation.NSValueExtensions.create(time);
+    }
+    /**
+     * @since Available in iOS 4.0 and later.
+     */
+    @WeaklyLinked
+    public static NSValue valueOf(CMTimeRange timeRange) {
+        return org.robovm.apple.avfoundation.NSValueExtensions.create(timeRange);
+    }
+    /**
+     * @since Available in iOS 4.0 and later.
+     */
+    @WeaklyLinked
+    public static NSValue valueOf(CMTimeMapping timeMapping) {
+        return org.robovm.apple.avfoundation.NSValueExtensions.create(timeMapping);
+    }
+    
+    /* CoreAnimation extensions */
+    @WeaklyLinked
+    public CATransform3D transform3DValue() {
+        return org.robovm.apple.coreanimation.NSValueExtensions.getCATransform3DValue(this);
+    }
+    @WeaklyLinked
+    public static NSValue valueOf(CATransform3D t) {
+        return org.robovm.apple.coreanimation.NSValueExtensions.create(t);
+    }
+    /*<methods>*/
+    /**
+     * @since Available in iOS 11.0 and later.
+     */
+    @Method(selector = "getValue:size:")
+    protected native void getValue(VoidPtr value, @MachineSizedUInt long size);
+    @Method(selector = "initWithCoder:")
+    protected native @Pointer long init(NSCoder coder);
+    @Method(selector = "valueWithBytes:objCType:")
+    public static native NSValue valueOf(VoidPtr value, BytePtr type);
+    @Method(selector = "isEqualToValue:")
+    public native boolean equalsTo(NSValue value);
+    @Method(selector = "valueWithNonretainedObject:")
+    public static native NSValue valueOf(NSObject anObject);
+    @Method(selector = "valueWithPointer:")
+    public static native NSValue valueOf(VoidPtr pointer);
+    /**
+     * @deprecated Use getValue:size:
+     */
+    @Deprecated
+    @Method(selector = "getValue:")
+    protected native void getValue(VoidPtr value);
+    @Method(selector = "valueWithRange:")
+    public static native NSValue valueOf(@ByVal NSRange range);
+    @Method(selector = "encodeWithCoder:")
+    public native void encode(NSCoder coder);
+    /*</methods>*/
+}

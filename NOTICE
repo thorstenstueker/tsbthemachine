@@ -1,0 +1,60 @@
+tsbTheMachine
+=============
+
+tsbTheMachine is the ahead-of-time compiler and runtime for the mobile half of RapidFX and RapidJ.
+
+It is a fork of RoboVM / MobiVM, maintained for our own purposes.
+
+
+Origin
+------
+
+Derived from:
+
+  MobiVM/robovm                      commit fed6c1164, 2026-08-10 ("iOS 26.2 bindings")
+  thorstenstueker/robovm, br 27.0.0  commit f3babc9a5, 2026-09-28
+
+The second is the first plus our own work: the class library filled in against Java 25, the VM core
+ported to aarch64 Linux and to Android's Bionic, the CocoaTouch bindings reduced to what a rendered
+user interface needs, and our own distribution and release pipeline.
+
+RoboVM was created by Trillian Mobile AB / RoboVM AB. MobiVM is its community continuation. Neither
+is affiliated with this fork, and neither endorses it.
+
+
+Why it is a fork and not a contribution
+---------------------------------------
+
+The two projects are going in opposite directions, and that is not a complaint about either.
+
+MobiVM's product is *native* user interfaces: its investment is in binding Apple's frameworks so
+that a Java program can put UIKit controls on the screen. Ours is *one rendered* user interface
+across desktop, web and mobile, drawn through a single painting interface. We had native peers once
+and gave them up, because keeping three platforms' widget sets in agreement is the problem we are
+trying to remove rather than solve.
+
+So our changes are of no use upstream — for now — and upstream's yearly regeneration of the full
+CocoaTouch tree is investment in the surface we are shrinking. Measured on 2026-09-28: this tree is
+130 commits ahead of MobiVM's master and 0 behind it.
+
+There is no obligation here to stay in step, and none is wanted. If a new Xcode or iOS SDK breaks
+the bindings, what upstream did about it is worth a look — as a reference, not as a duty.
+
+
+Licence
+-------
+
+GPL version 2, as RoboVM and MobiVM are. Per-module LICENSE.txt and NOTICE.txt files carry the
+terms and the copyright notices of each part, and they are unchanged; parts of the runtime carry
+the GPL's Classpath exception (compiler/rt/LICENSE_GPL_CE.txt) and parts are Apache 2.0, because
+the runtime descends from Android's libcore, which descends from OpenJDK.
+
+**Corresponding source.** Every released binary is built from a commit in this repository, and the
+release tag names that commit. That is how the GPL's corresponding-source obligation is met: take
+the tag, take the commit, and you have the source for the archive published beside it.
+
+Releases made before this repository existed — tags `tsbmobile-27.0.0`, `tsbmobile-27.0.1` and
+`tsbmobile-27.0.2` — live in `thorstenstueker/robovm`. That repository is archived and stays
+readable, because binaries carrying those versions are in circulation and their source has to remain
+reachable. `tsbmobile-27.0.0` is withdrawn: its robovm-rt.jar holds 502 duplicated classes that
+iCloud wrote into the build tree, and 27.0.1 is the same commit line built from a swept tree.

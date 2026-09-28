@@ -1,0 +1,185 @@
+package: org.robovm.apple.usernotifications
+# tsbMobile (23.09.2026): the bindings are ours and only these frameworks exist; members typed with
+# a class of intents are skipped by the generator and listed in bro-gen/skipped.txt.
+include: [foundation.yaml]
+library: UserNotifications
+framework: UserNotifications
+clang_args: ['-x', 'objective-c']
+headers:
+    - /System/Library/Frameworks/UserNotifications.framework/Headers/UserNotifications.h
+
+enums:
+    UNAlertStyle: {}
+    UNAuthorizationOptions: {}
+    UNAuthorizationStatus: {}
+    UNErrorCode: {}
+    UNNotificationActionOptions: {}
+    UNNotificationCategoryOptions: {}
+    UNNotificationPresentationOptions: {}
+    UNNotificationSetting: {}
+    UNShowPreviewsSetting: {} #since 11.0
+    UNNotificationInterruptionLevel: {} #since 15.0
+
+classes:
+    UNCalendarNotificationTrigger:
+        methods:
+            '+triggerWithDateMatchingComponents:repeats:':
+                name: create
+                constructor: true
+    UNLocationNotificationTrigger:
+        properties:
+            region:
+                type: org.robovm.apple.corelocation.CLRegion
+        methods:
+            '+triggerWithRegion:repeats:':
+                name: create
+                constructor: true
+                parameters:
+                    region:
+                        type: org.robovm.apple.corelocation.CLRegion
+    UNMutableNotificationContent: {}
+    UNNotification: {}
+    UNNotificationAction:
+        methods:
+            '+actionWithIdentifier:title:options:':
+                name: create
+                constructor: true
+            '+actionWithIdentifier:title:options:icon:':
+                name: create
+                constructor: true
+    UNNotificationAttachment:
+        methods:
+            '+attachmentWithIdentifier:URL:options:error:':
+                name: create
+                constructor: true
+                throws: NSErrorException
+    UNNotificationCategory:
+        methods:
+            '+categoryWithIdentifier:actions:intentIdentifiers:options:':
+                name: create
+                constructor: true
+            '+categoryWithIdentifier:actions:intentIdentifiers:hiddenPreviewsBodyPlaceholder:options:':
+                name: create
+                constructor: true
+            '+categoryWithIdentifier:actions:intentIdentifiers:hiddenPreviewsBodyPlaceholder:categorySummaryFormat:options:':
+                name: create
+                constructor: true
+    UNNotificationContent: #since 10.0
+        methods:
+            '-contentByUpdatingWithProvider:error:':
+                name: contentByUpdating
+    UNNotificationRequest:
+        methods:
+            '+requestWithIdentifier:content:trigger:':
+                name: create
+                constructor: true
+    UNNotificationResponse: {}
+    UNNotificationServiceExtension:
+        methods:
+            '-didReceiveNotificationRequest:withContentHandler:':
+                name: didReceiveNotificationRequest
+    UNNotificationSettings: {}
+    UNNotificationSound:
+        methods:
+            '+criticalSoundNamed.*':
+                name: getCriticalSound
+            '+defaultCriticalSoundWithAudioVolume:':
+                name: getDefaultCriticalSound
+    UNNotificationTrigger: {}
+    UNPushNotificationTrigger: {}
+    UNTextInputNotificationAction:
+        methods:
+            '+actionWithIdentifier:title:options:textInputButtonTitle:textInputPlaceholder:':
+                name: create
+                constructor: true
+            '+actionWithIdentifier:title:options:icon:textInputButtonTitle:textInputPlaceholder:':
+                name: create
+                constructor: true
+    UNTextInputNotificationResponse: {}
+    UNTimeIntervalNotificationTrigger:
+        methods:
+            '+triggerWithTimeInterval:repeats:':
+                name: create
+                constructor: true
+    UNUserNotificationCenter:
+        methods:
+            '-requestAuthorizationWithOptions:completionHandler:':
+                name: requestAuthorization
+            '-addNotificationRequest:withCompletionHandler:':
+                name: addNotificationRequest
+            '-getNotificationCategoriesWithCompletionHandler:':
+                name: getNotificationCategories
+            '-getNotificationSettingsWithCompletionHandler:':
+                name: getNotificationSettings
+            '-getPendingNotificationRequestsWithCompletionHandler:':
+                name: getPendingNotificationRequests
+            '-removePendingNotificationRequestsWithIdentifiers:':
+                name: removePendingNotificationRequests
+            '-getDeliveredNotificationsWithCompletionHandler:':
+                name: getDeliveredNotifications
+            '-removeDeliveredNotificationsWithIdentifiers:':
+                name: removeDeliveredNotifications
+            '-setBadgeCount:withCompletionHandler:':
+                name: setBadgeCount
+    UNNotificationActionIcon: #since 15.0
+        methods:
+            '+iconWithTemplateImageName:':
+                name: createWithTemplateImageName
+            '+iconWithSystemImageName:':
+                name: createWithSystemImageName
+    UNNotificationAttributedMessageContext: #since 18.0
+        methods:
+            '+contextWithSendMessageIntent:attributedContent:':
+                name: create
+                constructor: true
+protocols:
+    UNUserNotificationCenterDelegate:
+        methods:
+            '-userNotificationCenter:willPresentNotification:withCompletionHandler:':
+                name: willPresentNotification
+            '-userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:':
+                name: didReceiveNotificationResponse
+            '-userNotificationCenter:openSettingsForNotification:':
+                name: openSettings
+    UNNotificationContentProviding: {} #since 15.0
+functions:
+    # Make sure we don't miss any functions if new ones are introduced in a later version
+    (k?UN.*):
+        class: UserNotifications
+        name: 'Function__#{g[0]}'
+
+values:
+    UNErrorDomain:
+        class: UNErrorCode
+        name: getClassDomain
+
+    UNNotificationAttachmentOptions(ThumbnailClippingRectKey|ThumbnailHiddenKey|ThumbnailTimeKey|TypeHintKey):
+        class: UNNotificationAttachmentOptions
+        name: '#{g[0]}'
+
+    UNNotification(Default|Dismiss)ActionIdentifier:
+        class: UNNotificationActionIdentifier
+        name: '#{g[0]}'
+
+    # Make sure we don't miss any values if new ones are introduced in a later version
+    (k?UN.*):
+        class: UserNotifications
+        name: 'Value__#{g[0]}'
+
+constants:
+    # excluding bellow as these are part of generated enum
+    UNNotificationActionOptionNone:
+        exclude: true
+    UNAuthorizationOptionNone:
+        exclude: true
+    UNNotificationPresentationOptionNone:
+        exclude: true
+    UNNotificationCategoryOptionNone:
+        exclude: true
+
+
+
+    # Make sure we don't miss any constants if new ones are introduced in a later version
+    (k?UN.*):
+        class: UserNotifications
+        name: 'Constant__#{g[0]}'

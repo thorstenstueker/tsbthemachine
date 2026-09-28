@@ -1,0 +1,82 @@
+plugins {
+    id 'java'
+    id "org.jetbrains.kotlin.jvm" version "2.1.20"
+    id "org.jetbrains.intellij.platform" version "2.16.0"
+}
+
+ext {
+    roboVMVersion = '3.0.0-SNAPSHOT'
+}
+
+group 'com.mobidevelop.robovm'
+version "${roboVMVersion}"
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url 'https://central.sonatype.com/repository/maven-snapshots'}
+    intellijPlatform {
+        defaultRepositories()
+    }
+}
+
+configurations {
+    robovm_dist
+}
+
+dependencies {
+    implementation ("com.mobidevelop.robovm:robovm-dist-compiler:${roboVMVersion}") {
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-rt'
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-objc'
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-bro-bridge'
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-cocoatouch'
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-cacerts-full'
+    }
+    implementation ("com.mobidevelop.robovm:robovm-ibxcode:${roboVMVersion}") {
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-compiler'
+    }
+    implementation ("com.mobidevelop.robovm:robovm-templater:${roboVMVersion}") {
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-templates-ios-single-view-no-ib'
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-templates-ios-framework'
+        exclude group: 'com.mobidevelop.robovm', module: 'robovm-templates-console'
+    }
+    robovm_dist "com.mobidevelop.robovm:robovm-dist:${roboVMVersion}:nocompiler@tar.gz"
+
+    implementation 'org.apache.commons:commons-compress:1.25.0'
+
+    intellijPlatform {
+        intellijIdeaCommunity('2025.2')
+        bundledPlugins('com.intellij.java', 'org.jetbrains.idea.maven', 'com.intellij.gradle')
+
+        pluginVerifier()
+    }
+}
+
+kotlin {
+    jvmToolchain(21)
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+intellijPlatform {
+    pluginConfiguration {
+        ideaVersion {
+            // allow to run on any recent version of IntelliJ IDEA since version specified in intellijIdeaCommunity
+            untilBuild = provider { null }
+        }
+    }
+}
+
+def copyRoboVmDist = tasks.register("copyRoboVmDist", Copy) {
+    from configurations.robovm_dist
+    into "src/main/resources/"
+    rename "robovm-dist-${roboVMVersion}-nocompiler.tar.gz", "robovm-dist"
+}
+
+tasks.named("patchPluginXml").configure {
+    dependsOn copyRoboVmDist
+}

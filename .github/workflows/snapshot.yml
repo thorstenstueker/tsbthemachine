@@ -1,0 +1,49 @@
+name: Build library and deploy snapshot
+
+on:
+  push:
+    branches: [ dev/3.0.0 ]
+
+jobs:
+  build:
+
+    runs-on: macos-15
+
+    env:
+      MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+      MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+      MAVEN_ARGS: -Dmaven.resolver.transport=wagon
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          cache: 'maven'
+          java-version: '21'
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+      - name: Install dependencies
+        run: |
+          brew install openssl
+          brew install autoconf
+          brew install automake
+          brew install libtool
+      - name: build natives
+        run: ./build.sh
+      - name: Maven deploy
+        run: mvn clean deploy
+      - name: Gradle plugin deploy
+        run: cd plugins/gradle && ./gradlew clean build publish
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY_SECRET }}
+          aws-region: eu-west-3
+      - name: Deploy idea plugin
+        run: aws s3 sync ./plugins/idea/build/distributions/ s3://${{ secrets.AWS_BUCKET }}/snapshots/idea3.x --acl public-read --follow-symlinks --delete
+      - name: Deploy eclipse plugin
+        run: aws s3 sync ./plugins/eclipse/update-site/target/repository/ s3://${{ secrets.AWS_BUCKET }}/snapshots/eclipse3.x --acl public-read --follow-symlinks --delete

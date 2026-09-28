@@ -1,0 +1,290 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.coremedia;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.foundation.*;
+import org.robovm.apple.corefoundation.*;
+import org.robovm.apple.dispatch.*;
+import org.robovm.apple.coreaudio.*;
+import org.robovm.apple.coregraphics.*;
+import org.robovm.apple.corevideo.*;
+import org.robovm.apple.audiotoolbox.*;
+/*</imports>*/
+
+/*<javadoc>*/
+/*</javadoc>*/
+/*<annotations>*/@Library("CoreMedia") @StronglyLinked/*</annotations>*/
+@Marshaler(/*<name>*/CMMetadataBaseDataType/*</name>*/.Marshaler.class)
+/*<visibility>*/public/*</visibility>*/ class /*<name>*/CMMetadataBaseDataType/*</name>*/ 
+    extends /*<extends>*/GlobalValueEnumeration<CFString>/*</extends>*/
+    /*<implements>*//*</implements>*/ {
+
+    static { Bro.bind(/*<name>*/CMMetadataBaseDataType/*</name>*/.class); }
+
+    /*<marshalers>*/
+    public static class Marshaler {
+        @MarshalsPointer
+        public static CMMetadataBaseDataType toObject(Class<CMMetadataBaseDataType> cls, long handle, long flags) {
+            CFString o = (CFString) CFType.Marshaler.toObject(CFString.class, handle, flags);
+            if (o == null) {
+                return null;
+            }
+            return CMMetadataBaseDataType.valueOf(o);
+        }
+        @MarshalsPointer
+        public static long toNative(CMMetadataBaseDataType o, long flags) {
+            if (o == null) {
+                return 0L;
+            }
+            return CFType.Marshaler.toNative(o.value(), flags);
+        }
+    }
+    public static class AsListMarshaler {
+        @MarshalsPointer
+        public static List<CMMetadataBaseDataType> toObject(Class<? extends CFType> cls, long handle, long flags) {
+            CFArray o = (CFArray) CFType.Marshaler.toObject(CFArray.class, handle, flags);
+            if (o == null) {
+                return null;
+            }
+            List<CMMetadataBaseDataType> list = new ArrayList<>();
+            for (int i = 0; i < o.size(); i++) {
+                list.add(CMMetadataBaseDataType.valueOf(o.get(i, CFString.class)));
+            }
+            return list;
+        }
+        @MarshalsPointer
+        public static long toNative(List<CMMetadataBaseDataType> l, long flags) {
+            if (l == null) {
+                return 0L;
+            }
+            CFArray array = CFMutableArray.create();
+            for (CMMetadataBaseDataType o : l) {
+                array.add(o.value());
+            }
+            return CFType.Marshaler.toNative(array, flags);
+        }
+    }
+    /*</marshalers>*/
+
+    /*<constants>*/
+    public static final CMMetadataBaseDataType RawData = new CMMetadataBaseDataType("RawData");
+    public static final CMMetadataBaseDataType UTF8 = new CMMetadataBaseDataType("UTF8");
+    public static final CMMetadataBaseDataType UTF16 = new CMMetadataBaseDataType("UTF16");
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    public static final CMMetadataBaseDataType MacRoman = new CMMetadataBaseDataType("MacRoman");
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    public static final CMMetadataBaseDataType ISOLatin1 = new CMMetadataBaseDataType("ISOLatin1");
+    public static final CMMetadataBaseDataType GIF = new CMMetadataBaseDataType("GIF");
+    public static final CMMetadataBaseDataType JPEG = new CMMetadataBaseDataType("JPEG");
+    public static final CMMetadataBaseDataType PNG = new CMMetadataBaseDataType("PNG");
+    public static final CMMetadataBaseDataType BMP = new CMMetadataBaseDataType("BMP");
+    public static final CMMetadataBaseDataType Float32 = new CMMetadataBaseDataType("Float32");
+    public static final CMMetadataBaseDataType Float64 = new CMMetadataBaseDataType("Float64");
+    public static final CMMetadataBaseDataType SInt8 = new CMMetadataBaseDataType("SInt8");
+    public static final CMMetadataBaseDataType SInt16 = new CMMetadataBaseDataType("SInt16");
+    public static final CMMetadataBaseDataType SInt32 = new CMMetadataBaseDataType("SInt32");
+    public static final CMMetadataBaseDataType SInt64 = new CMMetadataBaseDataType("SInt64");
+    public static final CMMetadataBaseDataType UInt8 = new CMMetadataBaseDataType("UInt8");
+    public static final CMMetadataBaseDataType UInt16 = new CMMetadataBaseDataType("UInt16");
+    public static final CMMetadataBaseDataType UInt32 = new CMMetadataBaseDataType("UInt32");
+    public static final CMMetadataBaseDataType UInt64 = new CMMetadataBaseDataType("UInt64");
+    public static final CMMetadataBaseDataType PointF32 = new CMMetadataBaseDataType("PointF32");
+    public static final CMMetadataBaseDataType DimensionsF32 = new CMMetadataBaseDataType("DimensionsF32");
+    public static final CMMetadataBaseDataType RectF32 = new CMMetadataBaseDataType("RectF32");
+    public static final CMMetadataBaseDataType AffineTransformF64 = new CMMetadataBaseDataType("AffineTransformF64");
+    /**
+     * @since Available in iOS 9.0 and later.
+     */
+    public static final CMMetadataBaseDataType PolygonF32 = new CMMetadataBaseDataType("PolygonF32");
+    /**
+     * @since Available in iOS 9.0 and later.
+     */
+    public static final CMMetadataBaseDataType PolylineF32 = new CMMetadataBaseDataType("PolylineF32");
+    /**
+     * @since Available in iOS 9.0 and later.
+     */
+    public static final CMMetadataBaseDataType JSON = new CMMetadataBaseDataType("JSON");
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    public static final CMMetadataBaseDataType PerspectiveTransformF64 = new CMMetadataBaseDataType("PerspectiveTransformF64");
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    public static final CMMetadataBaseDataType RasterRectangleValue = new CMMetadataBaseDataType("RasterRectangleValue");
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    public static final CMMetadataBaseDataType ExtendedRasterRectangleValue = new CMMetadataBaseDataType("ExtendedRasterRectangleValue");
+    public static final CMMetadataBaseDataType QuickTimeMetadataLocation_ISO6709 = new CMMetadataBaseDataType("QuickTimeMetadataLocation_ISO6709");
+    public static final CMMetadataBaseDataType QuickTimeMetadataDirection = new CMMetadataBaseDataType("QuickTimeMetadataDirection");
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    public static final CMMetadataBaseDataType QuickTimeMetadataUUID = new CMMetadataBaseDataType("QuickTimeMetadataUUID");
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    public static final CMMetadataBaseDataType QuickTimeMetadataMilliLux = new CMMetadataBaseDataType("QuickTimeMetadataMilliLux");
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    public static final CMMetadataBaseDataType QuickTimeMetadataSMPTE2094_50 = new CMMetadataBaseDataType("QuickTimeMetadataSMPTE2094_50");
+    /*</constants>*/
+    
+    private static /*<name>*/CMMetadataBaseDataType/*</name>*/[] values = new /*<name>*/CMMetadataBaseDataType/*</name>*/[] {/*<value_list>*/RawData, UTF8, UTF16, MacRoman, ISOLatin1, GIF, JPEG, PNG, BMP, Float32, Float64, SInt8, SInt16, SInt32, SInt64, UInt8, UInt16, UInt32, UInt64, PointF32, DimensionsF32, RectF32, AffineTransformF64, PolygonF32, PolylineF32, JSON, PerspectiveTransformF64, RasterRectangleValue, ExtendedRasterRectangleValue, QuickTimeMetadataLocation_ISO6709, QuickTimeMetadataDirection, QuickTimeMetadataUUID, QuickTimeMetadataMilliLux, QuickTimeMetadataSMPTE2094_50/*</value_list>*/};
+    
+    /*<name>*/CMMetadataBaseDataType/*</name>*/ (String getterName) {
+        super(Values.class, getterName);
+    }
+    
+    public static /*<name>*/CMMetadataBaseDataType/*</name>*/ valueOf(/*<type>*/CFString/*</type>*/ value) {
+        for (/*<name>*/CMMetadataBaseDataType/*</name>*/ v : values) {
+            if (v.value().equals(value)) {
+                return v;
+            }
+        }
+        throw new IllegalArgumentException("No constant with value " + value + " found in " 
+            + /*<name>*/CMMetadataBaseDataType/*</name>*/.class.getName());
+    }
+    
+    /*<methods>*//*</methods>*/
+    
+    /*<annotations>*/@Library("CoreMedia") @StronglyLinked/*</annotations>*/
+    public static class Values {
+    	static { Bro.bind(Values.class); }
+
+        /*<values>*/
+        @GlobalValue(symbol="kCMMetadataBaseDataType_RawData", optional=true)
+        public static native CFString RawData();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_UTF8", optional=true)
+        public static native CFString UTF8();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_UTF16", optional=true)
+        public static native CFString UTF16();
+        /**
+         * @since Available in iOS 27.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_MacRoman", optional=true)
+        public static native CFString MacRoman();
+        /**
+         * @since Available in iOS 27.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_ISOLatin1", optional=true)
+        public static native CFString ISOLatin1();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_GIF", optional=true)
+        public static native CFString GIF();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_JPEG", optional=true)
+        public static native CFString JPEG();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_PNG", optional=true)
+        public static native CFString PNG();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_BMP", optional=true)
+        public static native CFString BMP();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_Float32", optional=true)
+        public static native CFString Float32();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_Float64", optional=true)
+        public static native CFString Float64();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_SInt8", optional=true)
+        public static native CFString SInt8();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_SInt16", optional=true)
+        public static native CFString SInt16();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_SInt32", optional=true)
+        public static native CFString SInt32();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_SInt64", optional=true)
+        public static native CFString SInt64();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_UInt8", optional=true)
+        public static native CFString UInt8();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_UInt16", optional=true)
+        public static native CFString UInt16();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_UInt32", optional=true)
+        public static native CFString UInt32();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_UInt64", optional=true)
+        public static native CFString UInt64();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_PointF32", optional=true)
+        public static native CFString PointF32();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_DimensionsF32", optional=true)
+        public static native CFString DimensionsF32();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_RectF32", optional=true)
+        public static native CFString RectF32();
+        @GlobalValue(symbol="kCMMetadataBaseDataType_AffineTransformF64", optional=true)
+        public static native CFString AffineTransformF64();
+        /**
+         * @since Available in iOS 9.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_PolygonF32", optional=true)
+        public static native CFString PolygonF32();
+        /**
+         * @since Available in iOS 9.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_PolylineF32", optional=true)
+        public static native CFString PolylineF32();
+        /**
+         * @since Available in iOS 9.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_JSON", optional=true)
+        public static native CFString JSON();
+        /**
+         * @since Available in iOS 13.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_PerspectiveTransformF64", optional=true)
+        public static native CFString PerspectiveTransformF64();
+        /**
+         * @since Available in iOS 26.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_RasterRectangleValue", optional=true)
+        public static native CFString RasterRectangleValue();
+        /**
+         * @since Available in iOS 26.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataBaseDataType_ExtendedRasterRectangleValue", optional=true)
+        public static native CFString ExtendedRasterRectangleValue();
+        @GlobalValue(symbol="kCMMetadataDataType_QuickTimeMetadataLocation_ISO6709", optional=true)
+        public static native CFString QuickTimeMetadataLocation_ISO6709();
+        @GlobalValue(symbol="kCMMetadataDataType_QuickTimeMetadataDirection", optional=true)
+        public static native CFString QuickTimeMetadataDirection();
+        /**
+         * @since Available in iOS 18.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataDataType_QuickTimeMetadataUUID", optional=true)
+        public static native CFString QuickTimeMetadataUUID();
+        /**
+         * @since Available in iOS 18.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataDataType_QuickTimeMetadataMilliLux", optional=true)
+        public static native CFString QuickTimeMetadataMilliLux();
+        /**
+         * @since Available in iOS 27.0 and later.
+         */
+        @GlobalValue(symbol="kCMMetadataDataType_QuickTimeMetadataSMPTE2094_50", optional=true)
+        public static native CFString QuickTimeMetadataSMPTE2094_50();
+        /*</values>*/
+    }
+}

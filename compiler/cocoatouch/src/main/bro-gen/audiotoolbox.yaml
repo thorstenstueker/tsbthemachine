@@ -1,0 +1,1682 @@
+package: org.robovm.apple.audiotoolbox
+# tsbMobile (23.09.2026): the bindings are ours and only these frameworks exist; members typed with
+# a class of coremidi are skipped by the generator and listed in bro-gen/skipped.txt.
+include: [foundation.yaml, corefoundation.yaml, coreaudio.yaml, avfoundation.yaml, uikit.yaml]
+library: AudioToolbox
+framework: AudioToolbox
+clang_args: ['-x', 'objective-c', '-DUSE_AUDIOTOOLBOX_PUBLIC_HEADERS=1']
+headers:
+    - /System/Library/Frameworks/AudioToolbox.framework/Headers/AudioToolbox.h
+typedefs:
+
+private_typedefs:
+    '__CFString *': String
+    '__CFData': NSData
+    '__CFURL': NSURL
+    '__CFDictionary': NSDictionary
+    '__CFArray': NSArray
+    '__CFRunLoop': NSRunLoop
+    AUParameterListenerRef: AUParameterListener
+    AUEventListenerRef: AUEventListener
+    OS_dispatch_queue: org.robovm.apple.dispatch.DispatchQueue
+
+enums:
+    AudioBytePacketTranslationFlags: {prefix: kBytePacketTranslationFlag_, bits: true}
+    AudioConverterProperty:
+        first: kAudioConverterPropertyMinimumInputBufferSize
+        kAudioConverterProperty(.*): '#{g[0]}'
+    AudioConverterProperty2: {first: kAudioConverterPropertyCanResumeFromInterruption, prefix: kAudioConverterProperty, merge_with: AudioConverterProperty}
+    AudioConverterProperty3: {prefix: kAudioConverter, first: kAudioConverterPropertyMaximumInputBufferSize, merge_with: AudioConverterProperty}
+    AudioConverterDitherAlgorithm: {first: kDitherAlgorithm_TPDF}
+    AudioConverterQuality: {first: kAudioConverterQuality_Max}
+    AudioConverterSampleRateConverterComplexity: {first: kAudioConverterSampleRateConverterComplexity_Linear}
+    AudioConverterPrimeMethod: {first: kConverterPrimeMethod_Pre}
+    AudioConverterErrorCode: {first: kAudioConverterErr_FormatNotSupported}
+    AudioConverterErrorCode2: {first: kAudioConverterErr_HardwareInUse, merge_with: AudioConverterErrorCode}
+    AudioFileType: {first: kAudioFileAIFFType, suffix: Type}
+    AudioFileErrorCode: {first: kAudioFileUnspecifiedError, suffix: Error}
+    AudioFileFlags: {}
+    AudioFilePermissions: {}
+    AudioFileLoopDirection: {first: kAudioFileLoopDirection_NoLooping}
+    AudioFileMarkerType: {first: kAudioFileMarkerType_Generic, prefix: kAudioFileMarkerType_}
+    AudioFileRegionFlags: {}
+    AudioFileProperty: {first: kAudioFilePropertyFileFormat}
+    AudioFileGlobalInfo: {first: kAudioFileGlobalInfo_ReadableTypes}
+    AudioFileStreamPropertyFlags: {}
+    AudioFileStreamErrorCode: {first: kAudioFileStreamError_UnsupportedFileType}
+    AudioFileStreamProperty: {first: kAudioFileStreamProperty_ReadyToProducePackets}
+    AudioPanningMode: {first: kPanningMode_SoundField}
+    AudioBalanceFadeType: {first: kAudioBalanceFadeType_MaxUnityGain}
+    AudioFormatProperty: {first: kAudioFormatProperty_FormatInfo}
+    AudioCodecComponentType: {first: kAudioDecoderComponentType, suffix: ComponentType}
+    AudioCodecComponentManufacturer: {first: kAppleSoftwareAudioCodecManufacturer, suffix: AudioCodecManufacturer}
+    AudioFormatErrorCode: {first: kAudioFormatUnspecifiedError, suffix: Error}
+    AudioQueueErrorCode: {first: kAudioQueueErr_InvalidBuffer}
+    AudioQueueProperty:
+        first: kAudioQueueProperty_IsRunning
+        prefix: kAudioQueueProperty_
+        kAudioQueueDeviceProperty_SampleRate: SampleRate
+        kAudioQueueDeviceProperty_NumberChannels: NumberChannels
+    AudioQueueProperty2: {first: kAudioQueueProperty_HardwareCodecPolicy, prefix: kAudioQueueProperty_, merge_with: AudioQueueProperty}
+    AudioQueueProperty3: {first: kAudioQueueProperty_ChannelAssignments, prefix: kAudioQueueProperty_, merge_with: AudioQueueProperty}
+    AudioQueuePitchAlgorithm: {first: kAudioQueueTimePitchAlgorithm_Spectral}
+    AudioQueuePitchAlgorithm2: {first: kAudioQueueTimePitchAlgorithm_LowQualityZeroLatency, prefix: kAudioQueueTimePitchAlgorithm_, merge_with: AudioQueuePitchAlgorithm}
+    AudioQueueHardwareCodecPolicy: {first: kAudioQueueHardwareCodecPolicy_Default}
+    AudioQueueParam: {first: kAudioQueueParam_Volume}
+    AudioQueueProcessingTapFlags: {}
+    AudioServicesErrorCode: {first: kAudioServicesNoError, suffix: Error}
+    AudioServicesProperty: {first: kAudioServicesPropertyIsUISound}
+    AudioSessionActivationFlags: {first: kAudioSessionSetActiveFlag_NotifyOthersOnDeactivation, prefix: kAudioSessionSetActiveFlag_, bits: true}
+    AudioSessionErrorCode: {first: kAudioSessionNoError, prefix: kAudioSession, suffix: Error, kAudioServicesNoHardwareError: NoHardware}
+    AudioSessionInterruptionState: {first: kAudioSessionBeginInterruption}
+    AudioSessionCategory: {first: kAudioSessionCategory_AmbientSound}
+    AudioSessionOverrideAudioRoute: {first: kAudioSessionOverrideAudioRoute_None}
+    AudioSessionRouteChangeReason: {first: kAudioSessionRouteChangeReason_Unknown}
+    AudioSessionInterruptionType: {first: kAudioSessionInterruptionType_ShouldResume}
+    AudioSessionMode: {first: kAudioSessionMode_Default}
+    AudioSessionProperty: {first: kAudioSessionProperty_PreferredHardwareSampleRate}
+    AUGraphErrorCode: {first: kAUGraphErr_NodeNotFound}
+    AUNodeInteractionType: {first: kAUNodeInteraction_Connection}
+    CAFFileHeaderInfo: {first: kCAF_FileType, exclude: true}
+    CAFChunkType: {first: kCAF_StreamDescriptionChunkID, exclude: true}
+    CAFFormatFlags: {kCAF(LinearPCM)FormatFlag(.*): '#{g[0]}#{g[1]}', exclude: true}
+    CAFMarkerType: {first: kCAFMarkerType_Generic, exclude: true}
+    CAFSMPTETimeType: {first: kCAF_SMPTE_TimeTypeNone}
+    CAFRegionFlags: { exclude: true }
+    ExtAudioFileProperty: {first: kExtAudioFileProperty_FileDataFormat}
+    ExtAudioFileErrorCode: {first: kExtAudioFileError_CodecUnavailableInputConsumed}
+    MusicEventType: {first: kMusicEventType_NULL}
+    MusicSequenceType: {}
+    MusicSequenceFileTypeID: {}
+    MusicSequenceFileFlags: {}
+    MusicSequenceLoadFlags: {}
+    MusicPlayerErrorCode: {first: kAudioToolboxErr_InvalidSequenceType}
+    MusicTrackProperty: {first: kSequenceTrackProperty_LoopInfo}
+
+    AudioComponentFlags: {first: kAudioComponentFlag_Unsearchable, bits: true}
+    AudioComponentErrorCode: {first: kAudioComponentErr_DuplicateDescription}
+    AUType: {first: kAudioUnitType_Output}
+    AUType2: {first: kAudioUnitType_RemoteEffect, prefix: kAudioUnitType_, merge_with: AUType}
+    AUManufacturer: {first: kAudioUnitManufacturer_Apple, prefix: kAudioUnitManufacturer_}
+    AUTypeOutput: {first: kAudioUnitSubType_GenericOutput}
+    AUTypeOutput2: {first: kAudioUnitSubType_RemoteIO, prefix: kAudioUnitSubType_, merge_with: AUTypeOutput}
+    AUTypeMusicDevice: {first: kAudioUnitSubType_Sampler}
+    AUTypeConverter: {first: kAudioUnitSubType_AUConverter}
+    AUTypeConverter2: {first: kAudioUnitSubType_AUiPodTime, prefix: kAudioUnitSubType_, merge_with: AUTypeConverter}
+    AUTypeConverter3: {first: kAudioUnitSubType_TimePitch, prefix: kAudioUnitSubType_, merge_with: AUTypeConverter}
+    AUTypeEffect: {first: kAudioUnitSubType_PeakLimiter}
+    AUTypeEffect2: {first: kAudioUnitSubType_Reverb2, merge_with: AUTypeEffect}
+    AUTypeEffect3: {prefix: kAudioUnitSubType_, first: kAudioUnitSubType_AUiPodEQ, merge_with: AUTypeEffect}
+    AUTypeMixer: {first: kAudioUnitSubType_MultiChannelMixer}
+    AUTypeGenerator: {first: kAudioUnitSubType_ScheduledSoundPlayer}
+    AURenderActionFlags: {first: kAudioUnitRenderAction_PreRender, bits: true, prefix: kAudioUnitRenderAction_, kAudioOfflineUnitRenderAction_(.*): 'Offline#{g[0]}'}
+    AUErrorCode: {first: kAudioUnitErr_InvalidProperty, prefix: kAudioUnitErr_, kAudioComponentErr_(.*) : '#{g[0]}'}
+    AUParameterEventType: {}
+    AUSelector: {first: kAudioUnitRange, suffix: Select, ignore: kAudioUnitRange}
+    AUOutputSelector: {first: kAudioOutputUnitRange, suffix: Select, ignore: kAudioOutputUnitRange}
+    AUParameterAutomationEventType: {}
+    AUParameterMIDI: {first: kAUGroupParameterID_Volume}
+    AUParameterSpatialMixer: {first: kSpatialMixerParam_Azimuth}
+    AUParameterReverb: {first: kReverbParam_FilterFrequency}
+    AUParameterMultiChannelMixer: {first: kMultiChannelMixerParam_Volume}
+    AUParameterMatrixMixer: {first: kMatrixMixerParam_Volume}
+    AUParameterOutput: {first: kHALOutputParam_Volume, prefix: kHALOutputParam_}
+    AUParameterTimePitch: {first: kTimePitchParam_Rate, prefix: kTimePitchParam_}
+    AUParameterNewTimePitch: {first: kNewTimePitchParam_Rate}
+    AUParameterSampler: {first: kAUSamplerParam_Gain}
+    AUParameterBandpass: {first: kBandpassParam_CenterFrequency}
+    AUParameterHipass: {first: kHipassParam_CutoffFrequency}
+    AUParameterLowpass: {first: kLowPassParam_CutoffFrequency}
+    AUParameterHighShelf: {first: kHighShelfParam_CutOffFrequency}
+    AUParameterLowShelf: {first: kAULowShelfParam_CutoffFrequency}
+    AUParameterParametricEQ: {first: kParametricEQParam_CenterFreq}
+    AUParameterPeakLimiter: {first: kLimiterParam_AttackTime}
+    AUParameterDynamicsProcessor: {first: kDynamicsProcessorParam_Threshold}
+    AUParameterVarispeed: {first: kVarispeedParam_PlaybackRate}
+    AUParameterDistortion: {first: kDistortionParam_Delay}
+    AUParameterDelay: {first: kDelayParam_WetDryMix}
+    AUParameterBandEQ: {first: kAUNBandEQParam_GlobalGain}
+    AUBandEQFilterType: {first: kAUNBandEQFilterType_Parametric, prefix: kAUNBandEQFilterType_, ignore: kNumAUNBandEQFilterTypes}
+    AUParameterRoundTripAAC: {first: kRoundTripAACParam_Format}
+    AUParameterRandom: {first: kRandomParam_BoundA}
+    AUParameterReverb2: {first: kReverb2Param_DryWetMix}
+    AUScope: {first: kAudioUnitScope_Global}
+    AUGenericProperty: {first: kAudioUnitProperty_ClassInfo}
+    AUGenericProperty2: {first: kAudioUnitProperty_RemoteControlEventListener, merge_with: AUGenericProperty}
+    AUConverterProperty: {first: kAudioUnitProperty_SampleRateConverterComplexity, prefix: kAudioUnitProperty_}
+    AUMixerProperty: {first: kAudioUnitProperty_MeteringMode, prefix: kAudioUnitProperty_}
+    AUSpatialMixerProperty: {first: kAudioUnitProperty_ReverbRoomType, kAudioUnitProperty_SpatialMixer(.*): '#{g[0]}' }
+    AUScheduledSoundPlayerProperty: {first: kAudioUnitProperty_ScheduleAudioSlice}
+    AUAudioFilePlayerProperty: {first: kAudioUnitProperty_ScheduledFileIDs, prefix: kAudioUnitProperty_}
+    AUDeferredRendererProperty: {first: kAudioUnitProperty_DeferredRendererPullSize}
+    AUVoiceIOProperty: {first: kAUVoiceIOProperty_BypassVoiceProcessing}
+    AUVoiceIOProperty2: {first: kAUVoiceIOProperty_DuckNonVoiceAudio, prefix: kAUVoiceIOProperty_, merge_with: AUVoiceIOProperty}
+    AUVoiceIOProperty3: {first: kAUVoiceIOProperty_VoiceProcessingQuality, prefix: kAUVoiceIOProperty_, merge_with: AUVoiceIOProperty}
+    AUVoiceIOProperty4: {first: kAUVoiceIOProperty_MutedSpeechActivityEventListener, prefix: kAUVoiceIOProperty_, merge_with: AUVoiceIOProperty}
+    AUVoiceIOProperty5: {first: kAUVoiceIOProperty_OtherAudioDuckingConfiguration, prefix: kAUVoiceIOProperty_, merge_with: AUVoiceIOProperty}
+    AUNBandEQProperty: {first: kAUNBandEQProperty_NumberOfBands}
+    AUMIDISynthProperty: {first: kAUMIDISynthProperty_EnablePreload, prefix: kAUMIDISynthProperty_}
+    AUSamplerProperty: {first: kAUSamplerProperty_LoadInstrument}
+    AUOutputProperty: {first: kAudioOutputUnitProperty_CurrentDevice}
+    AUOutputProperty2: {first: kAudioOutputUnitProperty_MIDICallbacks, merge_with: AUOutputProperty}
+    AUOutputProperty3: {first: kAudioOutputUnitProperty_IsRunning, prefix: kAudioOutputUnitProperty_, merge_with: AUOutputProperty}
+    MusicDeviceProperty: {first: kMusicDeviceProperty_InstrumentName, prefix: kMusicDeviceProperty_}
+    MusicDeviceProperty1: {first: kMusicDeviceProperty_InstrumentCount, prefix: kMusicDeviceProperty_, merge_with: MusicDeviceProperty}
+    AURenderQuality: {first: kRenderQuality_Max}
+    AudioUnitParameterUnit: {}
+    AUParameterFlags: {first: kAudioUnitParameterFlag_CFNameRelease, bits: true}
+    AudioUnitRemoteControlEvent: {name: AURemoteControlEvent}
+    AUampleRateConverterComplexity: {first: kAudioUnitSampleRateConverterComplexity_Linear}
+    AUSpatializationAlgorithm: {first: kSpatializationAlgorithm_EqualPowerPanning}
+    AUReverbRoomType: {first: kReverbRoomType_SmallRoom}
+    AUSpatialMixerAttenuationCurve: {first: kSpatialMixerAttenuationCurve_Power}
+    AUSpatialMixerRenderingFlags: {first: kSpatialMixerRenderingFlags_InterAuralDelay, bits: true}
+    AUScheduledAudioSliceFlags: {first: kScheduledAudioSliceFlag_Complete, bits: true}
+    AUInstrumentType: {first: kInstrumentType_DLSPreset}
+    AUSamplerBank: {first: kAUSampler_DefaultPercussionBankMSB}
+    MusicDeviceSelector: {first: kMusicDeviceRange, suffix: Select, ignore: kMusicDeviceRange}
+    AudioComponentValidationResult: {}
+    AudioComponentInstantiationOptions: {prefix: kAudioComponentInstantiation_}
+    AUAudioUnitBusType: {}
+    AUHostTransportStateFlags: {bits: true}
+    AURenderEventType: {}
+    AUEventSampleTime: {first: AUEventSampleTimeImmediate, prefix: AUEventSampleTime}
+    AUPropertyID: {first: kAudioUnitProperty_3DMixerDistanceParams, prefix: kAudioUnitProperty_}
+    AUErrors: {first: kAudioUnitErr_IllegalInstrument, prefix: kAudioUnitErr_}
+    AudioFileStreamParseFlags: {prefix: kAudioFileStreamParseFlag_}
+    AudioFileStreamSeekFlags: {prefix: kAudioFileStreamSeekFlag_}
+    ExtAudioFilePacketTableInfoOverride: {prefix: kExtAudioFilePacketTableInfoOverride_UseFileValue, first: kExtAudioFilePacketTableInfoOverride_UseFileValue}
+    # ios13 activities
+    AudioCodecGlobalProperty: {prefix: kAudioCodecProperty, first: kAudioCodecPropertySupportedInputFormats}
+    AudioCodecInstanceProperty: {prefix: kAudioCodecProperty, first: kAudioCodecPropertyInputBufferSize}
+
+    AudioCodecQuality: {prefix: kAudioCodecQuality_, first: kAudioCodecQuality_Max}
+    AudioCodecPrimeMethod: {prefix: kAudioCodecPrimeMethod_, first: kAudioCodecPrimeMethod_Pre}
+    AudioCodecPropertyBitRateControlMode: {prefix: kAudioCodecBitRateControlMode_, first: kAudioCodecBitRateControlMode_Constant}
+    AudioCodecDelayMode: {prefix: kAudioCodecDelayMode_, first: kAudioCodecDelayMode_Compatibility}
+    ProgramTargetLevel: {prefix: kProgramTargetLevel_, first: kProgramTargetLevel_None}
+    DynamicRangeControlMode: {prefix: kDynamicRangeControlMode_, first: kDynamicRangeControlMode_None}
+    AudioSettingsFlags: {prefix: kAudioSettingsFlags_}
+    AudioCodecProduceOutputPacketStatus: {prefix: kAudioCodecProduceOutputPacket, first: kAudioCodecProduceOutputPacketFailure}
+    AudioCodecSelectors: {prefix: kAudioCodec, first: kAudioCodecGetPropertyInfoSelect}
+    AudioCodecErrors: {prefix: kAudioCodec, first: kAudioCodecNoError}
+    AudioCodecProperty: {prefix: kAudioCodecProperty, first: kAudioCodecPropertyMinimumDelayMode}
+    AudioCodecProperty2: {prefix: kAudioCodecProperty, first: kAudioCodecPropertyNameCFString, merge_with: AudioCodecProperty}
+    AudioCodecProperty3: {prefix: kAudioCodecProperty, first: kAudioCodecPropertyRequiresPacketDescription, kAudioCodec(.*) : '#{g[0]}', merge_with: AudioCodecProperty}
+    AudioCodecBitRateFormat: {prefix: kAudioCodecBitRateFormat_, first: kAudioCodecBitRateFormat_CBR}
+    AudioCodecOutputPrecedence: {prefix: kAudioCodecOutputPrecedence, first: kAudioCodecOutputPrecedenceNone}
+    AudioCodecSettingsHint: {prefix: kHint, first: kHintBasic}
+    ExtAudioFileError: {prefix: kExtAudioFileError_, first: kExtAudioFileError_InvalidProperty}
+    AUVoiceIOSpeechActivityEvent: { prefix: kAUVoiceIOSpeechActivity }
+    AUSpatialMixerSourceMode: {prefix: kSpatialMixerSourceMode_}
+    AUSpatialMixerOutputType: {prefix: kSpatialMixerOutputType_}
+    AUSpatialMixerPointSourceInHeadMode: {prefix: kSpatialMixerPointSourceInHeadMode_}
+    AudioUnitEventType: {}
+    AUVoiceIOOtherAudioDuckingLevel: {}
+
+    DynamicRangeCompressionProfile: {prefix: kDynamicRangeCompressionProfile_, first: kDynamicRangeCompressionProfile_None}
+    AudioCodecDynamicRangeControlConfiguration: {prefix: kAudioCodecDynamicRangeControlConfiguration_, first: kAudioCodecDynamicRangeControlConfiguration_None}
+    AudioCodecContentSource: {prefix: kAudioCodecContentSource_, first: kAudioCodecContentSource_Unspecified}
+    AUSpatialMixerPersonalizedHRTFMode: {prefix: kSpatialMixerPersonalizedHRTFMode_, first: kSpatialMixerPersonalizedHRTFMode_Off}
+    AUAudioMixProperty: {prefix: kAUAudioMixProperty_, first: kAUAudioMixProperty_SpatialAudioMixMetadata}
+    SampleDelayParam: {prefix: kSampleDelayParam_, first: kSampleDelayParam_DelayFrames}
+    AUSoundIsolationParam: {prefix: kAUSoundIsolationParam_, first: kAUSoundIsolationParam_WetDryMixPercent}
+    AUSoundIsolationSoundType: {prefix: kAUSoundIsolationSoundType_, first: kAUSoundIsolationSoundType_HighQualityVoice}
+    AUAudioMixParameter: {prefix: kAUAudioMixParameter_, first: kAUAudioMixParameter_Style}
+    AUAudioMixRenderingStyle: {prefix: kAudioMixRenderingStyle_, first: kAudioMixRenderingStyle_Cinematic}
+    AudioConverterOptions: {}
+    CASoundStageSize: {}
+
+    # excludes as either deprecated or not to be used
+    Excluded2: {first: kNumberOfResponseFrequencies, exclude: true}
+    # Excluded5: AudioUnitParameterID: {first: kAUParameterListener_AnyParameter} -- will convert to constant
+    # Excluded3: {prefix: kAudioUnitParameterName_Full, first: kAudioUnitParameterName_Full, exclude: true} -- will convert to constant
+    #Excluded5: {prefix: kSystemSoundID_Vibrate, first: kSystemSoundID_Vibrate, exclude: true} -- will convert to constant
+
+    # Deprecated
+    Deprecated1: {first: kAudioUnitErr_IllegalInstrument, exclude: true}
+    Deprecated2: {first: kAudioUnitProperty_3DMixerDistanceParams, exclude: true}
+    Deprecated3: {first: kAUVoiceIOProperty_DuckNonVoiceAudio, exclude: true}
+    Deprecated4: {first: kAUSamplerProperty_LoadPresetFromBank, exclude: true}
+    Deprecated5: {first: k3DMixerRenderingFlags_InterAuralDelay, exclude: true}
+    Deprecated6: {first: k3DMixerAttenuationCurve_Power, exclude: true}
+    Deprecated7: {first: k3DMixerParam_Azimuth, exclude: true}
+    Deprecated8: {first: kMusicNoteEvent_UseGroupInstrument, exclude: true}
+    Deprecated9: {first: kAudioUnitSubType_AU3DMixerEmbedded, exclude: true}
+
+    Deprecated10: {first: kAudioSessionCategory_UserInterfaceSoundEffects, exclude: true}
+    Deprecated11: {first: kAudioSessionProperty_AudioRoute, exclude: true}
+    Deprecated12: {first: kAudioFormatProperty_HardwareCodecCapabilities, exclude: true}
+
+    # System reserved
+    System1: {first: kAudioUnitClumpID_System, exclude: true}
+
+classes:
+    OpaqueAudioConverter:
+        name: AudioConverter
+    AudioConverterRef:
+        name: AudioConverter
+    OpaqueAudioFileID:
+        name: AudioFile
+    AudioFileID:
+        name: AudioFile
+    OpaqueAudioFileStreamID:
+        name: AudioFileStream
+    AudioFileStreamID:
+        name: AudioFileStream
+    OpaqueAudioQueue:
+        name: AudioQueue
+    OpaqueAUGraph:
+        name: AUGraph
+    OpaqueExtAudioFile:
+        name: ExtAudioFile
+    OpaqueAudioQueueTimeline:
+        name: AudioQueueTimeline
+    OpaqueAudioQueueProcessingTap:
+        name: AudioQueueProcessingTap
+    AudioQueueProcessingTap:
+        add_ptr: true
+    MusicEventIterator: {}
+    MusicPlayer: {}
+    MusicSequence: {}
+    MusicTrack: {}
+
+    # Structs
+    # tsbMobile: the AUv3 render-event family carries a CoreMIDI MIDIEventList, a framework the fork
+    # does not bind; a struct cannot lose a member, so the family is out (nothing here hosts audio units)
+    AUMIDIEventList: {exclude: true}
+    AURecordedParameterEvent: {}
+    AUMIDIEvent: {exclude: true}
+    AUMIDIOutputCallbackStruct: {}
+    AUParameterAutomationEvent: {}
+    AUParameterEvent:
+        annotations: ['@Packed(4)']
+    AudioUnitEvent: {}
+    AudioUnitEvent$InnerStruct$1:
+        name: AudioUnitEventArgument
+    AURenderEvent: {exclude: true}
+    AURenderEventHeader: {exclude: true}
+    AUSamplerBankPresetData: {}
+    AudioUnitParameterEvent: {}
+    AudioUnitParameterEvent$InnerStruct$1:
+        name: AudioUnitParameterEventValues
+    AudioUnitParameterEvent$InnerStruct$2:
+        name: AudioUnitParameterEventValuesRamp
+    AudioUnitParameterEvent$InnerStruct$3:
+        name: AudioUnitParameterEventValuesImmediate
+    OpaqueMusicEventIterator: {}
+    OpaqueMusicPlayer: {}
+    OpaqueMusicSequence: {}
+    OpaqueMusicTrack: {}
+    AudioBalanceFade: # DONE
+        mLeftRightBalance:
+            name: leftRightBalance
+        mBackFrontFade:
+            name: backFrontFade
+        mType:
+            name: type
+            type: AudioBalanceFadeType
+        mChannelLayout:
+            name: channelLayout
+    AudioBytePacketTranslation: # DONE
+        mByte:
+            name: translationByte
+        mPacket:
+            name: packet
+        mByteOffsetInPacket:
+            name: byteOffsetInPacket
+        mFlags:
+            name: flags
+            type: AudioBytePacketTranslationFlags
+    AudioConverterPrimeInfo: {} # DONE
+    AudioFileMarker: # DONE
+        mFramePosition:
+            name: framePosition
+        mName:
+            name: name
+        mMarkerID:
+            name: markerID
+        mSMPTETime:
+            name: SMPTETime
+        mType:
+            name: type
+            type: AudioFileMarkerType
+        mReserved:
+            name: reserved
+            visibility: private
+        mChannel:
+            name: channel
+    AudioFileMarkerList: # DONE
+        mSMPTE_TimeType:
+            name: SMPTETimeType
+            type: CAFSMPTETimeType
+        mNumberMarkers:
+            name: numberMarkers
+            visibility: protected
+        mMarkers:
+            name: markers0
+            type: AudioFileMarker.AudioFileMarkerPtr
+            visibility: protected
+    AudioFilePacketTableInfo: # DONE
+        mNumberValidFrames:
+            name: numberValidFrames
+        mPrimingFrames:
+            name: primingFrames
+        mRemainderFrames:
+            name: remainderFrames
+    AudioFileRegion: # DONE
+        mRegionID:
+            name: regionID
+        mName:
+            name: name
+        mFlags:
+            name: flags
+            type: AudioFileRegionFlags
+        mNumberMarkers:
+            name: numberMarkers
+            visibility: protected
+        mMarkers:
+            name: markers0
+            type: AudioFileMarker.AudioFileMarkerPtr
+            visibility: protected
+    AudioFileRegionList: # DONE
+        mSMPTE_TimeType:
+            name: SMPTETimeType
+            type: CAFSMPTETimeType
+        mNumberRegions:
+            name: numberRegions
+            visibility: protected
+        mRegions:
+            name: regions0
+            type: AudioFileRegion.AudioFileRegionPtr
+            visibility: protected
+    AudioFile_SMPTE_Time: # DONE
+        name: AudioFileSMPTETime
+        mHours:
+            name: hours
+        mMinutes:
+            name: minutes
+        mSeconds:
+            name: seconds
+        mFrames:
+            name: frames
+        mSubFrameSampleOffset:
+            name: subFrameSampleOffset
+    AudioFileTypeAndFormatID: # DONE
+        name: AudioFileTypeAndFormat
+        mFileType:
+            name: fileType
+            type: AudioFileType
+        mFormatID:
+            name: format
+            type: AudioFormat
+    AudioFormatInfo: # DONE
+        mASBD:
+            name: ASBD
+        mMagicCookie:
+            name: magicCookie
+        mMagicCookieSize:
+            name: magicCookieSize
+    AudioFramePacketTranslation: # DONE
+        mFrame:
+            name: frame
+        mPacket:
+            name: packet
+        mFrameOffsetInPacket:
+            name: frameOffsetInPacket
+    AudioPanningInfo: # DONE
+        mPanningMode:
+            name: panningMode
+            type: AudioPanningMode
+        mCoordinateFlags:
+            name: coordinateFlags
+            type: AudioChannelFlags
+        mCoordinates:
+            name: coordinates
+            type: '@Array({3}) float[]'
+        mGainScale:
+            name: gainScale
+        mOutputChannelMap:
+            name: outputChannelMap
+    AudioQueueBuffer: # DONE
+        mAudioDataBytesCapacity:
+            exclude: true
+            name: audioDataBytesCapacity
+            visibility: protected
+            setter: false
+        mAudioData:
+            exclude: true
+            name: audioData0
+            visibility: protected
+        mAudioDataByteSize:
+            name: audioDataByteSize
+            visibility: protected
+        mUserData:
+            name: userData
+            visibility: protected
+        mPacketDescriptionCapacity:
+            exclude: true
+            name: packetDescriptionCapacity
+            visibility: protected
+            setter: false
+        mPacketDescriptions:
+            name: packetDescriptions0
+            type: AudioStreamPacketDescription.AudioStreamPacketDescriptionPtr
+            visibility: protected
+        mPacketDescriptionCount:
+            name: packetDescriptionCount0
+            visibility: protected
+    AudioQueueChannelAssignment: # DONE
+        mDeviceUID:
+            name: deviceUID
+        mChannelNumber:
+            name: channelNumber
+    AudioQueueLevelMeterState: # DONE
+        mAveragePower:
+            name: averagePower
+        mPeakPower:
+            name: peakPower
+    AudioQueueParameterEvent: # DONE
+        mID:
+            name: ID
+        mValue:
+            name: value
+    AudioUnitNodeConnection: # DONE
+        name: AUNodeConnection
+    AUNodeConnection: {} # DONE
+    AUNodeRenderCallback: {} # DONE
+    AUNodeInteraction: # DONE
+        nodeInteractionType:
+            type: AUNodeInteractionType
+    AUNodeInteraction$InnerStruct$1:
+        name: AUNodeInteractionInfo
+    AUPresetEvent: # DONE
+        scope:
+            type: AUScope
+        preset:
+            type: NSPropertyList
+    CABarBeatTime: # DONE
+        reserved:
+            visibility: private
+    # CAFFile.h entries excluded as low level entries are hard to bind (and these were not usable anyway)
+    CAFAudioDescription: { exclude: true }
+    CAFAudioFormatListItem: { exclude: true }
+    CAFDataChunk: { exclude: true }
+    CAFFileHeader: { exclude: true }
+    CAFInfoStrings: { exclude: true }
+    CAFInstrumentChunk: { exclude: true }
+    CAFMarker: { exclude: true }
+    CAFMarkerChunk: { exclude: true }
+    CAFOverviewChunk: { exclude: true }
+    CAFOverviewSample: { exclude: true }
+    CAFPacketTableHeader: { exclude: true }
+    CAFPeakChunk: { exclude: true }
+    CAFPositionPeak: { exclude: true }
+    CAFRegion: { exclude: true }
+    CAFRegionChunk: { exclude: true }
+    CAF_SMPTE_Time: { exclude: true }
+    CAFStringID: { exclude: true }
+    CAFStrings: { exclude: true }
+    CAFUMIDChunk: { exclude: true }
+    CAF_UUID_ChunkHeader: { exclude: true }
+    ExtendedAudioFormatInfo: # DONE
+        mASBD:
+            name: ASBD
+        mMagicCookie:
+            name: magicCookie
+        mMagicCookieSize:
+            name: magicCookieSize
+        mClassDescription:
+            name: classDescription
+    ExtendedNoteOnEvent: {} # DONE
+    ExtendedTempoEvent: {} # DONE
+    MIDIChannelMessage: # DONE
+        reserved:
+            visibility: private
+    MIDIMetaEvent: # DONE
+        unused1:
+            visibility: private
+        unused2:
+            visibility: private
+        unused3:
+            visibility: private
+        dataLength:
+            name: dataLength0
+            visibility: protected
+        data:
+            exclude: true
+            name: data0
+            visibility: protected
+            type: '@Pointer long'
+    MIDINoteMessage: {} # DONE
+    MIDIRawData: # DONE
+        length:
+            name: length0
+            visibility: protected
+        data:
+            exclude: true
+            name: data0
+            visibility: protected
+            type: '@Pointer long'
+    MusicEventUserData: # DONE
+        length:
+            name: length0
+            visibility: protected
+        data:
+            exclude: true
+            name: data0
+            visibility: protected
+            type: '@Pointer long'
+    MusicTrackLoopInfo: {} # DONE
+    ParameterEvent: # DONE
+        name: AUParameterEvent
+        parameterID:
+            type: AUParameterType
+        scope:
+            type: AUScope   
+
+    AudioUnit:
+        extends: AudioComponentInstance
+    AudioCodec:
+        extends: AudioComponentInstance
+    AudioComponent: {}
+    OpaqueAudioComponent:
+        name: AudioComponent
+    AudioComponentInstance: {}
+    OpaqueAudioComponentInstance:
+        name: AudioComponentInstance
+    MusicDevice:
+        extends: AudioComponentInstance
+
+    AudioComponentDescription: # DONE
+        annotations: ['@Packed(4)']
+        componentType:
+            type: AUType
+        componentSubType:
+            type: AUSubType
+        componentManufacturer:
+            type: AUManufacturer
+        componentFlags:
+            type: AudioComponentFlags
+    AudioComponentPlugInInterface: {}
+    AudioUnitParameter: # DONE
+        mAudioUnit:
+            name: audioUnit
+        mParameterID:
+            name: type
+            type: AUParameterType
+        mScope:
+            name: scope
+            type: AUScope
+        mElement:
+            name: element
+    AudioUnitProperty: # DONE
+        mAudioUnit:
+            name: audioUnit
+        mPropertyID:
+            name: propertyID
+            type: AUPropertyType
+        mScope:
+            name: scope
+            type: AUScope
+        mElement:
+            name: element
+    AudioUnitConnection: # DONE
+        name: AUConnection
+    AUChannelInfo: {} # DONE
+    AudioUnitExternalBuffer:
+        name: AUExternalBuffer
+    AURenderCallbackStruct: # DONE
+        inputProcRefCon:
+            type: '@Pointer long'
+    AUPreset: {} # DONE
+    AudioUnitFrequencyResponseBin: # DONE
+        name: AUFrequencyResponseBin
+        mFrequency:
+            name: freqency
+        mMagnitude:
+            name: magnitude
+    HostCallbackInfo: # DONE
+        name: AUHostCallbackInfo
+        hostUserData:
+            type: '@Pointer long'
+    AUDependentParameter: # DONE
+        mScope:
+            name: scope
+            type: AUScope
+        mParameterID:
+            name: type
+            type: AUParameterType
+    AUInputSamplesInOutputCallbackStruct: # DONE
+        userData:
+            type: '@Pointer long'
+    AudioUnitParameterHistoryInfo: # DONE
+        name: AUParameterHistoryInfo
+    AudioUnitParameterInfo: # DONE
+        name: AUParameterInfo
+        skip_def_constructor: true
+        0:
+            visibility: private
+        flags:
+            type: AUParameterFlags
+        cfNameString:
+            name: nameString
+    AudioUnitParameterNameInfo: # DONE
+        name: AUParameterNameInfo
+    AudioUnitParameterStringFromValue: # DONE
+        name: AUParameterStringFromValue
+    AudioUnitParameterValueFromString: # DONE
+        name: AUParameterValueFromString
+        inString:
+            type: CFString.CFStringPtr
+    AudioOutputUnitMIDICallbacks: # DONE
+        name: AUOutputMIDICallbacksStruct
+        userData:
+            type: '@Pointer long'
+    AudioOutputUnitStartAtTimeParams: # DONE
+        name: AUOutputStartAtTimeParams
+        mTimestamp:
+            name: timestamp
+        mFlags:
+            name: flags
+    AudioUnitMeterClipping: # DONE
+        name: AUMeterClipping
+    MixerDistanceParams: # DONE
+        name: AUMixerDistanceParams
+        mReferenceDistance:
+            name: referenceDistance
+        mMaxDistance:
+            name: maxDistance
+        mMaxAttenuation:
+            name: maxAttenuation
+    ScheduledAudioSlice: # DONE
+        name: AUScheduledAudioSlice
+        mTimeStamp:
+            name: timeStamp
+        mCompletionProc:
+            name: completionProc
+            visibility: private
+        mCompletionProcUserData:
+            name: completionProcUserData
+            type: '@Pointer long'
+            visibility: private
+        mFlags:
+            name: flags
+            type: AUScheduledAudioSlice
+        mReserved:
+            name: reserved
+            visibility: private
+        mReserved2:
+            name: reserved2
+            visibility: private
+        mNumberFrames:
+            name: numberFrames
+        mBufferList:
+            name: bufferList
+    ScheduledAudioFileRegion: # DONE
+        name: AUScheduledAudioFileRegion
+        mTimeStamp:
+            name: timeStamp
+        mCompletionProc:
+            name: completionProc
+            visibility: private
+        mCompletionProcUserData:
+            name: completionProcUserData
+            type: '@Pointer long'
+            visibility: private
+        mAudioFile:
+            name: audioFile
+        mLoopCount:
+            name: loopCount
+        mStartFrame:
+            name: startFrame
+        mFramesToPlay:
+            name: framesToPlay
+    AUSamplerInstrumentData: # DONE
+        instrumentType:
+            type: AUInstrumentType
+    MusicDeviceStdNoteParams: # DONE
+        skip_def_constructor: true
+        mPitch:
+            name: pitch
+        mVelocity:
+            name: velocity
+        argCount:
+            visibility: private
+    NoteParamsControlValue: # DONE
+        mID:
+            name: id
+        mValue:
+            name: value
+    MusicDeviceNoteParams: # DONE
+        skip_def_constructor: true
+        argCount:
+            visibility: private
+        mPitch:
+            name: pitch
+        mVelocity:
+            name: velocity
+        mControls:
+            exclude: true
+    # added during ios11 bindings
+    AUAudioUnit: #since 9.0
+        properties:
+            osWorkgroup:
+                exclude: true # TODO: not supported yet (check dispatch)
+            renderContextObserver:
+                exclude: true # TODO: not supported yet (check dispatch)
+        methods:
+            '-initWithComponentDescription:options:error:':
+                throws: NSErrorException
+                name: init
+            '-initWithComponentDescription:error:':
+                throws: NSErrorException
+                name: init
+            '+instantiateWithComponentDescription:options:completionHandler:':
+                name: instantiate
+            '-shouldChangeToFormat:forBus:':
+                trim_after_first_colon: true
+            '+registerSubclass:asComponentDescription:name:version:':
+                trim_after_first_colon: true
+            '-setFormat:error:':
+                trim_after_first_colon: true
+            '-profileStateForCable:channel:':
+                name: getProfileState
+            '-enableProfile:cable:onChannel:error:':
+                trim_after_first_colon: true
+            '-disableProfile:cable:onChannel:error:':
+                trim_after_first_colon: true
+            '-parametersForOverviewWithCount:':
+                name: getParameters
+            '-saveUserPreset:error:':
+                throws: NSErrorException
+                name: saveUserPreset
+            '-deleteUserPreset:error:':
+                throws: NSErrorException
+                name: deleteUserPreset
+            '-presetStateFor:error:':
+                throws: NSErrorException
+                name: getPresetState
+    AUAudioUnitBus: #since 9.0
+        methods:
+            '-initWithFormat:error:':
+                throws: NSErrorException
+                name: init
+            '-initWithAudioUnit:busType:busses:':
+                name: init
+            '-initWithAudioUnit:busType:':
+                name: init
+            '-setBusCount:error:':
+                trim_after_first_colon: true
+            '-addObserverToAllBusses:forKeyPath:options:context:':
+                trim_after_first_colon: true
+            '-removeObserverFromAllBusses:forKeyPath:context:':
+                trim_after_first_colon: true
+            '-setFormat:error:':
+                trim_after_first_colon: true
+    AUAudioUnitBusArray: #since 9.0
+        methods:
+            '-initWithAudioUnit:busType:busses:':
+                name: init
+            '-initWithAudioUnit:busType:':
+                name: init
+            '-setBusCount:error:':
+                trim_after_first_colon: true
+            '-addObserverToAllBusses:forKeyPath:options:context:':
+                trim_after_first_colon: true
+            '-removeObserverFromAllBusses:forKeyPath:context:':
+                trim_after_first_colon: true
+    AUAudioUnitPreset: {} #since 9.0
+    AUAudioUnitV2Bridge: {} #since 9.0
+    AUParameter: #since 9.0
+        methods:
+            '-setValue:originator:':
+                trim_after_first_colon: true
+            '-setValue:originator:atHostTime:':
+                trim_after_first_colon: true
+            '-setValue:originator:atHostTime:eventType:':
+                trim_after_first_colon: true
+    AUParameterGroup: {} #since 9.0
+    AUParameterNode: #since 9.0
+        methods:
+            '-displayNameWithLength:':
+                name: displayName
+    AUParameterTree: #since 9.0
+        methods:
+            '-parameterWithID:scope:element:':
+                name: getParameter
+            '+createParameterWithIdentifier:name:address:min:max:unit:unitName:flags:valueStrings:dependentParameters:':
+                name: createParameter
+            '+createGroupWithIdentifier:name:children:':
+                name: createGroup
+            '+createGroupFromTemplate:identifier:name:addressOffset:':
+                name: createGroup
+            '-parameterWithAddress:':
+                name: getParameter
+            '+createTreeWithChildren:':
+                name: create
+                constructor: true
+protocols:
+    AUAudioUnitFactory:
+        methods:
+            '-createAudioUnitWithComponentDescription:error:':
+                throws: NSErrorException
+                name: createAudioUnit
+    AUMessageChannel: {} #since 16.0
+functions:
+    (Audio.*)GetTypeID:
+        class: '#{g[0]}'
+        name: getClassTypeID
+    
+    # AudioConverter
+    AudioConverter(New.*):
+        class: AudioConverter
+        name: create0
+        visibility: protected
+    AudioConverter(.*Property.*):
+        class: AudioConverter
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inPropertyID:
+                type: AudioConverterProperty
+    AudioConverter(FillComplexBuffer):
+        class: AudioConverter
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inInputDataProcUserData:
+                type: '@Pointer long'
+            outPacketDescription:
+                type: AudioStreamPacketDescription.AudioStreamPacketDescriptionPtr
+    AudioConverter(ConvertBuffer):
+        class: AudioConverter
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inInputData:
+                type: '@Pointer long'
+            outOutputData:
+                type: BytePtr
+    AudioConverter(.*):
+        class: AudioConverter
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # AudioFileStream
+    AudioFileStream(Open):
+        class: AudioFileStream
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inClientData:
+                type: '@Pointer long'
+            inFileTypeHint:
+                type: AudioFileType
+    AudioFileStream(ParseBytes):
+        class: AudioFileStream
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inData:
+                type: '@Pointer long'
+            inFlags:
+                type: AudioFileStreamParseFlags
+    AudioFileStream(Seek):
+        class: AudioFileStream
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            ioFlags:
+                type: AudioFileStreamMutableSeekFlags
+    AudioFileStream(.*Property.*):
+        class: AudioFileStream
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inPropertyID:
+                type: AudioFileStreamProperty
+    AudioFileStream(.*):
+        class: AudioFileStream
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # AudioFile
+    AudioFile(Create)WithURL:
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inFileType:
+                type: AudioFileType
+            inFlags:
+                type: AudioFileFlags
+    AudioFile(OpenURL):
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inFileTypeHint:
+                type: AudioFileType
+    AudioFile(Initialize)WithCallbacks:
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inClientData:
+                type: '@Pointer long'
+            inFileType:
+                type: AudioFileType
+            inFlags:
+                type: AudioFileFlags
+    AudioFile(Open)WithCallbacks:
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inClientData:
+                type: '@Pointer long'
+            inFileTypeHint:
+                type: AudioFileType
+    AudioFile(.*Property.*):
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inPropertyID:
+                type: AudioFileProperty
+    AudioFile(.*GlobalInfo.*):
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inPropertyID:
+                type: AudioFileProperty
+    AudioFile(Close):
+        class: AudioFile
+        name: '#{g[0]}File0'
+        visibility: protected
+    AudioFile(ReadBytes):
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            outBuffer:
+                type: BytePtr
+    AudioFile(WriteBytes):
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inBuffer:
+                type: '@Pointer long'
+    AudioFile(.*):
+        class: AudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # AudioFormatProperty
+    AudioFormat(.*Property.*):
+        class: AudioFormatProperty
+        name: '#{g[0]}0'
+        visibility: protected
+        static: true
+        parameters:
+            inPropertyID:
+                type: AudioFormatProperty
+
+    # AudioQueueProcessingTap
+    AudioQueueProcessingTapNew:
+        class: AudioQueueProcessingTap
+        name: create0
+        visibility: protected
+        parameters:
+            inClientData:
+                type: '@Pointer long'
+            inFlags:
+                type: AudioQueueProcessingTapFlags
+            outProcessingFormat:
+                type: AudioStreamBasicDescription
+    AudioQueueProcessingTap(.*):
+        class: AudioQueueProcessingTap
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            outFlags:
+                type: AudioQueueProcessingTapMutableFlags
+
+    # AudioQueue
+    AudioQueueNew(.*):
+        class: AudioQueue
+        name: 'create#{g[0]}0'
+        visibility: protected
+        parameters:
+            inUserData:
+                type: '@Pointer long'
+            inCallbackDispatchQueue:
+                type: org.robovm.apple.dispatch.DispatchQueue
+    AudioQueue(.*Property.*):
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inID:
+                type: AudioQueueProperty
+            inUserData:
+                type: '@Pointer long'
+    AudioQueue(AllocateBuffer)WithPacketDescriptions:
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+    AudioQueue(EnqueueBuffer).*:
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inBuffer:
+                type: '@Pointer long'
+            inPacketDescs:
+                type: AudioStreamPacketDescription.AudioStreamPacketDescriptionPtr
+            inParamValues:
+                type: AudioQueueParameterEvent.AudioQueueParameterEventPtr
+            outActualStartTime:
+                type: AudioTimeStamp.AudioTimeStampPtr
+    AudioQueue(FreeBuffer):
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inBuffer:
+                type: '@Pointer long'
+    AudioQueue(GetCurrentTime):
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            outTimeStamp:
+                type: AudioTimeStamp.AudioTimeStampPtr
+    AudioQueueDevice(GetNearestStartTime):
+        class: AudioQueue
+        name: getNearestDeviceStartTime0
+        visibility: protected
+    AudioQueueDevice(.*)Time:
+        class: AudioQueue
+        name: '#{g[0]}DeviceTime0'
+        visibility: protected
+        parameters:
+            outTime:
+                type: AudioTimeStamp.AudioTimeStampPtr
+            outTimeStamp:
+                type: AudioTimeStamp.AudioTimeStampPtr
+    AudioQueue(.*Parameter):
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inParamID:
+                type: AudioQueueParam
+    AudioQueueDevice(.*):
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+    AudioQueue(.*):
+        class: AudioQueue
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # AudioServices
+    AudioServices(PlayAlertSound|PlaySystemSound):
+        class: AudioServices
+        name: '#{g[0]}'
+        parameters:
+            inSystemSoundID:
+                name: systemSoundID
+    AudioServices(.*Property.*):
+        class: AudioServices
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inPropertyID:
+                type: AudioServicesProperty
+    AudioServices(.*):
+        class: AudioServices
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # AudioSession
+    AudioSession(Initialize):
+        class: AudioSession
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inClientData:
+                type: '@Pointer long'
+    AudioSession(SetActive)WithFlags:
+        class: AudioSession
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inFlags:
+                name: flags
+                type: AudioSessionActivationFlags
+    AudioSession(AddPropertyListener):
+        class: AudioSession
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inID:
+                name: id
+                type: AudioSessionProperty
+            inClientData:
+                type: '@Pointer long'
+    AudioSession(RemovePropertyListener)WithUserData:
+        class: AudioSession
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inID:
+                name: id
+                type: AudioSessionProperty
+            inClientData:
+                type: '@Pointer long'
+    AudioSession(.*Property.*):
+        class: AudioSession
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inID:
+                name: id
+                type: AudioSessionProperty
+    AudioSession(.*):
+        class: AudioSession
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # AUGraph
+    NewAUGraph:
+        class: AUGraph
+        name: create0
+        visibility: private
+    DisposeAUGraph:
+        exclude: true
+    AUGraphClose:
+        exclude: true
+    AUGraph(AddRenderNotify|RemoveRenderNotify):
+        class: AUGraph
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inCallback:
+                name: callback
+            inRefCon:
+                name: refCon
+                type: '@Pointer long'
+    AUGraph(NodeInfo):
+        class: AUGraph
+        name: 'get#{g[0]}0'
+        visibility: protected
+        parameters:
+            outDescription:
+                type: AudioComponentDescription.AudioComponentDescriptionPtr
+    AUGraph(GetInteractionInfo):
+        class: AUGraph
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inInteractionIndex:
+                name: interactionIndex
+            outInteraction:
+                type: AUNodeInteraction.AUNodeInteractionPtr
+    AUGraph(GetNodeInteractions):
+        class: AUGraph
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inNode:
+                name: node
+            outInteractions:
+                type: AUNodeInteraction.AUNodeInteractionPtr
+    AUGraph(.*):
+        class: AUGraph
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # ExtAudioFile
+    ExtAudioFile(Create)WithURL:
+        class: ExtAudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inFileType:
+                type: AudioFileType
+            inFlags:
+                type: AudioFileFlags
+    ExtAudioFile(WrapAudioFile)ID:
+        class: ExtAudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+    ExtAudioFile(.*Property.*):
+        class: ExtAudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inPropertyID:
+                type: ExtAudioFileProperty
+    ExtAudioFile(.*):
+        class: ExtAudioFile
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # MusicPlayer:
+    NewMusicPlayer:
+        class: MusicPlayer
+        name: create0
+        visibility: protected
+    (.*)MusicPlayer:
+        class: MusicPlayer
+        name: '#{g[0]}0'
+        visibility: protected
+    MusicPlayer(.*):
+        class: MusicPlayer
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # MusicSequence
+    NewMusicSequence:
+        class: MusicSequence
+        name: create0
+        visibility: protected
+    (.*)MusicSequence:
+        class: MusicSequence
+        name: '#{g[0]}0'
+        visibility: protected
+    MusicSequenceFileLoad:
+        class: MusicSequence
+        name: loadFile0
+        visibility: protected
+    MusicSequenceFileLoadData:
+        class: MusicSequence
+        name: loadFileData0
+        visibility: protected
+    MusicSequenceFileCreate:
+        class: MusicSequence
+        name: createFile0
+        visibility: protected
+    MusicSequenceFileCreateData:
+        class: MusicSequence
+        name: createFileData0
+        visibility: protected
+        parameters:
+            outData:
+                type: NSData.NSDataPtr
+    MusicSequence(.*BarBeatTime.*):
+        class: MusicSequence
+        name: 'convert#{g[0]}0'
+        visibility: protected
+        parameters:
+            outBarBeatTime:
+                type: CABarBeatTime.CABarBeatTimePtr
+    MusicSequence(GetInfoDictionary):
+        class: MusicSequence
+        name: '#{g[0]}'
+        return_type: AudioFileInfoDictionary
+    MusicSequence(SetUserCallback):
+        class: MusicSequence
+        name: '#{g[0]}0'
+        parameters:
+            inClientData:
+                type: '@Pointer long'
+    MusicSequence(SetMIDIEndpoint):
+        class: MusicSequence
+        name: '#{g[0]}0'
+        annotations: ['@WeaklyLinked']
+    MusicSequence(.*):
+        class: MusicSequence
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # MusicTrack
+    MusicTrack(.*Property.*):
+        class: MusicTrack
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inPropertyID:
+                type: MusicTrackProperty
+    (.*)MusicTrack:
+        class: MusicTrack
+        name: '#{g[0]}0'
+        visibility: protected
+    MusicTrack((Get|Set)DestMIDIEndpoint):
+        class: MusicTrack
+        name: '#{g[0]}0'
+        visibility: protected
+        annotations: ['@WeaklyLinked']
+    MusicTrack(.*):
+        class: MusicTrack
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # MusicEventIterator
+    NewMusicEventIterator:
+        class: MusicEventIterator
+        name: create0
+        visibility: protected
+    (.*)MusicEventIterator:
+        class: MusicEventIterator
+        name: '#{g[0]}0'
+        visibility: protected
+    MusicEventIterator(.*):
+        class: MusicEventIterator
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # AudioComponentInstance
+    AudioComponentInstanceNew:
+        class: AudioComponentInstance
+        name: create0
+        visibility: protected
+    AudioComponentInstance(CanDo):
+        class: AudioComponentInstance
+        name: '#{g[0]}'
+        visibility: ''
+    AudioComponentInstance(Dispose):
+        class: AudioComponentInstance
+        name: '#{g[0]}0'
+        visibility: protected
+    AudioComponentInstance(.*):
+        class: AudioComponentInstance
+        name: '#{g[0]}'
+    AudioCodec(.*):
+        class: AudioCodec
+        name: '#{g[0]}'
+
+    # AudioComponent
+    AudioComponent(FindNext):
+        class: AudioComponent
+        name: '#{g[0]}'
+        static: true
+    AudioComponentCopy(Name):
+        class: AudioComponent
+        name: 'get#{g[0]}0'
+        visibility: protected
+        parameters:
+            outName:
+                type: CFString.CFStringPtr
+    AudioComponent(GetDescription):
+        class: AudioComponent
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            outDesc:
+                name: desc
+                type: AudioComponentDescription.AudioComponentDescriptionPtr
+    AudioComponent(GetVersion):
+        class: AudioComponent
+        name: '#{g[0]}0'
+        visibility: protected
+    AudioComponent(GetIcon):
+        class: AudioComponent
+        name: '#{g[0]}'
+        annotations: ['@WeaklyLinked']
+    AudioComponent(Instantiate):
+        name: 'instantiate'
+        parameters:
+            inCompletionHandler:
+                type: '@Block VoidBlock2<AudioComponentInstance, OSStatus>'
+    AudioComponent(Register):
+        exclude: true
+    AudioComponent(.*):
+        class: AudioComponent
+        name: '#{g[0]}'
+
+    # AudioUnit
+    AudioUnit(RemovePropertyListener)WithUserData:
+        class: AudioUnit
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inID:
+                type: AUPropertyType
+            inScope:
+                type: AUScope
+            inProcUserData:
+                type: '@Pointer long'
+    AudioUnit(.*Property.*):
+        class: AudioUnit
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inID:
+                type: AUPropertyType
+            inScope:
+                type: AUScope
+            inProcUserData:
+                type: '@Pointer long'
+    AudioUnit(AddRenderNotify|RemoveRenderNotify):
+        class: AudioUnit
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inProcUserData:
+                type: '@Pointer long'
+    AudioUnit(.*Parameter):
+        class: AudioUnit
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inID:
+                type: AUParameterType
+            inScope:
+                type: AUScope
+    AudioUnit(Render|Process|ProcessMultiple):
+        class: AudioUnit
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            ioActionFlags:
+                name: actionFlags
+                type: AUMutableRenderActionFlags
+    AudioOutputUnit(Publish):
+        class: AudioUnit
+        name: publishOutput0 # TODO move into separate AudioOutputUnit class
+        visibility: protected
+    AudioOutputUnit(GetHostIcon):
+        class: AudioUnit
+        name: getOutputHostIcon # TODO move into separate AudioOutputUnit class
+        annotations: ['@WeaklyLinked']
+    AudioOutputUnit(Start|Stop):
+        class: AudioUnit
+        name: '#{g[0]}Output0'
+        visibility: protected
+    AudioUnit(Reset):
+        class: AudioUnit
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inScope:
+                type: AUScope
+    AudioUnit(ScheduleParameters):
+        class: AudioUnit
+        name: '#{g[0]}'
+        exclude: true # TODO
+    AudioUnit(.*):
+        class: AudioUnit
+        name: '#{g[0]}0'
+        visibility: protected
+
+    # MusicDevice
+    MusicDeviceMIDIEvent:
+        class: MusicDevice
+        name: midiEvent0
+        visibility: protected
+        parameters:
+            inStatus:
+                name: status
+            inData1:
+                name: data1
+            inData2:
+                name: data2
+            inOffsetSampleFrame:
+                name: offsetSampleFrame
+    MusicDevice(SysEx):
+        class: MusicDevice
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inData:
+                name: data
+                type: '@Pointer long'
+            inLength:
+                name: length
+    MusicDevice(StartNote):
+        class: MusicDevice
+        name: '#{g[0]}0'
+        visibility: protected
+    MusicDevice(StopNote):
+        class: MusicDevice
+        name: '#{g[0]}0'
+        visibility: protected
+        parameters:
+            inGroupID:
+                name: groupID
+            inNoteInstanceID:
+                name: noteInstanceID
+            inOffsetSampleFrame:
+                name: offsetSampleFrame
+    MusicDevice(.*):
+        class: MusicDevice
+        name: '#{g[0]}0'
+        visibility: protected
+
+    AudioWorkIntervalCreate:
+        exclude: true # as workgroups are not supported
+
+    AUListener(CreateWithDispatchQueue):
+        class: AUParameterListener
+        name: create0
+        visibility: protected
+    AUListenerCreate:
+        exclude: true # in sake of block version
+    AUListener(.*):
+        class: AUParameterListener
+        name: '#{g[0]}'
+    AUParameterSet:
+        class: AUParameterListener
+        name: setParameter
+    AUParameterListenerNotify:
+        class: AUParameterListener
+        name: notifyParameterListener
+
+    AUEventListener(CreateWithDispatchQueue):
+        class: AUEventListener
+        name: create0
+        visibility: protected
+    AUEventListenerCreate:
+        exclude: true # in sake of block version
+    AUEventListener(.*):
+        class: AUEventListener
+        name: '#{g[0]}'
+
+    AUParameterValue(FromLinear|ToLinear):
+        class: AudioUnitParameter
+        name: '#{g[0]}'
+        static: true
+    AUParameterFormatValue:
+        exclude: true
+
+    # Make sure we don't miss any functions if new ones are introduced in a later version
+    (AU.*):
+        class: FIXME!
+        name: 'Function__#{g[0]}'
+    (Audio.*):
+        class: FIXME!
+        name: 'Function__#{g[0]}'
+
+values:
+    # AudioSession
+    kAudioSession(.*): # deprecated
+        exclude: true
+
+    # AudioComponent
+    kAudioComponent(RegistrationsChangedNotification|InstanceInvalidationNotification):
+        class: AudioComponent
+        name: '#{g[0]}'
+        type: NSString
+
+    # Make sure we don't miss any values if new ones are introduced in a later version
+    (k?Audio.*):
+        class: FIXME!
+        name: 'Value__#{g[0]}'
+
+constants:
+    # AudioServices
+    kSystemSoundID_(.*):
+        class: AudioServices
+        name: 'SystemSound#{g[0]}'
+
+    # enums from constants
+    kAudioComponentValidationParameter_(.*):
+        class: AudioComponentValidationParameter
+        name: '#{g[0]}'
+    kAudioComponentConfigurationInfo_(.*):
+        class: AudioComponentConfigurationInfo
+        name: '#{g[0]}'
+    kAudioUnitConfigurationInfo_(.*):
+        class: AUConfigurationInfo
+        name: '#{g[0]}'
+    kAudioSession_AudioRouteChangeKey_(.*):
+        class: AudioSessionAudioRouteChangeKeys
+        name: '#{g[0]}'
+    kAudioSettings_(.*):
+        class: AudioCodecProperty
+        name: '#{g[0]}'
+
+    AUDIO_UNIT_VERSION:
+        exclude: true
+
+    kAudioUnitParameterName_Full:
+        class: AUParameterNameInfo
+        name: FullNameLength
+
+    kAUParameterListener_AnyParameter:
+        class: AUParameterListener
+        name: AnyParameter
+
+    kSampleDelayParam_DelayFrames:
+        exclude: true
+
+    kAUPreset(.*):
+        class: AudioToolbox
+        static_class: Presets
+        name: '#{g[0]}'
+
+    kInstrumentInfoKey_(.*):
+        class: AudioToolbox
+        static_class: InstrumentInfoKeys
+        name: '#{g[0]}'
+
+    kAFInfoDictionary_(.*):
+        class: AudioFile
+        static_class: InfoDictionaryKeys
+        name: '#{g[0]}'
+
+    kMusicTimeStamp_EndOfTrack:
+        class: AudioToolbox
+        name: EndOfTrackTimeStamp
+    kAUParameterListener_(.*):
+        class: AUParameterListener
+        name: '#{g[0]}'
+    kAUSoundIsolationParam_(.*):
+        class: AudioToolbox
+        static_class: IsolationParams
+        name: '#{g[0]}'
+    kAUSoundIsolationSoundType_(.*):
+        class: AudioToolbox
+        static_class: IsolationSoundTypes
+        name: '#{g[0]}'
+
+    # Make sure we don't miss any constants if new ones are introduced in a later version
+    (k.*):
+        class: FIXME!
+        name: 'Constant__#{g[0]}'

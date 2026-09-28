@@ -1,0 +1,301 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.coreservices;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.foundation.*;
+import org.robovm.apple.corefoundation.*;
+/*</imports>*/
+
+/*<javadoc>*/
+/*</javadoc>*/
+/*<annotations>*/@Library("CFNetwork") @StronglyLinked/*</annotations>*/
+@Marshaler(/*<name>*/CFSocketStreamProperty/*</name>*/.Marshaler.class)
+/*<visibility>*/public/*</visibility>*/ class /*<name>*/CFSocketStreamProperty/*</name>*/ 
+    extends /*<extends>*/GlobalValueEnumeration<CFString>/*</extends>*/
+    /*<implements>*//*</implements>*/ {
+
+    static { Bro.bind(/*<name>*/CFSocketStreamProperty/*</name>*/.class); }
+
+    /*<marshalers>*/
+    public static class Marshaler {
+        @MarshalsPointer
+        public static CFSocketStreamProperty toObject(Class<CFSocketStreamProperty> cls, long handle, long flags) {
+            CFString o = (CFString) CFType.Marshaler.toObject(CFString.class, handle, flags);
+            if (o == null) {
+                return null;
+            }
+            return CFSocketStreamProperty.valueOf(o);
+        }
+        @MarshalsPointer
+        public static long toNative(CFSocketStreamProperty o, long flags) {
+            if (o == null) {
+                return 0L;
+            }
+            return CFType.Marshaler.toNative(o.value(), flags);
+        }
+    }
+    public static class AsListMarshaler {
+        @MarshalsPointer
+        public static List<CFSocketStreamProperty> toObject(Class<? extends CFType> cls, long handle, long flags) {
+            CFArray o = (CFArray) CFType.Marshaler.toObject(CFArray.class, handle, flags);
+            if (o == null) {
+                return null;
+            }
+            List<CFSocketStreamProperty> list = new ArrayList<>();
+            for (int i = 0; i < o.size(); i++) {
+                list.add(CFSocketStreamProperty.valueOf(o.get(i, CFString.class)));
+            }
+            return list;
+        }
+        @MarshalsPointer
+        public static long toNative(List<CFSocketStreamProperty> l, long flags) {
+            if (l == null) {
+                return 0L;
+            }
+            CFArray array = CFMutableArray.create();
+            for (CFSocketStreamProperty o : l) {
+                array.add(o.value());
+            }
+            return CFType.Marshaler.toNative(array, flags);
+        }
+    }
+    /*</marshalers>*/
+
+    /*<constants>*/
+    public static final CFSocketStreamProperty SSLContext = new CFSocketStreamProperty("SSLContext");
+    public static final CFSocketStreamProperty SSLPeerTrust = new CFSocketStreamProperty("SSLPeerTrust");
+    public static final CFSocketStreamProperty SSLSettings = new CFSocketStreamProperty("SSLSettings");
+    public static final CFSocketStreamProperty NetworkServiceType = new CFSocketStreamProperty("NetworkServiceType");
+    public static final CFSocketStreamProperty NoCellular = new CFSocketStreamProperty("NoCellular");
+    public static final CFSocketStreamProperty ConnectionIsCellular = new CFSocketStreamProperty("ConnectionIsCellular");
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    public static final CFSocketStreamProperty AllowExpensiveNetworkAccess = new CFSocketStreamProperty("AllowExpensiveNetworkAccess");
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    public static final CFSocketStreamProperty ConnectionIsExpensive = new CFSocketStreamProperty("ConnectionIsExpensive");
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    public static final CFSocketStreamProperty AllowConstrainedNetworkAccess = new CFSocketStreamProperty("AllowConstrainedNetworkAccess");
+    public static final CFSocketStreamProperty ProxyLocalBypass = new CFSocketStreamProperty("ProxyLocalBypass");
+    public static final CFSocketStreamProperty SocketRemoteHost = new CFSocketStreamProperty("SocketRemoteHost");
+    public static final CFSocketStreamProperty SocketRemoteNetService = new CFSocketStreamProperty("SocketRemoteNetService");
+    /**
+     * @since Available in iOS 9.0 and later.
+     */
+    public static final CFSocketStreamProperty SocketExtendedBackgroundIdleMode = new CFSocketStreamProperty("SocketExtendedBackgroundIdleMode");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPResponseHeader = new CFSocketStreamProperty("HTTPResponseHeader");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPFinalURL = new CFSocketStreamProperty("HTTPFinalURL");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPFinalRequest = new CFSocketStreamProperty("HTTPFinalRequest");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPProxy = new CFSocketStreamProperty("HTTPProxy");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPProxyHost = new CFSocketStreamProperty("HTTPProxyHost");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPProxyPort = new CFSocketStreamProperty("HTTPProxyPort");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPSProxyHost = new CFSocketStreamProperty("HTTPSProxyHost");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPSProxyPort = new CFSocketStreamProperty("HTTPSProxyPort");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPShouldAutoredirect = new CFSocketStreamProperty("HTTPShouldAutoredirect");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPAttemptPersistentConnection = new CFSocketStreamProperty("HTTPAttemptPersistentConnection");
+    /**
+     * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+     */
+    @Deprecated
+    public static final CFSocketStreamProperty HTTPRequestBytesWrittenCount = new CFSocketStreamProperty("HTTPRequestBytesWrittenCount");
+    /*</constants>*/
+    
+    private static /*<name>*/CFSocketStreamProperty/*</name>*/[] values = new /*<name>*/CFSocketStreamProperty/*</name>*/[] {/*<value_list>*/SSLContext, SSLPeerTrust, SSLSettings, NetworkServiceType, NoCellular, ConnectionIsCellular, AllowExpensiveNetworkAccess, ConnectionIsExpensive, AllowConstrainedNetworkAccess, ProxyLocalBypass, SocketRemoteHost, SocketRemoteNetService, SocketExtendedBackgroundIdleMode, HTTPResponseHeader, HTTPFinalURL, HTTPFinalRequest, HTTPProxy, HTTPProxyHost, HTTPProxyPort, HTTPSProxyHost, HTTPSProxyPort, HTTPShouldAutoredirect, HTTPAttemptPersistentConnection, HTTPRequestBytesWrittenCount/*</value_list>*/};
+    
+    /*<name>*/CFSocketStreamProperty/*</name>*/ (String getterName) {
+        super(Values.class, getterName);
+    }
+    
+    public static /*<name>*/CFSocketStreamProperty/*</name>*/ valueOf(/*<type>*/CFString/*</type>*/ value) {
+        for (/*<name>*/CFSocketStreamProperty/*</name>*/ v : values) {
+            if (v.value().equals(value)) {
+                return v;
+            }
+        }
+        throw new IllegalArgumentException("No constant with value " + value + " found in " 
+            + /*<name>*/CFSocketStreamProperty/*</name>*/.class.getName());
+    }
+    
+    /*<methods>*//*</methods>*/
+    
+    /*<annotations>*/@Library("CFNetwork") @StronglyLinked/*</annotations>*/
+    public static class Values {
+    	static { Bro.bind(Values.class); }
+
+        /*<values>*/
+        @GlobalValue(symbol="kCFStreamPropertySSLContext", optional=true)
+        public static native CFString SSLContext();
+        @GlobalValue(symbol="kCFStreamPropertySSLPeerTrust", optional=true)
+        public static native CFString SSLPeerTrust();
+        @GlobalValue(symbol="kCFStreamPropertySSLSettings", optional=true)
+        public static native CFString SSLSettings();
+        @GlobalValue(symbol="kCFStreamNetworkServiceType", optional=true)
+        public static native CFString NetworkServiceType();
+        @GlobalValue(symbol="kCFStreamPropertyNoCellular", optional=true)
+        public static native CFString NoCellular();
+        @GlobalValue(symbol="kCFStreamPropertyConnectionIsCellular", optional=true)
+        public static native CFString ConnectionIsCellular();
+        /**
+         * @since Available in iOS 13.0 and later.
+         */
+        @GlobalValue(symbol="kCFStreamPropertyAllowExpensiveNetworkAccess", optional=true)
+        public static native CFString AllowExpensiveNetworkAccess();
+        /**
+         * @since Available in iOS 13.0 and later.
+         */
+        @GlobalValue(symbol="kCFStreamPropertyConnectionIsExpensive", optional=true)
+        public static native CFString ConnectionIsExpensive();
+        /**
+         * @since Available in iOS 13.0 and later.
+         */
+        @GlobalValue(symbol="kCFStreamPropertyAllowConstrainedNetworkAccess", optional=true)
+        public static native CFString AllowConstrainedNetworkAccess();
+        @GlobalValue(symbol="kCFStreamPropertyProxyLocalBypass", optional=true)
+        public static native CFString ProxyLocalBypass();
+        @GlobalValue(symbol="kCFStreamPropertySocketRemoteHost", optional=true)
+        public static native CFString SocketRemoteHost();
+        @GlobalValue(symbol="kCFStreamPropertySocketRemoteNetService", optional=true)
+        public static native CFString SocketRemoteNetService();
+        /**
+         * @since Available in iOS 9.0 and later.
+         */
+        @GlobalValue(symbol="kCFStreamPropertySocketExtendedBackgroundIdleMode", optional=true)
+        public static native CFString SocketExtendedBackgroundIdleMode();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPResponseHeader", optional=true)
+        public static native CFString HTTPResponseHeader();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPFinalURL", optional=true)
+        public static native CFString HTTPFinalURL();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPFinalRequest", optional=true)
+        public static native CFString HTTPFinalRequest();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPProxy", optional=true)
+        public static native CFString HTTPProxy();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPProxyHost", optional=true)
+        public static native CFString HTTPProxyHost();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPProxyPort", optional=true)
+        public static native CFString HTTPProxyPort();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPSProxyHost", optional=true)
+        public static native CFString HTTPSProxyHost();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPSProxyPort", optional=true)
+        public static native CFString HTTPSProxyPort();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPShouldAutoredirect", optional=true)
+        public static native CFString HTTPShouldAutoredirect();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPAttemptPersistentConnection", optional=true)
+        public static native CFString HTTPAttemptPersistentConnection();
+        /**
+         * @deprecated Deprecated in iOS 9.0. Use NSURLSession API for http requests
+         */
+        @Deprecated
+        @GlobalValue(symbol="kCFStreamPropertyHTTPRequestBytesWrittenCount", optional=true)
+        public static native CFString HTTPRequestBytesWrittenCount();
+        /*</values>*/
+    }
+}

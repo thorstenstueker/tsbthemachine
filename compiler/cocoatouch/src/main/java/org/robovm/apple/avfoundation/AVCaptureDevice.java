@@ -1,0 +1,960 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.avfoundation;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.foundation.*;
+import org.robovm.apple.corefoundation.*;
+import org.robovm.apple.dispatch.*;
+import org.robovm.apple.coreanimation.*;
+import org.robovm.apple.coreimage.*;
+import org.robovm.apple.coregraphics.*;
+import org.robovm.apple.coreaudio.*;
+import org.robovm.apple.coremedia.*;
+import org.robovm.apple.corevideo.*;
+import org.robovm.apple.audiotoolbox.*;
+import org.robovm.apple.uikit.*;
+/*</imports>*/
+
+/*<javadoc>*/
+
+/*</javadoc>*/
+/*<annotations>*/@Library("AVFoundation") @NativeClass/*</annotations>*/
+/*<visibility>*/public/*</visibility>*/ class /*<name>*/AVCaptureDevice/*</name>*/ 
+    extends /*<extends>*/NSObject/*</extends>*/ 
+    /*<implements>*//*</implements>*/ {
+
+    public static class Notifications {
+        /**
+         * @since Available in iOS 4.0 and later.
+         */
+        public static NSObject observeWasConnected(final VoidBlock1<AVCaptureDevice> block) {
+            return NSNotificationCenter.getDefaultCenter().addObserver(WasConnectedNotification(), null, NSOperationQueue.getMainQueue(), new VoidBlock1<NSNotification>() {
+                @Override
+                public void invoke(NSNotification a) {
+                    block.invoke((AVCaptureDevice) a.getObject());
+                }
+            });
+        }
+        /**
+         * @since Available in iOS 4.0 and later.
+         */
+        public static NSObject observeWasDisconnected(final VoidBlock1<AVCaptureDevice> block) {
+            return NSNotificationCenter.getDefaultCenter().addObserver(WasDisconnectedNotification(), null, NSOperationQueue.getMainQueue(), new VoidBlock1<NSNotification>() {
+                @Override
+                public void invoke(NSNotification a) {
+                    block.invoke((AVCaptureDevice) a.getObject());
+                }
+            });
+        }
+        /**
+         * @since Available in iOS 5.0 and later.
+         */
+        public static NSObject observeSubjectAreaDidChange(AVCaptureDevice object, final VoidBlock1<AVCaptureDevice> block) {
+            return NSNotificationCenter.getDefaultCenter().addObserver(SubjectAreaDidChangeNotification(), null, NSOperationQueue.getMainQueue(), new VoidBlock1<NSNotification>() {
+                @Override
+                public void invoke(NSNotification a) {
+                    block.invoke((AVCaptureDevice) a.getObject());
+                }
+            });
+        }
+    }
+    
+    /*<ptr>*/public static class AVCaptureDevicePtr extends Ptr<AVCaptureDevice, AVCaptureDevicePtr> {}/*</ptr>*/
+    /*<bind>*/static { ObjCRuntime.bind(AVCaptureDevice.class); }/*</bind>*/
+    /*<constants>*//*</constants>*/
+    /*<constructors>*/
+    protected AVCaptureDevice() {}
+    protected AVCaptureDevice(Handle h, long handle) { super(h, handle); }
+    protected AVCaptureDevice(SkipInit skipInit) { super(skipInit); }
+    /*</constructors>*/
+    /*<properties>*/
+    @Property(selector = "uniqueID")
+    public native String getUniqueID();
+    @Property(selector = "modelID")
+    public native String getModelID();
+    @Property(selector = "localizedName")
+    public native String getLocalizedName();
+    /**
+     * @since Available in iOS 14.0 and later.
+     */
+    @Property(selector = "manufacturer")
+    public native String getManufacturer();
+    @Property(selector = "isConnected")
+    public native boolean isConnected();
+    /**
+     * @since Available in iOS 14.0 and later.
+     */
+    @Property(selector = "isSuspended")
+    public native boolean isSuspended();
+    @Property(selector = "formats")
+    public native NSArray<AVCaptureDeviceFormat> getFormats();
+    @Property(selector = "activeFormat")
+    public native AVCaptureDeviceFormat getActiveFormat();
+    @Property(selector = "setActiveFormat:")
+    public native void setActiveFormat(AVCaptureDeviceFormat v);
+    @Property(selector = "activeVideoMinFrameDuration")
+    public native @ByVal CMTime getActiveVideoMinFrameDuration();
+    @Property(selector = "setActiveVideoMinFrameDuration:")
+    public native void setActiveVideoMinFrameDuration(@ByVal CMTime v);
+    @Property(selector = "activeVideoMaxFrameDuration")
+    public native @ByVal CMTime getActiveVideoMaxFrameDuration();
+    @Property(selector = "setActiveVideoMaxFrameDuration:")
+    public native void setActiveVideoMaxFrameDuration(@ByVal CMTime v);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "isVideoFrameDurationLocked")
+    public native boolean isVideoFrameDurationLocked();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "minSupportedLockedVideoFrameDuration")
+    public native @ByVal CMTime getMinSupportedLockedVideoFrameDuration();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "isFollowingExternalSyncDevice")
+    public native boolean isFollowingExternalSyncDevice();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "minSupportedExternalSyncFrameDuration")
+    public native @ByVal CMTime getMinSupportedExternalSyncFrameDuration();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "isAdjustingSignalCompensationDelayWhileRunningSupported")
+    public native boolean isAdjustingSignalCompensationDelayWhileRunningSupported();
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Property(selector = "isAutoVideoFrameRateEnabled")
+    public native boolean isAutoVideoFrameRateEnabled();
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Property(selector = "setAutoVideoFrameRateEnabled:")
+    public native void setAutoVideoFrameRateEnabled(boolean v);
+    @Property(selector = "position")
+    public native AVCaptureDevicePosition getPosition();
+    /**
+     * @since Available in iOS 10.0 and later.
+     */
+    @Property(selector = "deviceType")
+    public native String getDeviceType();
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "userPreferredCamera")
+    public static native AVCaptureDevice getUserPreferredCamera();
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "setUserPreferredCamera:")
+    public static native void setUserPreferredCamera(AVCaptureDevice v);
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "systemPreferredCamera")
+    public static native AVCaptureDevice getSystemPreferredCamera();
+    /**
+     * @since Available in iOS 11.1 and later.
+     */
+    @Property(selector = "systemPressureState")
+    public native AVCaptureSystemPressureState getSystemPressureState();
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "isVirtualDevice")
+    public native boolean isVirtualDevice();
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "constituentDevices")
+    public native NSArray<AVCaptureDevice> getConstituentDevices();
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "virtualDeviceSwitchOverVideoZoomFactors")
+    public native NSArray<NSNumber> getVirtualDeviceSwitchOverVideoZoomFactors();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "isPrimaryConstituentDeviceSwitchingBehaviorLockedWithDeviceSupported")
+    public native boolean isPrimaryConstituentDeviceSwitchingBehaviorLockedWithDeviceSupported();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "primaryConstituentDeviceSwitchingBehavior")
+    public native AVCapturePrimaryConstituentDeviceSwitchingBehavior getPrimaryConstituentDeviceSwitchingBehavior();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "primaryConstituentDeviceRestrictedSwitchingBehaviorConditions")
+    public native AVCapturePrimaryConstituentDeviceRestrictedSwitchingBehaviorConditions getPrimaryConstituentDeviceRestrictedSwitchingBehaviorConditions();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "activePrimaryConstituentDeviceSwitchingBehavior")
+    public native AVCapturePrimaryConstituentDeviceSwitchingBehavior getActivePrimaryConstituentDeviceSwitchingBehavior();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "activePrimaryConstituentDeviceRestrictedSwitchingBehaviorConditions")
+    public native AVCapturePrimaryConstituentDeviceRestrictedSwitchingBehaviorConditions getActivePrimaryConstituentDeviceRestrictedSwitchingBehaviorConditions();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "activePrimaryConstituentDevice")
+    public native AVCaptureDevice getActivePrimaryConstituentDevice();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "supportedFallbackPrimaryConstituentDevices")
+    public native NSArray<AVCaptureDevice> getSupportedFallbackPrimaryConstituentDevices();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "fallbackPrimaryConstituentDevices")
+    public native NSArray<AVCaptureDevice> getFallbackPrimaryConstituentDevices();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "setFallbackPrimaryConstituentDevices:")
+    public native void setFallbackPrimaryConstituentDevices(NSArray<AVCaptureDevice> v);
+    @Property(selector = "hasFlash")
+    public native boolean hasFlash();
+    @Property(selector = "isFlashAvailable")
+    public native boolean isFlashAvailable();
+    /**
+     * @deprecated Deprecated in iOS 10.0. Use AVCapturePhotoOutput's -isFlashScene instead.
+     */
+    @Deprecated
+    @Property(selector = "isFlashActive")
+    public native boolean isFlashActive();
+    /**
+     * @deprecated Deprecated in iOS 10.0. Use AVCapturePhotoSettings.flashMode instead.
+     */
+    @Deprecated
+    @Property(selector = "flashMode")
+    public native AVCaptureFlashMode getFlashMode();
+    /**
+     * @deprecated Deprecated in iOS 10.0. Use AVCapturePhotoSettings.flashMode instead.
+     */
+    @Deprecated
+    @Property(selector = "setFlashMode:")
+    public native void setFlashMode(AVCaptureFlashMode v);
+    @Property(selector = "hasTorch")
+    public native boolean hasTorch();
+    @Property(selector = "isTorchAvailable")
+    public native boolean isTorchAvailable();
+    @Property(selector = "isTorchActive")
+    public native boolean isTorchActive();
+    @Property(selector = "torchLevel")
+    public native float getTorchLevel();
+    @Property(selector = "torchMode")
+    public native AVCaptureTorchMode getTorchMode();
+    @Property(selector = "setTorchMode:")
+    public native void setTorchMode(AVCaptureTorchMode v);
+    /**
+     * @since Available in iOS 10.0 and later.
+     */
+    @Property(selector = "isLockingFocusWithCustomLensPositionSupported")
+    public native boolean isLockingFocusWithCustomLensPositionSupported();
+    @Property(selector = "focusMode")
+    public native AVCaptureFocusMode getFocusMode();
+    @Property(selector = "setFocusMode:")
+    public native void setFocusMode(AVCaptureFocusMode v);
+    @Property(selector = "isFocusPointOfInterestSupported")
+    public native boolean isFocusPointOfInterestSupported();
+    @Property(selector = "focusPointOfInterest")
+    public native @ByVal CGPoint getFocusPointOfInterest();
+    @Property(selector = "setFocusPointOfInterest:")
+    public native void setFocusPointOfInterest(@ByVal CGPoint v);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "isFocusRectOfInterestSupported")
+    public native boolean isFocusRectOfInterestSupported();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "minFocusRectOfInterestSize")
+    public native @ByVal CGSize getMinFocusRectOfInterestSize();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "focusRectOfInterest")
+    public native @ByVal CGRect getFocusRectOfInterest();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "setFocusRectOfInterest:")
+    public native void setFocusRectOfInterest(@ByVal CGRect v);
+    @Property(selector = "isAdjustingFocus")
+    public native boolean isAdjustingFocus();
+    @Property(selector = "isAutoFocusRangeRestrictionSupported")
+    public native boolean isAutoFocusRangeRestrictionSupported();
+    @Property(selector = "autoFocusRangeRestriction")
+    public native AVCaptureAutoFocusRangeRestriction getAutoFocusRangeRestriction();
+    @Property(selector = "setAutoFocusRangeRestriction:")
+    public native void setAutoFocusRangeRestriction(AVCaptureAutoFocusRangeRestriction v);
+    @Property(selector = "isSmoothAutoFocusSupported")
+    public native boolean isSmoothAutoFocusSupported();
+    @Property(selector = "isSmoothAutoFocusEnabled")
+    public native boolean isSmoothAutoFocusEnabled();
+    @Property(selector = "setSmoothAutoFocusEnabled:")
+    public native void setSmoothAutoFocusEnabled(boolean v);
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "automaticallyAdjustsFaceDrivenAutoFocusEnabled")
+    public native boolean automaticallyAdjustsFaceDrivenAutoFocusEnabled();
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "setAutomaticallyAdjustsFaceDrivenAutoFocusEnabled:")
+    public native void setAutomaticallyAdjustsFaceDrivenAutoFocusEnabled(boolean v);
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "isFaceDrivenAutoFocusEnabled")
+    public native boolean isFaceDrivenAutoFocusEnabled();
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "setFaceDrivenAutoFocusEnabled:")
+    public native void setFaceDrivenAutoFocusEnabled(boolean v);
+    @Property(selector = "lensPosition")
+    public native float getLensPosition();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "minimumFocusDistance")
+    public native @MachineSizedSInt long getMinimumFocusDistance();
+    @Property(selector = "exposureMode")
+    public native AVCaptureExposureMode getExposureMode();
+    @Property(selector = "setExposureMode:")
+    public native void setExposureMode(AVCaptureExposureMode v);
+    @Property(selector = "isExposurePointOfInterestSupported")
+    public native boolean isExposurePointOfInterestSupported();
+    @Property(selector = "exposurePointOfInterest")
+    public native @ByVal CGPoint getExposurePointOfInterest();
+    @Property(selector = "setExposurePointOfInterest:")
+    public native void setExposurePointOfInterest(@ByVal CGPoint v);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "isExposureRectOfInterestSupported")
+    public native boolean isExposureRectOfInterestSupported();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "minExposureRectOfInterestSize")
+    public native @ByVal CGSize getMinExposureRectOfInterestSize();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "exposureRectOfInterest")
+    public native @ByVal CGRect getExposureRectOfInterest();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "setExposureRectOfInterest:")
+    public native void setExposureRectOfInterest(@ByVal CGRect v);
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "automaticallyAdjustsFaceDrivenAutoExposureEnabled")
+    public native boolean automaticallyAdjustsFaceDrivenAutoExposureEnabled();
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "setAutomaticallyAdjustsFaceDrivenAutoExposureEnabled:")
+    public native void setAutomaticallyAdjustsFaceDrivenAutoExposureEnabled(boolean v);
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "isFaceDrivenAutoExposureEnabled")
+    public native boolean isFaceDrivenAutoExposureEnabled();
+    /**
+     * @since Available in iOS 15.4 and later.
+     */
+    @Property(selector = "setFaceDrivenAutoExposureEnabled:")
+    public native void setFaceDrivenAutoExposureEnabled(boolean v);
+    /**
+     * @since Available in iOS 12.0 and later.
+     */
+    @Property(selector = "activeMaxExposureDuration")
+    public native @ByVal CMTime getActiveMaxExposureDuration();
+    /**
+     * @since Available in iOS 12.0 and later.
+     */
+    @Property(selector = "setActiveMaxExposureDuration:")
+    public native void setActiveMaxExposureDuration(@ByVal CMTime v);
+    @Property(selector = "isAdjustingExposure")
+    public native boolean isAdjustingExposure();
+    @Property(selector = "lensAperture")
+    public native float getLensAperture();
+    @Property(selector = "exposureDuration")
+    public native @ByVal CMTime getExposureDuration();
+    @Property(selector = "ISO")
+    public native float getISO();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "autoExposureLensApertureRateLimit")
+    public native float getAutoExposureLensApertureRateLimit();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "setAutoExposureLensApertureRateLimit:")
+    public native void setAutoExposureLensApertureRateLimit(float v);
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "automaticallyAdjustsLensAperture")
+    public native boolean automaticallyAdjustsLensAperture();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "automaticallyAdjustsExposureDuration")
+    public native boolean automaticallyAdjustsExposureDuration();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "automaticallyAdjustsISO")
+    public native boolean automaticallyAdjustsISO();
+    @Property(selector = "exposureTargetOffset")
+    public native float getExposureTargetOffset();
+    @Property(selector = "exposureTargetBias")
+    public native float getExposureTargetBias();
+    @Property(selector = "minExposureTargetBias")
+    public native float getMinExposureTargetBias();
+    @Property(selector = "maxExposureTargetBias")
+    public native float getMaxExposureTargetBias();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "activeExposureSignals")
+    public native NSSet<NSString> getActiveExposureSignals();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "enabledExposureSignals")
+    public native NSSet<NSString> getEnabledExposureSignals();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "setEnabledExposureSignals:")
+    public native void setEnabledExposureSignals(NSSet<NSString> v);
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "supportedExposureSignals")
+    public native NSSet<NSString> getSupportedExposureSignals();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "automaticallyEnablesExposureSignals")
+    public native boolean automaticallyEnablesExposureSignals();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "setAutomaticallyEnablesExposureSignals:")
+    public native void setAutomaticallyEnablesExposureSignals(boolean v);
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "isGlobalToneMappingEnabled")
+    public native boolean isGlobalToneMappingEnabled();
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "setGlobalToneMappingEnabled:")
+    public native void setGlobalToneMappingEnabled(boolean v);
+    /**
+     * @since Available in iOS 10.0 and later.
+     */
+    @Property(selector = "isLockingWhiteBalanceWithCustomDeviceGainsSupported")
+    public native boolean isLockingWhiteBalanceWithCustomDeviceGainsSupported();
+    @Property(selector = "whiteBalanceMode")
+    public native AVCaptureWhiteBalanceMode getWhiteBalanceMode();
+    @Property(selector = "setWhiteBalanceMode:")
+    public native void setWhiteBalanceMode(AVCaptureWhiteBalanceMode v);
+    @Property(selector = "isAdjustingWhiteBalance")
+    public native boolean isAdjustingWhiteBalance();
+    @Property(selector = "deviceWhiteBalanceGains")
+    public native @ByVal AVCaptureWhiteBalanceGains getDeviceWhiteBalanceGains();
+    @Property(selector = "grayWorldDeviceWhiteBalanceGains")
+    public native @ByVal AVCaptureWhiteBalanceGains getGrayWorldDeviceWhiteBalanceGains();
+    @Property(selector = "maxWhiteBalanceGain")
+    public native float getMaxWhiteBalanceGain();
+    @Property(selector = "isSubjectAreaChangeMonitoringEnabled")
+    public native boolean isSubjectAreaChangeMonitoringEnabled();
+    @Property(selector = "setSubjectAreaChangeMonitoringEnabled:")
+    public native void setSubjectAreaChangeMonitoringEnabled(boolean v);
+    @Property(selector = "isLowLightBoostSupported")
+    public native boolean isLowLightBoostSupported();
+    @Property(selector = "isLowLightBoostEnabled")
+    public native boolean isLowLightBoostEnabled();
+    @Property(selector = "automaticallyEnablesLowLightBoostWhenAvailable")
+    public native boolean automaticallyEnablesLowLightBoostWhenAvailable();
+    @Property(selector = "setAutomaticallyEnablesLowLightBoostWhenAvailable:")
+    public native void setAutomaticallyEnablesLowLightBoostWhenAvailable(boolean v);
+    @Property(selector = "videoZoomFactor")
+    public native @MachineSizedFloat double getVideoZoomFactor();
+    @Property(selector = "setVideoZoomFactor:")
+    public native void setVideoZoomFactor(@MachineSizedFloat double v);
+    @Property(selector = "isRampingVideoZoom")
+    public native boolean isRampingVideoZoom();
+    /**
+     * @since Available in iOS 11.0 and later.
+     * @deprecated Deprecated in iOS 13.0. Use virtualDeviceSwitchOverVideoZoomFactors
+     */
+    @Deprecated
+    @Property(selector = "dualCameraSwitchOverVideoZoomFactor")
+    public native @MachineSizedFloat double getDualCameraSwitchOverVideoZoomFactor();
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Property(selector = "displayVideoZoomFactorMultiplier")
+    public native @MachineSizedFloat double getDisplayVideoZoomFactorMultiplier();
+    @Property(selector = "automaticallyAdjustsVideoHDREnabled")
+    public native boolean automaticallyAdjustsVideoHDREnabled();
+    @Property(selector = "setAutomaticallyAdjustsVideoHDREnabled:")
+    public native void setAutomaticallyAdjustsVideoHDREnabled(boolean v);
+    @Property(selector = "isVideoHDREnabled")
+    public native boolean isVideoHDREnabled();
+    @Property(selector = "setVideoHDREnabled:")
+    public native void setVideoHDREnabled(boolean v);
+    /**
+     * @since Available in iOS 10.0 and later.
+     */
+    @Property(selector = "activeColorSpace")
+    public native AVCaptureColorSpace getActiveColorSpace();
+    /**
+     * @since Available in iOS 10.0 and later.
+     */
+    @Property(selector = "setActiveColorSpace:")
+    public native void setActiveColorSpace(AVCaptureColorSpace v);
+    /**
+     * @since Available in iOS 11.0 and later.
+     */
+    @Property(selector = "activeDepthDataFormat")
+    public native AVCaptureDeviceFormat getActiveDepthDataFormat();
+    /**
+     * @since Available in iOS 11.0 and later.
+     */
+    @Property(selector = "setActiveDepthDataFormat:")
+    public native void setActiveDepthDataFormat(AVCaptureDeviceFormat v);
+    /**
+     * @since Available in iOS 12.0 and later.
+     */
+    @Property(selector = "activeDepthDataMinFrameDuration")
+    public native @ByVal CMTime getActiveDepthDataMinFrameDuration();
+    /**
+     * @since Available in iOS 12.0 and later.
+     */
+    @Property(selector = "setActiveDepthDataMinFrameDuration:")
+    public native void setActiveDepthDataMinFrameDuration(@ByVal CMTime v);
+    /**
+     * @since Available in iOS 11.0 and later.
+     */
+    @Property(selector = "minAvailableVideoZoomFactor")
+    public native @MachineSizedFloat double getMinAvailableVideoZoomFactor();
+    /**
+     * @since Available in iOS 11.0 and later.
+     */
+    @Property(selector = "maxAvailableVideoZoomFactor")
+    public native @MachineSizedFloat double getMaxAvailableVideoZoomFactor();
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "isGeometricDistortionCorrectionSupported")
+    public native boolean isGeometricDistortionCorrectionSupported();
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "isGeometricDistortionCorrectionEnabled")
+    public native boolean isGeometricDistortionCorrectionEnabled();
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Property(selector = "setGeometricDistortionCorrectionEnabled:")
+    public native void setGeometricDistortionCorrectionEnabled(boolean v);
+    /**
+     * @since Available in iOS 14.5 and later.
+     */
+    @Property(selector = "centerStageControlMode")
+    public static native AVCaptureCenterStageControlMode getCenterStageControlMode();
+    /**
+     * @since Available in iOS 14.5 and later.
+     */
+    @Property(selector = "setCenterStageControlMode:")
+    public static native void setCenterStageControlMode(AVCaptureCenterStageControlMode v);
+    /**
+     * @since Available in iOS 14.5 and later.
+     */
+    @Property(selector = "isCenterStageEnabled")
+    public static native boolean isCenterStageEnabled();
+    /**
+     * @since Available in iOS 14.5 and later.
+     */
+    @Property(selector = "setCenterStageEnabled:")
+    public static native void setCenterStageEnabled(boolean v);
+    /**
+     * @since Available in iOS 14.5 and later.
+     */
+    @Property(selector = "isCenterStageActive")
+    public native boolean isCenterStageActive();
+    /**
+     * @since Available in iOS 16.4 and later.
+     */
+    @Property(selector = "centerStageRectOfInterest")
+    public native @ByVal CGRect getCenterStageRectOfInterest();
+    /**
+     * @since Available in iOS 16.4 and later.
+     */
+    @Property(selector = "setCenterStageRectOfInterest:")
+    public native void setCenterStageRectOfInterest(@ByVal CGRect v);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "isPortraitEffectEnabled")
+    public static native boolean isPortraitEffectEnabled();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "isPortraitEffectActive")
+    public native boolean isPortraitEffectActive();
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "reactionEffectsEnabled")
+    public static native boolean isReactionEffectsEnabled();
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "reactionEffectGesturesEnabled")
+    public static native boolean isReactionEffectGesturesEnabled();
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "canPerformReactionEffects")
+    public native boolean canPerformReactionEffects();
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "availableReactionTypes")
+    public native NSSet<NSString> getAvailableReactionTypes();
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Property(selector = "reactionEffectsInProgress")
+    public native NSArray<AVCaptureReactionEffectState> getReactionEffectsInProgress();
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Property(selector = "isBackgroundReplacementEnabled")
+    public static native boolean isBackgroundReplacementEnabled();
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Property(selector = "isBackgroundReplacementActive")
+    public native boolean isBackgroundReplacementActive();
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Property(selector = "isContinuityCamera")
+    public native boolean isContinuityCamera();
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Property(selector = "companionDeskViewCamera")
+    public native AVCaptureDevice getCompanionDeskViewCamera();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "preferredMicrophoneMode")
+    public static native AVCaptureMicrophoneMode getPreferredMicrophoneMode();
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Property(selector = "activeMicrophoneMode")
+    public static native AVCaptureMicrophoneMode getActiveMicrophoneMode();
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Property(selector = "spatialCaptureDiscomfortReasons")
+    public native NSSet<NSString> getSpatialCaptureDiscomfortReasons();
+    @Property(selector = "cinematicVideoCaptureSceneMonitoringStatuses")
+    public native NSSet<NSString> getCinematicVideoCaptureSceneMonitoringStatuses();
+    @Property(selector = "dynamicAspectRatio")
+    public native AVCaptureAspectRatio getDynamicAspectRatio();
+    @Property(selector = "dynamicDimensions")
+    public native @ByVal CMVideoDimensions getDynamicDimensions();
+    @Property(selector = "smartFramingMonitor")
+    public native AVCaptureSmartFramingMonitor getSmartFramingMonitor();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "nominalFocalLengthIn35mmFilm")
+    public native float getNominalFocalLengthIn35mmFilm();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "isContinuousAutoFocusTrackingEnabled")
+    public native boolean isContinuousAutoFocusTrackingEnabled();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "setContinuousAutoFocusTrackingEnabled:")
+    public native void setContinuousAutoFocusTrackingEnabled(boolean v);
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "continuousAutoFocusTrackingLensPositionBias")
+    public native float getContinuousAutoFocusTrackingLensPositionBias();
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "setContinuousAutoFocusTrackingLensPositionBias:")
+    public native void setContinuousAutoFocusTrackingLensPositionBias(float v);
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Property(selector = "isContinuousAutoFocusTrackingSubjectAcquired")
+    public native boolean isContinuousAutoFocusTrackingSubjectAcquired();
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Property(selector = "isStudioLightEnabled")
+    public static native boolean isStudioLightEnabled();
+    /**
+     * @since Available in iOS 16.0 and later.
+     */
+    @Property(selector = "isStudioLightActive")
+    public native boolean isStudioLightActive();
+    /**
+     * @since Available in iOS 26.2 and later.
+     */
+    @Property(selector = "isEdgeLightEnabled")
+    public static native boolean isEdgeLightEnabled();
+    /**
+     * @since Available in iOS 26.2 and later.
+     */
+    @Property(selector = "isEdgeLightActive")
+    public static native boolean isEdgeLightActive();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "isCameraLensSmudgeDetectionEnabled")
+    public native boolean isCameraLensSmudgeDetectionEnabled();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "cameraLensSmudgeDetectionInterval")
+    public native @ByVal CMTime getCameraLensSmudgeDetectionInterval();
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Property(selector = "cameraLensSmudgeDetectionStatus")
+    public native AVCaptureCameraLensSmudgeDetectionStatus getCameraLensSmudgeDetectionStatus();
+    /*</properties>*/
+    /*<members>*//*</members>*/
+    /*<methods>*/
+    @GlobalValue(symbol="AVCaptureDeviceWasConnectedNotification", optional=true)
+    public static native NSString WasConnectedNotification();
+    @GlobalValue(symbol="AVCaptureDeviceWasDisconnectedNotification", optional=true)
+    public static native NSString WasDisconnectedNotification();
+    @GlobalValue(symbol="AVCaptureDeviceSubjectAreaDidChangeNotification", optional=true)
+    public static native NSString SubjectAreaDidChangeNotification();
+    @GlobalValue(symbol="AVCaptureExposureDurationCurrent", optional=true)
+    public static native @ByVal CMTime getExposureDurationCurrent();
+    @GlobalValue(symbol="AVCaptureISOCurrent", optional=true)
+    public static native float getISOCurrent();
+    @GlobalValue(symbol="AVCaptureMaxAvailableTorchLevel", optional=true)
+    public static native float getMaxAvailableTorchLevel();
+    @GlobalValue(symbol="AVCaptureLensPositionCurrent", optional=true)
+    public static native float getLensPositionCurrent();
+    @GlobalValue(symbol="AVCaptureExposureTargetBiasCurrent", optional=true)
+    public static native float getExposureTargetBiasCurrent();
+    @GlobalValue(symbol="AVCaptureWhiteBalanceGainsCurrent", optional=true)
+    public static native @ByVal AVCaptureWhiteBalanceGains getWhiteBalanceGainsCurrent();
+    
+    @Method(selector = "hasMediaType:")
+    public native boolean hasMediaType(AVMediaType mediaType);
+    public boolean lockForConfiguration() throws NSErrorException {
+       NSError.NSErrorPtr ptr = new NSError.NSErrorPtr();
+       boolean result = lockForConfiguration(ptr);
+       if (ptr.get() != null) { throw new NSErrorException(ptr.get()); }
+       return result;
+    }
+    @Method(selector = "lockForConfiguration:")
+    private native boolean lockForConfiguration(NSError.NSErrorPtr outError);
+    @Method(selector = "unlockForConfiguration")
+    public native void unlockForConfiguration();
+    @Method(selector = "supportsAVCaptureSessionPreset:")
+    public native boolean supportsAVCaptureSessionPreset(AVCaptureSessionPreset preset);
+    /**
+     * @deprecated Deprecated in iOS 10.0. Use AVCaptureDeviceDiscoverySession instead.
+     */
+    @Deprecated
+    @Method(selector = "devices")
+    public static native NSArray<AVCaptureDevice> getDevices();
+    /**
+     * @deprecated Deprecated in iOS 10.0. Use AVCaptureDeviceDiscoverySession instead.
+     */
+    @Deprecated
+    @Method(selector = "devicesWithMediaType:")
+    public static native NSArray<AVCaptureDevice> getDevicesForMediaType(AVMediaType mediaType);
+    @Method(selector = "defaultDeviceWithMediaType:")
+    public static native AVCaptureDevice getDefaultDeviceForMediaType(AVMediaType mediaType);
+    @Method(selector = "deviceWithUniqueID:")
+    public static native AVCaptureDevice getDeviceWithUniqueID(String deviceUniqueID);
+    /**
+     * @since Available in iOS 10.0 and later.
+     */
+    @Method(selector = "defaultDeviceWithDeviceType:mediaType:position:")
+    public static native AVCaptureDevice getDefaultDevice(String deviceType, AVMediaType mediaType, AVCaptureDevicePosition position);
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Method(selector = "setPrimaryConstituentDeviceSwitchingBehaviorLockedWithDevice:")
+    public native void setPrimaryConstituentDeviceSwitchingBehaviorLockedWithDevice(AVCaptureDevice device);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Method(selector = "setPrimaryConstituentDeviceSwitchingBehavior:restrictedSwitchingBehaviorConditions:")
+    public native void setPrimaryConstituentDeviceSwitchingBehavior(AVCapturePrimaryConstituentDeviceSwitchingBehavior switchingBehavior, AVCapturePrimaryConstituentDeviceRestrictedSwitchingBehaviorConditions restrictedSwitchingBehaviorConditions);
+    /**
+     * @deprecated Deprecated in iOS 10.0. Use AVCapturePhotoOutput's -supportedFlashModes instead.
+     */
+    @Deprecated
+    @Method(selector = "isFlashModeSupported:")
+    public native boolean isFlashModeSupported(AVCaptureFlashMode flashMode);
+    @Method(selector = "isTorchModeSupported:")
+    public native boolean isTorchModeSupported(AVCaptureTorchMode torchMode);
+    public boolean setTorchModeOn(float torchLevel) throws NSErrorException {
+       NSError.NSErrorPtr ptr = new NSError.NSErrorPtr();
+       boolean result = setTorchModeOn(torchLevel, ptr);
+       if (ptr.get() != null) { throw new NSErrorException(ptr.get()); }
+       return result;
+    }
+    @Method(selector = "setTorchModeOnWithLevel:error:")
+    private native boolean setTorchModeOn(float torchLevel, NSError.NSErrorPtr outError);
+    @Method(selector = "isFocusModeSupported:")
+    public native boolean isFocusModeSupported(AVCaptureFocusMode focusMode);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "defaultRectForFocusPointOfInterest:")
+    public native @ByVal CGRect defaultRectForFocusPointOfInterest(@ByVal CGPoint pointOfInterest);
+    @Method(selector = "setFocusModeLockedWithLensPosition:completionHandler:")
+    public native void setFocusModeLocked(float lensPosition, @Block("(@ByVal)") VoidBlock1<CMTime> handler);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "setCinematicVideoTrackingFocusWithDetectedObjectID:focusMode:")
+    public native void setCinematicVideoTrackingFocus(@MachineSizedSInt long detectedObjectID, AVCaptureCinematicVideoFocusMode focusMode);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "setCinematicVideoTrackingFocusAtPoint:focusMode:")
+    public native void setCinematicVideoTrackingFocusAtPoint(@ByVal CGPoint point, AVCaptureCinematicVideoFocusMode focusMode);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "setCinematicVideoFixedFocusAtPoint:focusMode:")
+    public native void setCinematicVideoFixedFocusAtPoint(@ByVal CGPoint point, AVCaptureCinematicVideoFocusMode focusMode);
+    @Method(selector = "isExposureModeSupported:")
+    public native boolean isExposureModeSupported(AVCaptureExposureMode exposureMode);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "defaultRectForExposurePointOfInterest:")
+    public native @ByVal CGRect defaultRectForExposurePointOfInterest(@ByVal CGPoint pointOfInterest);
+    @Method(selector = "setExposureModeCustomWithDuration:ISO:completionHandler:")
+    public native void setExposureModeCustom(@ByVal CMTime duration, float ISO, @Block("(@ByVal)") VoidBlock1<CMTime> handler);
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @Method(selector = "setExposureModeCustomWithLensAperture:duration:ISO:completionHandler:")
+    public native void setExposureModeCustomWithLensAperture$duration$ISO$completionHandler$(float lensAperture, @ByVal CMTime duration, float ISO, @Block("(@ByVal)") VoidBlock1<CMTime> handler);
+    @Method(selector = "setExposureTargetBias:completionHandler:")
+    public native void setExposureTargetBias(float bias, @Block("(@ByVal)") VoidBlock1<CMTime> handler);
+    @Method(selector = "isWhiteBalanceModeSupported:")
+    public native boolean isWhiteBalanceModeSupported(AVCaptureWhiteBalanceMode whiteBalanceMode);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "setWhiteBalanceModeLockedWithDeviceWhiteBalanceTemperatureAndTintValues:completionHandler:")
+    public native void setWhiteBalanceModeLocked(@ByVal AVCaptureWhiteBalanceTemperatureAndTintValues whiteBalanceTemperatureAndTintValues, @Block("(@ByVal)") VoidBlock1<CMTime> handler);
+    @Method(selector = "setWhiteBalanceModeLockedWithDeviceWhiteBalanceGains:completionHandler:")
+    public native void setWhiteBalanceModeLocked(@ByVal AVCaptureWhiteBalanceGains whiteBalanceGains, @Block("(@ByVal)") VoidBlock1<CMTime> handler);
+    @Method(selector = "chromaticityValuesForDeviceWhiteBalanceGains:")
+    public native @ByVal AVCaptureWhiteBalanceChromaticityValues convertDeviceWhiteBalanceGainsToChromaticityValues(@ByVal AVCaptureWhiteBalanceGains whiteBalanceGains);
+    @Method(selector = "deviceWhiteBalanceGainsForChromaticityValues:")
+    public native @ByVal AVCaptureWhiteBalanceGains convertChromaticityValuesToDeviceWhiteBalanceGains(@ByVal AVCaptureWhiteBalanceChromaticityValues chromaticityValues);
+    @Method(selector = "temperatureAndTintValuesForDeviceWhiteBalanceGains:")
+    public native @ByVal AVCaptureWhiteBalanceTemperatureAndTintValues convertDeviceWhiteBalanceGainsToTemperatureAndTintValues(@ByVal AVCaptureWhiteBalanceGains whiteBalanceGains);
+    @Method(selector = "deviceWhiteBalanceGainsForTemperatureAndTintValues:")
+    public native @ByVal AVCaptureWhiteBalanceGains convertTemperatureAndTintValuesToDeviceWhiteBalanceGains(@ByVal AVCaptureWhiteBalanceTemperatureAndTintValues tempAndTintValues);
+    @Method(selector = "rampToVideoZoomFactor:withRate:")
+    public native void rampToVideoZoomFactor(@MachineSizedFloat double factor, float rate);
+    @Method(selector = "cancelVideoZoomRamp")
+    public native void cancelVideoZoomRamp();
+    @Method(selector = "authorizationStatusForMediaType:")
+    public static native AVAuthorizationStatus getAuthorizationStatusForMediaType(AVMediaType mediaType);
+    @Method(selector = "requestAccessForMediaType:completionHandler:")
+    public static native void requestAccessForMediaType(AVMediaType mediaType, @Block VoidBooleanBlock handler);
+    /**
+     * @since Available in iOS 13.0 and later.
+     */
+    @Method(selector = "extrinsicMatrixFromDevice:toDevice:")
+    public static native NSData getExtrinsicMatrix(AVCaptureDevice fromDevice, AVCaptureDevice toDevice);
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Method(selector = "performEffectForReaction:")
+    public native void performEffectForReaction(AVCaptureReactionType reactionType);
+    /**
+     * @since Available in iOS 15.0 and later.
+     */
+    @Method(selector = "showSystemUserInterface:")
+    public static native void showSystemUserInterface(AVCaptureSystemUserInterface systemUserInterface);
+    @Method(selector = "setDynamicAspectRatio:completionHandler:")
+    public native void setDynamicAspectRatio(AVCaptureAspectRatio dynamicAspectRatio, @Block("(@ByVal,)") VoidBlock2<CMTime, NSError> handler);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Method(selector = "setCameraLensSmudgeDetectionEnabled:detectionInterval:")
+    public native void setCameraLensSmudgeDetectionEnabled(boolean cameraLensSmudgeDetectionEnabled, @ByVal CMTime detectionInterval);
+    /*</methods>*/
+}

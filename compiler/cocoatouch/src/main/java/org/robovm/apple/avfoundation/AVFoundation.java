@@ -1,0 +1,99 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.avfoundation;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.foundation.*;
+import org.robovm.apple.corefoundation.*;
+import org.robovm.apple.dispatch.*;
+import org.robovm.apple.coreanimation.*;
+import org.robovm.apple.coreimage.*;
+import org.robovm.apple.coregraphics.*;
+import org.robovm.apple.coreaudio.*;
+import org.robovm.apple.coremedia.*;
+import org.robovm.apple.corevideo.*;
+import org.robovm.apple.audiotoolbox.*;
+import org.robovm.apple.uikit.*;
+/*</imports>*/
+
+/*<javadoc>*/
+/*</javadoc>*/
+/*<annotations>*/@Library("AVFoundation")/*</annotations>*/
+/*<visibility>*/public/*</visibility>*/ class /*<name>*/AVFoundation/*</name>*/ 
+    extends /*<extends>*/CocoaUtility/*</extends>*/ 
+    /*<implements>*//*</implements>*/ {
+
+    /*<ptr>*/
+    /*</ptr>*/
+    /*<bind>*/static { Bro.bind(AVFoundation.class); }/*</bind>*/
+    /*<constants>*//*</constants>*/
+    /*<constructors>*//*</constructors>*/
+    /*<properties>*//*</properties>*/
+    /*<members>*//*</members>*/
+    /*<methods>*/
+    @GlobalValue(symbol="AVCoreAnimationBeginTimeAtZero", optional=true)
+    public static native double CoreAnimationBeginTimeAtZero();
+    
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Bridge(symbol="AVCaptionDimensionMake", optional=true)
+    public static native @ByVal AVCaptionDimension function__AVCaptionDimensionMake(@MachineSizedFloat double value, AVCaptionUnitsType units);
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Bridge(symbol="AVCaptionPointMake", optional=true)
+    public static native @ByVal AVCaptionPoint function__AVCaptionPointMake(@ByVal AVCaptionDimension x, @ByVal AVCaptionDimension y);
+    /**
+     * @since Available in iOS 18.0 and later.
+     */
+    @Bridge(symbol="AVCaptionSizeMake", optional=true)
+    public static native @ByVal AVCaptionSize function__AVCaptionSizeMake(@ByVal AVCaptionDimension width, @ByVal AVCaptionDimension height);
+    @Bridge(symbol="AVMakeRectWithAspectRatioInsideRect", optional=true)
+    public static native @ByVal CGRect createRectWithAspectRatioInsideRect(@ByVal CGSize aspectRatio, @ByVal CGRect boundingRect);
+    /**
+     * @since Available in iOS 17.0 and later.
+     */
+    @Bridge(symbol="AVCaptureReactionSystemImageNameForType", optional=true)
+    public static native String function__AVCaptureReactionSystemImageNameForType(AVCaptureReactionType reactionType);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Bridge(symbol="AVCaptureTimecodeCreateMetadataSampleBufferAssociatedWithPresentationTimeStamp", optional=true)
+    public static native CMSampleBuffer function__AVCaptureTimecodeCreateMetadataSampleBufferAssociatedWithPresentationTimeStamp(@ByVal AVCaptureTimecode timecode, @ByVal CMTime presentationTimeStamp);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Bridge(symbol="AVCaptureTimecodeCreateMetadataSampleBufferForDuration", optional=true)
+    public static native CMSampleBuffer function__AVCaptureTimecodeCreateMetadataSampleBufferForDuration(@ByVal AVCaptureTimecode timecode, @ByVal CMTime duration);
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @Bridge(symbol="AVCaptureTimecodeAdvancedByFrames", optional=true)
+    public static native @ByVal AVCaptureTimecode function__AVCaptureTimecodeAdvancedByFrames(@ByVal AVCaptureTimecode timecode, long framesToAdd);
+    /*</methods>*/
+}

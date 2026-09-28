@@ -1,0 +1,8 @@
+pluginManagement {
+    repositories {
+        mavenCentral() // as workaround for failing jcenter
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'com.mobidevelop.robovm.intellij'

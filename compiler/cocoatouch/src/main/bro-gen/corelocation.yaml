@@ -1,0 +1,368 @@
+package: org.robovm.apple.corelocation
+# tsbMobile (23.09.2026): the bindings are ours and only these frameworks exist; members typed with
+# a class of addressbook, contacts are skipped by the generator and listed in bro-gen/skipped.txt.
+include: [foundation.yaml, corebluetooth.yaml]
+library: CoreLocation
+framework: CoreLocation
+internal_frameworks: [_LocationEssentials]
+clang_args: ['-x', 'objective-c']
+headers:
+    - /System/Library/Frameworks/CoreLocation.framework/Headers/CoreLocation.h
+typedefs:
+    CLGeocodeCompletionHandler: '@Block VoidBlock2<NSArray<CLPlacemark>, NSError>'
+    OS_dispatch_queue: org.robovm.apple.dispatch.DispatchQueue
+enums:
+    CLActivityType: {}
+    CLAuthorizationStatus: {}
+    CLDeviceOrientation: {}
+    CLError: {name: CLErrorCode}
+    CLProximity: {}
+    CLRegionState: {}
+    CLAccuracyAuthorization: {}
+    CLLocationPushServiceError: { nserror: true } #since 15.0
+    CLLiveUpdateConfiguration: { }
+    CLMonitoringState: { }
+    CLServiceSessionAuthorizationRequirement: {}
+classes:
+    CLError:
+        extends: NSError
+        annotations: ['@StronglyLinked']
+
+    # Structs
+    CLLocationCoordinate2D: {}
+
+    # Classes
+    CLBeacon: {} # DONE
+    CLBeaconRegion: # DONE
+        properties:
+            'notifyEntryStateOnDisplay':
+                name: notifiesEntryStateOnDisplay
+        methods:
+            '-initWithUUID:identifier:':
+                static_constructor_name: createUsingUUID
+                name: createUsingUUID0
+            '-initWithUUID:major:identifier:':
+                static_constructor_name: createUsingUUID
+                name: createUsingUUID0
+            '-initWithUUID:major:minor:identifier:':
+                static_constructor_name: createUsingUUID
+                name: createUsingUUID0
+            '-initWithBeaconIdentityConstraint:identifier:':
+                name: init
+            '-initWithProximityUUID:identifier:':
+                name: init
+            '-initWithProximityUUID:major:identifier:':
+                name: init
+            '-initWithProximityUUID:major:minor:identifier:':
+                name: init
+            '-peripheralDataWithMeasuredPower:':
+                name: getPeripheralData
+                return_type: CBAdvertisementData
+                annotations: ['@WeaklyLinked']
+    CLCircularRegion: # DONE
+        methods:
+            '-initWithCenter:radius:identifier:':
+                name: init
+            '-containsCoordinate:': # Overrides a method in CLRegion
+                exclude: true
+    CLFloor: {} # DONE
+    CLGeocoder: # DONE
+        methods:
+            '-reverseGeocodeLocation:completionHandler:':
+                trim_after_first_colon: true
+            '-geocodeAddressDictionary:completionHandler:':
+                name: geocodeAddress
+                annotations: ['@WeaklyLinked']
+                # tsbMobile: was typed ABPersonAddress (AddressBook), a framework the fork does not bind
+            '-geocodeAddressString:completionHandler:':
+                name: geocodeAddress
+            '-geocodeAddressString:inRegion:completionHandler:':
+                name: geocodeAddress
+            '-reverseGeocodeLocation:preferredLocale:completionHandler:':
+                name: reverseGeocodeLocation
+            '-geocodeAddressString:inRegion:preferredLocale:completionHandler:':
+                name: geocodeAddress
+            '-geocodePostalAddress:completionHandler:':
+                name: geocodePostalAddress
+            '-geocodePostalAddress:preferredLocale:completionHandler:':
+                name: geocodePostalAddress
+    CLHeading: # DONE
+        properties:
+            'description':
+                exclude: true
+    CLLocation: # DONE
+        properties:
+            'description':
+                exclude: true
+        methods:
+            '-initWithLatitude:longitude:':
+                name: init
+            '-initWithCoordinate:altitude:horizontalAccuracy:verticalAccuracy:timestamp:':
+                name: init
+            '-initWithCoordinate:altitude:horizontalAccuracy:verticalAccuracy:course:speed:timestamp:':
+                name: init
+            '-initWithCoordinate:altitude:horizontalAccuracy:verticalAccuracy:course:courseAccuracy:speed:speedAccuracy:timestamp:':
+                name: init
+            '-initWithCoordinate:altitude:horizontalAccuracy:verticalAccuracy:course:courseAccuracy:speed:speedAccuracy:timestamp:sourceInfo:':
+                name: init
+            '-getDistanceFrom:':
+                exclude: true
+            '-distanceFromLocation:':
+                name: getDistanceTo
+    CLLocationManager: # DONE
+        properties:
+            # tsbMobile, iOS 27 SDK: CLBodyIdentifiable (visionOS body tracking) is not bound
+            'headingBody': {exclude: true}
+            'authorizationStatus':
+                omit_prefix: true
+            'headingAvailable': # Deprecated in iOS 4. Conflicts with the class method with the same name.
+                exclude: true
+            'locationServicesEnabled': # Deprecated in iOS 4. Conflicts with the class method with the same name.
+                exclude: true
+            'monitoredRegions':
+                type: NSSet<CLRegion>
+            'rangedRegions':
+                type: NSSet<CLBeaconRegion>
+        methods:
+            '+locationServicesEnabled':
+                name: isLocationServicesEnabled
+            '+headingAvailable':
+                name: isHeadingAvailable
+            '+significantLocationChangeMonitoringAvailable':
+                name: isSignificantLocationChangeMonitoringAvailable
+            '+isMonitoringAvailableForClass:':
+                name: isMonitoringAvailable
+                parameters:
+                    regionClass:
+                        type: 'Class<? extends CLRegion>'
+            '+regionMonitoringAvailable':
+                name: isRegionMonitoringAvailable
+            '+regionMonitoringEnabled': # Deprecated in iOS 6, replaced by regionMonitoringAvailable
+                exclude: true
+            '+authorizationStatus':
+                name: getAuthorizationStatus
+            '+deferredLocationUpdatesAvailable':
+                name: isDeferredLocationUpdatesAvailable
+            '-startMonitoringForRegion:desiredAccuracy:':
+                name: startMonitoring
+            '-stopMonitoringForRegion:':
+                name: stopMonitoring
+            '-startMonitoringForRegion:':
+                name: startMonitoring
+            '-requestStateForRegion:':
+                name: requestState
+            '-startRangingBeaconsInRegion:':
+                name: startRangingBeacons
+            '-stopRangingBeaconsInRegion:':
+                name: stopRangingBeacons
+            '-allowDeferredLocationUpdatesUntilTraveled:timeout:':
+                name: allowDeferredLocationUpdatesUntil
+            '-requestTemporaryFullAccuracyAuthorizationWithPurposeKey:completion:':
+                name: requestTemporaryFullAccuracyAuthorization
+            '-requestTemporaryFullAccuracyAuthorizationWithPurposeKey:':
+                name: requestTemporaryFullAccuracyAuthorization
+            '-startMonitoringLocationPushesWithCompletion:':
+                name: startMonitoringLocationPushes
+    CLPlacemark: # DONE
+        properties:
+            'areasOfInterest':
+                type: '@org.robovm.rt.bro.annotation.Marshaler(NSArray.AsStringListMarshaler.class) List<String>'
+            'addressDictionary':
+                name: address
+                # tsbMobile: was typed ABPersonAddress (AddressBook), a framework the fork does not bind
+                annotations: ['@WeaklyLinked']
+        methods:
+            '-initWithPlacemark:':
+                name: init
+    CLRegion: # DONE
+        properties:
+            'notifyOnEntry':
+                name: notifiesOnEntry
+            'notifyOnExit':
+                name: notifiesOnExit
+        methods:
+            '-initCircularRegionWithCenter:radius:identifier:':
+                exclude: true # as this method is deprecated and conflicts with initWithCenter:radius:identifier:
+            '-containsCoordinate:':
+                trim_after_first_colon: true
+    CLVisit: {} # DONE
+    CLBeaconIdentityConstraint: #since 13.0
+        methods:
+            '-initWithUUID:':
+                name: init
+            '-initWithUUID:major:':
+                name: init
+            '-initWithUUID:major:minor:':
+                name: init
+    CLLocationSourceInformation: #since 15.0
+        methods:
+            '-initWithSoftwareSimulationState:andExternalAccessoryState:':
+                name: init
+    CLBackgroundActivitySession: #since 17.0
+        methods:
+            '+backgroundActivitySessionWithQueue:handler:':
+                name: backgroundActivitySession
+    CLBeaconIdentityCondition: #since 17.0
+        methods:
+            '-initWithUUID:':
+                name: init
+            '-initWithUUID:major:':
+                name: init
+            '-initWithUUID:major:minor:':
+                name: init
+    CLCircularGeographicCondition: #since 17.0
+        methods:
+            '-initWithCenter:radius:':
+                name: init
+    CLCondition: {} #since 17.0
+    CLLocationUpdater: #since 17.0
+        methods:
+            '+liveUpdaterWithQueue:handler:':
+                constructor: true
+                name: createLiveUpdater
+            '+liveUpdaterWithConfiguration:queue:handler:':
+                constructor: true
+                name: createLiveUpdater
+    CLMonitor: #since 17.0
+        methods:
+            '-addConditionForMonitoring:identifier:':
+                name: addCondition
+            '-addConditionForMonitoring:identifier:assumedState:':
+                name: addCondition
+            '-removeConditionFromMonitoringWithIdentifier:':
+                name: removeCondition
+            '+requestMonitorWithConfiguration:completion:':
+                name: requestMonitor
+    CLMonitorConfiguration: #since 17.0
+        methods:
+            '+configWithMonitorName:queue:eventHandler:':
+                constructor: true
+                name: create
+    CLMonitoringEvent: {} #since 17.0
+    CLMonitoringRecord: {} #since 17.0
+    CLUpdate: #since 17.0
+        properties:
+            isStationary:
+                exclude: true # deprecated on arrival
+
+    CLBackgroundActivitySessionDiagnostic: { } #since 18.0
+    CLServiceSession: #since 18.0
+        methods:
+            '+sessionRequiringAuthorization:queue:handler:':
+                name: createSessionRequiringAuthorization
+            '+sessionRequiringAuthorization:fullAccuracyPurposeKey:':
+                name: createSessionRequiringAuthorization
+            '+sessionRequiringAuthorization:fullAccuracyPurposeKey:queue:handler:':
+                name: createSessionRequiringAuthorization
+    CLServiceSessionDiagnostic: { } #since 18.0
+protocols:
+    CLLocationManagerDelegate: # DONE
+        methods:
+            '-locationManager:didUpdateToLocation:fromLocation:':
+                name: didUpdateToLocation
+            '-locationManager:didUpdateLocations:':
+                name: didUpdateLocations
+                parameters:
+                    locations:
+                        type: NSArray<CLLocation>
+            '-locationManager:didUpdateHeading:':
+                name: didUpdateHeading
+            '-locationManagerShouldDisplayHeadingCalibration:':
+                name: shouldDisplayHeadingCalibration
+            '-locationManager:didDetermineState:forRegion:':
+                name: didDetermineState
+            '-locationManager:didRangeBeacons:inRegion:':
+                name: didRangeBeacons
+            '-locationManager:rangingBeaconsDidFailForRegion:withError:':
+                name: rangingBeaconsDidFail
+            '-locationManager:didEnterRegion:':
+                name: didEnterRegion
+            '-locationManager:didExitRegion:':
+                name: didExitRegion
+            '-locationManager:didFailWithError:':
+                name: didFail
+            '-locationManager:monitoringDidFailForRegion:withError:':
+                name: monitoringDidFail
+            '-locationManager:didChangeAuthorizationStatus:':
+                name: didChangeAuthorizationStatus
+            '-locationManager:didStartMonitoringForRegion:':
+                name: didStartMonitoring
+            '-locationManagerDidPauseLocationUpdates:':
+                name: didPauseLocationUpdates
+            '-locationManagerDidResumeLocationUpdates:':
+                name: didResumeLocationUpdates
+            '-locationManager:didFinishDeferredUpdatesWithError:':
+                name: didFinishDeferredUpdates
+            '-locationManager:didVisit:':
+                name: didVisit
+            '-locationManager:didRangeBeacons:satisfyingConstraint:':
+                name: didRangeBeacons
+            '-locationManager:didFailRangingBeaconsForConstraint:error:':
+                name: didFailRangingBeacons
+    CLLocationPushServiceExtension: #since 15.0
+        methods:
+            '-didReceiveLocationPushPayload:completion:':
+                name: didReceiveLocationPushPayload
+functions:
+    CLLocationCoordinate2DMake:
+        exclude: true
+
+    CLLocationCoordinate2D(IsValid):
+        class: CLLocationCoordinate2D
+        static: true
+        visibility: private
+        name: '#{g[0]}'
+
+    # Make sure we don't miss any functions if new ones are introduced in a later version
+    (CL.*):
+        class: CoreLocation
+        name: 'Function__#{g[0]}'
+
+values:
+    kCLErrorDomain:
+        class: CLError
+        name: getClassDomain
+    CLLocationPushServiceErrorDomain:
+        class: CLLocationPushServiceError
+        name: getClassDomain
+    kCLErrorUserInfo(.*)Key:
+        enum: CLErrorUserInfoKey
+        name: '#{g[0]}'
+        type: NSString
+        extends: NSErrorUserInfoKey
+
+    kCLLocationAccuracy(.*):
+        class: CLLocationAccuracy
+        name: '#{g[0]}Value'
+        visibility: protected
+
+    CL(LocationDistanceMax):
+        class: CLLocation
+        name: 'get#{g[0]}'
+    CL(TimeIntervalMax):
+        class: CLLocationManager
+        name: 'get#{g[0]}'
+    kCL(DistanceFilterNone):
+        class: CLLocationManager
+        name: 'get#{g[0]}'
+    kCL(HeadingFilterNone):
+        class: CLLocationManager
+        name: 'get#{g[0]}'
+
+    kCLLocationCoordinate2D(Invalid):
+        class: CLLocationCoordinate2D
+        name: '#{g[0]}'
+
+    # Make sure we don't miss any values if new ones are introduced in a later version
+    (k?CL.*):
+        class: CoreLocation
+        name: 'Value__#{g[0]}'
+
+constants:
+    CL_TARGET_SUPPORTS_CONDITIONS:
+        exclude: true
+
+    # Make sure we don't miss any constants if new ones are introduced in a later version
+    (k?CL.*):
+        class: CoreLocation
+        name: 'Constant__#{g[0]}'

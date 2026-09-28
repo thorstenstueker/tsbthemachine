@@ -1,0 +1,117 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.mobidevelop.robovm</groupId>
+        <artifactId>robovm-compiler-parent</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>robovm-cocoatouch</artifactId>
+    <name>RoboVM Cocoa Touch Bindings</name>
+    <packaging>jar</packaging>
+
+    <properties>
+        <cocoatouch.prune.skip>false</cocoatouch.prune.skip>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.mobidevelop.robovm</groupId>
+            <artifactId>robovm-rt</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.mobidevelop.robovm</groupId>
+            <artifactId>robovm-objc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <!-- provide empty bootclass as one from robovm.rt to be used -->
+                <configuration combine.self="override">
+                    <encoding>UTF-8</encoding>
+                    <source>8</source>
+                    <target>8</target>
+                    <compilerArgs>
+                        <arg>-bootclasspath</arg>
+                        <arg>""</arg>
+                        <arg>-Xlint:-options</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration combine.self="override">
+                    <quiet>true</quiet>
+                    <maxmemory>2g</maxmemory>
+                    <!-- docs for RT: no lint, no bootclass and api 8 -->
+                    <doclint>none</doclint>
+                    <source>8</source>
+                    <bootclasspath>""</bootclasspath>
+                    <detectJavaApiLink>false</detectJavaApiLink>
+                    <notree>true</notree>
+                    <noindex>true</noindex>
+                    <nodeprecated>true</nodeprecated>
+                </configuration>
+            </plugin>
+            <!-- The cut: after javac, before the jar. The sources are upstream's, unchanged; what the
+                 jar contains is decided by prune/seeds.txt and prune/exclude.txt, and prune/report.txt
+                 says what happened. See prune/UPDATE.md. -Dcocoatouch.prune.skip=true gives the full jar. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.mobidevelop.robovm</groupId>
+                        <artifactId>robovm-cocoatouch-prune</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>prune-bindings</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${cocoatouch.prune.skip}</skip>
+                            <mainClass>org.robovm.cocoatouch.prune.Prune</mainClass>
+                            <includeProjectDependencies>false</includeProjectDependencies>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <arguments>
+                                <argument>${project.build.outputDirectory}</argument>
+                                <argument>${project.basedir}/prune/seeds.txt</argument>
+                                <argument>${project.basedir}/prune/exclude.txt</argument>
+                                <argument>${project.basedir}/prune/report.txt</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

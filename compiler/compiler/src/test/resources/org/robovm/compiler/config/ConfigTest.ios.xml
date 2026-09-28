@@ -1,0 +1,13 @@
+<config>
+  <swiftSupport>
+    <enable>true</enable>
+    <copySwiftLibs>true</copySwiftLibs>
+  </swiftSupport>
+  <experimental>
+    <xcFrameworkLookup>true</xcFrameworkLookup>
+  </experimental>
+  <target>ios</target>
+  <iosSdkVersion>6.1</iosSdkVersion>
+  <iosInfoPList>Info.plist</iosInfoPList>
+  <iosEntitlementsPList>entitlements.plist</iosEntitlementsPList>
+</config>

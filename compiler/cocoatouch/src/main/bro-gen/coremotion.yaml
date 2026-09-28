@@ -1,0 +1,208 @@
+package: org.robovm.apple.coremotion
+include: [foundation.yaml]
+library: CoreMotion
+framework: CoreMotion
+clang_args: ['-x', 'objective-c']
+headers:
+    - /System/Library/Frameworks/CoreMotion.framework/Headers/CoreMotion.h
+    - /System/Library/Frameworks/CoreMotion.framework/Headers/CMAvailability.h
+typedefs: {}
+    
+enums:
+    CMAttitudeReferenceFrame: { bits: true }
+    CMMagneticFieldCalibrationAccuracy: { }
+    CMErrorCode: { first: CMErrorNULL }
+    CMMotionActivityConfidence: {}
+    CMPedometerEventType: {}
+    CMAuthorizationStatus: {} #since 11.0
+    CMDeviceMotionSensorLocation: {}
+    CMFallDetectionEventUserResolution: {}
+    CMWaterSubmersionState: {}
+    CMWaterSubmersionDepthState: {}
+    CMHighFrequencyHeartRateDataConfidence: {} #since 17.0
+    CMOdometerOriginDevice: {} #since 15.4
+    CMHeadphoneActivityStatus: {}
+classes:
+    CMError:
+        extends: NSError
+        annotations: ['@StronglyLinked']
+
+    CMAccelerometerData: {} # DONE
+    CMRecordedAccelerometerData: {} # DONE
+    CMAltimeter: # DONE
+        methods:
+            '-startRelativeAltitudeUpdatesToQueue:withHandler:':
+                name: startRelativeAltitudeUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMAltitudeData, NSError>'
+            '-startAbsoluteAltitudeUpdatesToQueue:withHandler:':
+                name: startAbsoluteAltitudeUpdates
+    CMAltitudeData: {} # DONE
+    CMAttitude: # DONE
+        methods:
+            '-multiplyByInverseOfAttitude:':
+                trim_after_first_colon: true
+    CMDeviceMotion: {} # DONE
+    CMGyroData: {} # DONE
+    CMLogItem: {} # DONE
+    CMMagnetometerData: {} # DONE
+    CMMotionActivity: {} # DONE
+    CMMotionActivityManager: # DONE
+        methods:
+            '-queryActivityStartingFromDate:toDate:toQueue:withHandler:':
+                name: queryActivity
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<NSArray<CMMotionActivity>, NSError>'
+            '-startActivityUpdatesToQueue:withHandler:':
+                name: startActivityUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock1<CMMotionActivity>'
+    CMMotionManager: # DONE
+        properties:
+            # tsbMobile, iOS 27 SDK: CMBodyIdentifiable (visionOS body tracking) is not bound
+            'deviceMotionBody': {exclude: true}
+        methods:
+            '-startAccelerometerUpdatesToQueue:withHandler:':
+                name: startAccelerometerUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMAccelerometerData, NSError>'
+            '-startGyroUpdatesToQueue:withHandler:':
+                name: startGyroUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMGyroData, NSError>'
+            '-startMagnetometerUpdatesToQueue:withHandler:':
+                name: startMagnetometerUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMMagnetometerData, NSError>'
+            '-startDeviceMotionUpdatesToQueue:withHandler:':
+                name: startDeviceMotionUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMDeviceMotion, NSError>'
+            '-startDeviceMotionUpdatesUsingReferenceFrame:':
+                name: startDeviceMotionUpdates
+            '-startDeviceMotionUpdatesUsingReferenceFrame:toQueue:withHandler:':
+                name: startDeviceMotionUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMDeviceMotion, NSError>'
+            '+availableAttitudeReferenceFrames':
+                property: true
+    CMPedometer: # DONE
+        methods:
+            '-queryPedometerDataFromDate:toDate:withHandler:':
+                name: queryPedometerData
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMPedometerData, NSError>'
+            '-startPedometerUpdatesFromDate:withHandler:':
+                name: startPedometerUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMPedometerData, NSError>'
+            '-startPedometerEventUpdatesWithHandler:':
+                name: startPedometerEventUpdates
+                parameters:
+                    handler:
+                        type: '@Block VoidBlock2<CMPedometerEvent, NSError>'
+    CMPedometerData: {} # DONE
+    CMPedometerEvent: {}
+    CMSensorDataList: {}      ### TODO make enumeratable
+    CMSensorRecorder: # DONE
+        methods:
+            '-accelerometerDataSince:':
+                name: getAccelerometerDataSince
+            '-accelerometerDataFromDate:toDate:':
+                name: getAccelerometerDataBetween
+            '-recordAccelerometerForDuration:':
+                trim_after_first_colon: true
+    CMStepCounter: # DONE
+        methods:
+            '-queryStepCountStartingFrom:to:toQueue:withHandler:':
+                name: queryStepCount
+                parameters:
+                    handler:
+                        type: '@Block("(@MachineSizedSInt,)") VoidBlock2<Long, NSError>'
+            '-startStepCountingUpdatesToQueue:updateOn:withHandler:':
+                name: startStepCountingUpdates
+                parameters:
+                    handler:
+                        type: '@Block("(@MachineSizedSInt,,)") VoidBlock3<Long, NSDate, NSError>'
+
+    CMDyskineticSymptomResult: {} #since 12.0
+    CMTremorResult: {} #since 12.0
+
+    # Structs
+    CMAcceleration: {}
+    CMRotationMatrix: {}
+    CMQuaternion: {}
+    CMCalibratedMagneticField: {}
+    CMRotationRate: {}
+    CMMagneticField: {}
+
+    CMHeadphoneMotionManager: #since 14.0
+        methods:
+            '-startDeviceMotionUpdatesToQueue:withHandler:':
+                name: startDeviceMotionUpdates
+    CMRecordedRotationRateData: {} #since 14.0
+    CMRotationRateData: {} #since 14.0
+    CMAbsoluteAltitudeData: {} #since 15.0
+    CMAmbientPressureData: {} #since 10.0
+    CMRecordedPressureData: {} #since 12.0
+    CMWaterSubmersionEvent: {}
+    CMWaterSubmersionManager: {}
+    CMWaterSubmersionMeasurement: {}
+    CMWaterTemperature: {}
+    CMBatchedSensorManager:
+        methods:
+            '-startAccelerometerUpdatesWithHandler:':
+                name: startAccelerometerUpdates
+            '-startDeviceMotionUpdatesWithHandler:':
+                name: startDeviceMotionUpdates
+    CMHighFrequencyHeartRateData: {} #since 17.0
+    CMOdometerData: {} #since 8.0
+    CMHeadphoneActivityManager: #since 18.0
+        methods:
+            '-startActivityUpdatesToQueue:withHandler:':
+                name: startActivityUpdates
+            '-startStatusUpdatesToQueue:withHandler:':
+                name: startStatusUpdates
+protocols:
+    CMHeadphoneMotionManagerDelegate: {} #since 14.0
+    CMWaterSubmersionManagerDelegate:
+        methods:
+            '-manager:didUpdateEvent:':
+                name: didUpdateEvent
+            '-manager:didUpdateMeasurement:':
+                name: didUpdateMeasurement
+            '-manager:didUpdateTemperature:':
+                name: didUpdateTemperature
+            '-manager:errorOccurred:':
+                name: errorOccurred
+functions:
+    # Make sure we don't miss any functions if new ones are introduced in a later version
+    (k?CM.*):
+        class: CoreMotion
+        name: 'Function__#{g[0]}'
+
+values:
+    CMErrorDomain:
+        class: CMError
+        name: getClassDomain
+   
+    # Make sure we don't miss any values if new ones are introduced in a later version
+    (k?CM.*):
+        class: CoreMotion
+        name: 'Value__#{g[0]}'
+
+constants:
+    # Make sure we don't miss any constants if new ones are introduced in a later version
+    (k?CM.*):
+        class: CoreMotion
+        name: 'Constant__#{g[0]}'

@@ -1,0 +1,8 @@
+.DS_STORE
+/target/
+/src/main/resources/robovm-dist
+/.idea/
+/build/
+org.robovm.idea.iml
+/.gradle/
+/.intellijPlatform/

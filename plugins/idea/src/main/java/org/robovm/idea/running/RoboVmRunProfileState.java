@@ -1,0 +1,109 @@
+/*
+ * Copyright (C) 2015 RoboVM AB
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
+ */
+package org.robovm.idea.running;
+
+import com.intellij.execution.ExecutionException;
+import com.intellij.execution.RunnerAndConfigurationSettings;
+import com.intellij.execution.configurations.CommandLineState;
+import com.intellij.execution.executors.DefaultDebugExecutor;
+import com.intellij.execution.executors.DefaultRunExecutor;
+import com.intellij.execution.process.ColoredProcessHandler;
+import com.intellij.execution.process.ProcessHandler;
+import com.intellij.execution.process.ProcessTerminatedListener;
+import com.intellij.execution.runners.ExecutionEnvironment;
+import org.jetbrains.annotations.NotNull;
+import org.robovm.compiler.AppCompiler;
+import org.robovm.compiler.config.Config;
+import org.robovm.compiler.launcher.LaunchParameters;
+import org.robovm.compiler.target.console.ConsoleLaunchParameters;
+import org.robovm.compiler.target.ios.devicecommon.IOSDeviceLaunchParameters;
+import org.robovm.compiler.target.ios.simulator.DeviceType;
+import org.robovm.compiler.target.ios.simulator.IOSSimulatorLaunchParameters;
+import org.robovm.idea.RoboVmPlugin;
+
+import java.io.File;
+
+public class RoboVmRunProfileState extends CommandLineState {
+    public RoboVmRunProfileState(ExecutionEnvironment environment) {
+        super(environment);
+    }
+
+    protected ProcessHandler executeRun() throws Throwable {
+        RunnerAndConfigurationSettings runnerAndConfigurationSettings = getEnvironment().getRunnerAndConfigurationSettings();
+        if (runnerAndConfigurationSettings == null)
+            throw new ExecutionException("RoboVmRunConfiguration is missing");
+        RoboVmRunConfiguration runConfig = (RoboVmRunConfiguration) runnerAndConfigurationSettings.getConfiguration();
+        Config config = runConfig.getConfig();
+        AppCompiler compiler = runConfig.getCompiler();
+        runConfig.setConfig(null);
+        runConfig.setCompiler(null);
+        RoboVmPlugin.logInfo(getEnvironment().getProject(), "Launching executable");
+
+        LaunchParameters launchParameters = config.getTarget().createLaunchParameters();
+        customizeLaunchParameters(runConfig, config, launchParameters);
+        launchParameters.setArguments(runConfig.getProgramArguments());
+
+        Process process = compiler.launchAsync(launchParameters);
+
+        // subclass to handle destroyProcessImpl to bypass the OS-level SIGKILL/PID reflection as process is synthetic ProcessProxy
+        final ColoredProcessHandler processHandler = new ColoredProcessHandler(process, "launching RoboVm application...") {
+                @Override
+                protected void destroyProcessImpl() {
+                    getProcess().destroy();
+                    notifyProcessTerminated(0);
+                }
+        };
+        ProcessTerminatedListener.attach(processHandler);
+        return processHandler;
+    }
+
+    protected void customizeLaunchParameters(RoboVmRunConfiguration runConfig, Config config, LaunchParameters launchParameters) throws ExecutionException {
+        if (launchParameters instanceof ConsoleLaunchParameters) {
+            if (runConfig.getWorkingDir() != null && !runConfig.getWorkingDir().isEmpty()) {
+                launchParameters.setWorkingDirectory(new File(runConfig.getWorkingDir()));
+            }
+        } else if (launchParameters instanceof IOSSimulatorLaunchParameters simParams) {
+            // finding exact simulator to run at
+            DeviceType exactType = RoboVmRunConfigurationUtils.getSimulator(runConfig);
+            if (exactType == null)
+                throw new ExecutionException("Simulator type is not set or is not available anymore!");
+            simParams.setDeviceType(exactType);
+            simParams.setPairedWatchAppName(config.getWatchKitApp() != null && runConfig.simulatorLaunchWatch()
+                    ? config.getWatchKitApp().getWatchAppName() : null);
+        } else if (launchParameters instanceof IOSDeviceLaunchParameters deviceParams) {
+            deviceParams.setDeviceId(runConfig.getTargetDeviceUDID());
+        }
+    }
+
+    @NotNull
+    @Override
+    protected ProcessHandler startProcess() throws ExecutionException {
+        try {
+            if (getEnvironment().getExecutor().getId().equals(DefaultRunExecutor.EXECUTOR_ID)) {
+                return executeRun();
+            } else if (getEnvironment().getExecutor().getId().equals(DefaultDebugExecutor.EXECUTOR_ID)) {
+                return executeRun();
+            } else {
+                throw new ExecutionException("Unsupported executor " + getEnvironment().getExecutor().getId());
+            }
+        } catch (Throwable t) {
+            RoboVmPlugin.logErrorThrowable(getEnvironment().getProject(), "Couldn't start application", t, true);
+            throw new ExecutionException(t);
+        }
+    }
+
+}

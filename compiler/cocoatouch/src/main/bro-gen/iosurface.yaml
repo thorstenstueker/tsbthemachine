@@ -1,0 +1,79 @@
+package: org.robovm.apple.iosurface
+include: [foundation.yaml, corefoundation.yaml]
+library: IOSurface
+framework: IOSurface
+clang_args: ['-x', 'objective-c']
+headers:
+    - /System/Library/Frameworks/IOSurface.framework/Headers/IOSurfaceObjC.h
+    - /System/Library/Frameworks/IOSurface.framework/Headers/IOSurfaceRef.h
+
+typedefs:
+    '__IOSurface *': IOSurface
+
+
+private_typedefs:
+    '__CFString *': CFString
+    '__CFDictionary *' : NSDictionary
+
+enums:
+    IOSurfaceLockOptions: {prefix: kIOSurfaceLock}
+    IOSurfacePurgeabilityState: {prefix: kIOSurfacePurgeable}
+    IOSurfaceCacheMode: {prefix: kIOSurface, first: kIOSurfaceDefaultCache}
+    IOSurfaceMemoryMapMode: {prefix: kIOSurfaceMap, first: kIOSurfaceMapCacheShift}
+    IOSurfaceComponentType: {prefix: kIOSurfaceComponentType}
+    IOSurfaceComponentRange: {prefix: kIOSurfaceComponentRange}
+    IOSurfaceSubsampling: {prefix: kIOSurfaceSubsampling}
+    IOSurfaceComponentName: {prefix: kIOSurfaceComponentName}
+    IOSurfaceMemoryLedgerTags: {prefix: kIOSurfaceMemoryLedgerTag}
+    IOSurfaceMemoryLedgerFlags: {prefix: kIOSurfaceMemoryLedgerFlag}
+classes:
+    IOSurface: #since 10.0
+        methods:
+            '-lockWithOptions:seed:':
+                name: lock
+            '-unlockWithOptions:seed:':
+                name: unlock
+            '-setAttachment:forKey:':
+                name: setAttachment
+            '-setPurgeable:oldState:':
+                name: setPurgeable
+            '-initWithProperties:':
+                name: init
+protocols:
+
+functions:
+
+    (k?IO.*):
+        class: IOSurface
+        name: '#{g[0]}'
+
+values:
+
+    IOSurfaceProperty(?:Key)?(.*)(?:Key)?:
+        enum: IOSurfacePropertyKey
+        type: CFString
+        name: '#{g[0]}'
+
+
+    kIOSurface(.*):
+        class: IOSurfaceValues
+        name: '#{g[0]}'
+
+    # Make sure we don't miss any values if new ones are introduced in a later CoreFoundation
+    (k?IO.*):
+        class: IOSurface
+        name: 'Values_#{g[0]}'
+
+constants:
+    IOSURFACE_REF_H:
+        exclude: true
+    IOSURFACE_OBJC_H:
+        exclude: true
+    kIOSurfaceSuccess:
+        class: IOSurface
+        name: successCode
+
+    # Make sure we don't miss any constants if new ones are introduced in a later CoreFoundation
+    (k?IO.*):
+        class: IOSurface
+        name: 'Constants_#{g[0]}'

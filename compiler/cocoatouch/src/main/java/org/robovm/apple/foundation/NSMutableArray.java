@@ -1,0 +1,306 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.foundation;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.corefoundation.*;
+import org.robovm.apple.uikit.*;
+import org.robovm.apple.coretext.*;
+import org.robovm.apple.coreanimation.*;
+import org.robovm.apple.coregraphics.*;
+import org.robovm.apple.coremedia.*;
+import org.robovm.apple.security.*;
+import org.robovm.apple.dispatch.*;
+/*</imports>*/
+
+/*<javadoc>*/
+
+/*</javadoc>*/
+/*<annotations>*/@Library("Foundation") @NativeClass/*</annotations>*/
+/*<visibility>*/public/*</visibility>*/ class /*<name>*/NSMutableArray<T extends NSObject>/*</name>*/
+    extends /*<extends>*/NSArray<T>/*</extends>*/
+    /*<implements>*//*</implements>*/ {
+
+    public static class NSMutableArrayPtr<T extends NSObject> extends Ptr<NSMutableArrayPtr<T>, NSMutableArrayPtr<T>> {}
+
+    static class ListAdapter<U extends NSObject> extends NSArray.ListAdapter<U> {
+
+        ListAdapter(NSArray<U> array) {
+            super(array);
+        }
+        
+        @Override
+        public void clear() {
+            ((NSMutableArray<U>) array).removeAllObjects();
+        }
+        
+        @Override
+        public U set(int index, U element) {
+            checkNull(element);
+            checkIndex(index);
+            U old = (U) array.getObjectAt(index);
+            ((NSMutableArray<U>) array).replaceObject(index, element);
+            return old;
+        }
+        
+        @Override
+        public void add(int index, U element) {
+            checkNull(element);
+            if (index < 0 || index > array.getCount()) {
+                checkIndex(index);
+            }
+            ((NSMutableArray<U>) array).insertObject(element, index);
+        }
+        
+        @Override
+        public U remove(int index) {
+            checkIndex(index);
+            U old = (U) array.getObjectAt(index);
+            ((NSMutableArray<U>) array).removeObject(index);
+            return old;
+        }
+    }
+
+    /*<bind>*/static { ObjCRuntime.bind(NSMutableArray.class); }/*</bind>*/
+    /*<constants>*//*</constants>*/
+    /*<constructors>*/
+    public NSMutableArray() {}
+    protected NSMutableArray(Handle h, long handle) { super(h, handle); }
+    protected NSMutableArray(SkipInit skipInit) { super(skipInit); }
+    @Method(selector = "initWithCapacity:")
+    public NSMutableArray(@MachineSizedUInt long numItems) { super((SkipInit) null); initObject(init(numItems)); }
+    @Method(selector = "initWithCoder:")
+    public NSMutableArray(NSCoder coder) { super((SkipInit) null); initObject(init(coder)); }
+    @Method(selector = "initWithContentsOfFile:")
+    public NSMutableArray(String path) { super((SkipInit) null); initObject(init(path)); }
+    @Method(selector = "initWithContentsOfURL:")
+    public NSMutableArray(NSURL url) { super((SkipInit) null); initObject(init(url)); }
+    /*</constructors>*/
+    
+    public NSMutableArray(Collection<T> c) {
+        super(c);
+    }
+    public NSMutableArray(T... objects) {
+        super(objects);
+    }    
+    
+    /*<properties>*/
+    
+    /*</properties>*/
+    /*<members>*//*</members>*/
+    
+    protected AbstractList<T> createAdapter() {
+        return new ListAdapter<T>(this);
+    }
+    
+    private void checkIndex(int index) {
+        int size = (int) getCount();
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("index = " + index + ", size = " + size);
+        }
+    }
+
+    public boolean add(boolean value) {
+        return add0(NSNumber.valueOf(value));
+    }
+
+    public void add(int index, boolean value) {
+        add0(index, NSNumber.valueOf(value));
+    }
+
+    public boolean add(Number value) {
+        return add0(NSNumber.valueOf(value));
+    }
+
+    public void add(int index, Number value) {
+        add0(index, NSNumber.valueOf(value));
+    }
+
+    public boolean add(String value) {
+        return add0(value != null?new NSString(value):null);
+    }
+
+    public void add(int index, String value) {
+        add0(index, value != null?new NSString(value):null);
+    }
+
+    private boolean add0(NSObject element) {
+        add0(size(), element);
+        return true;
+    }
+
+    private void add0(int index, NSObject element) {
+        checkNull(element);
+        if (index < 0 || index > getCount()) {
+            checkIndex(index);
+        }
+
+        if(element == null) {
+            element = NSNull.getNull();
+        }
+
+        insertObject((T)element, index);
+    }
+
+    public Object set(int index, boolean element) {
+        checkNull(Boolean.valueOf(element));
+        checkIndex(index);
+        Object old = getObjectAt(index);
+        replaceObject(index, (T) NSNumber.valueOf(element));
+        if (old instanceof NSNumber) {
+            old = Boolean.valueOf(((NSNumber)old).booleanValue());
+        }
+
+        return old;
+    }
+    
+    public Object set(int index, Number element) {
+        return set0(index, NSNumber.valueOf(element));
+    }
+    
+    public Object set(int index, String element) {
+        return set0(index, new NSString(element));
+    }
+    
+    private Object set0(int index, NSObject element) {
+        checkNull(element);
+        checkIndex(index);
+        Object old = getObjectAt(index);
+        replaceObject(index, (T) element);
+        if(old instanceof NSString) {
+            old = old.toString();
+        } else if(old instanceof NSNumber) {
+            old = Double.valueOf(((NSNumber)old).doubleValue());
+        }
+
+        return old;
+    }
+    
+    public boolean remove(boolean element) {
+        return remove(NSNumber.valueOf(element));
+    }
+
+    public boolean remove(Number element) {
+        return remove(NSNumber.valueOf(element));
+    }
+
+    public boolean remove(String element) {
+        return remove(new NSString(element));
+    }
+    
+    public static NSMutableArray<NSString> fromStrings (String... strings) {
+        int length = strings.length;
+        NSString[] nsStrings = new NSString[length];
+
+        for (int i = 0; i < length; i++) {
+            nsStrings[i] = new NSString(strings[i]);
+        }
+        return new NSMutableArray<NSString>(nsStrings);
+    }
+    public static NSMutableArray<NSString> fromStrings (List<String> strings) {
+        int size = strings.size();
+        NSString[] nsStrings = new NSString[size];
+
+        for (int i = 0; i < size; i++) {
+            nsStrings[i] = new NSString(strings.get(i));
+        }
+        return new NSMutableArray<>(nsStrings);
+    }
+    
+    public static NSMutableArray<?> read(java.io.File file) {
+        return read(file.getAbsolutePath());
+    }
+
+    /*<methods>*/
+    @Method(selector = "addObject:")
+    public native void addObject(T anObject);
+    @Method(selector = "insertObject:atIndex:")
+    protected native void insertObject(T anObject, @MachineSizedUInt long index);
+    @Method(selector = "removeLastObject")
+    public native void removeLastObject();
+    @Method(selector = "removeObjectAtIndex:")
+    protected native void removeObject(@MachineSizedUInt long index);
+    @Method(selector = "replaceObjectAtIndex:withObject:")
+    protected native void replaceObject(@MachineSizedUInt long index, T anObject);
+    @Method(selector = "initWithCapacity:")
+    protected native @Pointer long init(@MachineSizedUInt long numItems);
+    @Method(selector = "initWithCoder:")
+    protected native @Pointer long init(NSCoder coder);
+    @Method(selector = "addObjectsFromArray:")
+    public native void addObjectsFromArray(NSArray<T> otherArray);
+    @Method(selector = "exchangeObjectAtIndex:withObjectAtIndex:")
+    public native void exchangeObject(@MachineSizedUInt long idx1, @MachineSizedUInt long idx2);
+    @Method(selector = "removeAllObjects")
+    protected native void removeAllObjects();
+    @Method(selector = "removeObject:inRange:")
+    public native void removeObject(T anObject, @ByVal NSRange range);
+    @Method(selector = "removeObject:")
+    public native void removeObject(T anObject);
+    @Method(selector = "removeObjectIdenticalTo:inRange:")
+    public native void removeObjectIdenticalTo(T anObject, @ByVal NSRange range);
+    @Method(selector = "removeObjectIdenticalTo:")
+    public native void removeObjectIdenticalTo(T anObject);
+    @Method(selector = "removeObjectsInArray:")
+    public native void removeObjectsInArray(NSArray<T> otherArray);
+    @Method(selector = "removeObjectsInRange:")
+    public native void removeObjectsInRange(@ByVal NSRange range);
+    @Method(selector = "replaceObjectsInRange:withObjectsFromArray:range:")
+    public native void replaceObjectsInRange(@ByVal NSRange range, NSArray<T> otherArray, @ByVal NSRange otherRange);
+    @Method(selector = "replaceObjectsInRange:withObjectsFromArray:")
+    public native void replaceObjectsInRange(@ByVal NSRange range, NSArray<T> otherArray);
+    @Method(selector = "setArray:")
+    public native void setArray(NSArray<T> otherArray);
+    @Method(selector = "sortUsingSelector:")
+    public native void sortUsingSelector(Selector comparator);
+    @Method(selector = "insertObjects:atIndexes:")
+    public native void insertObjects(NSArray<T> objects, NSIndexSet indexes);
+    @Method(selector = "removeObjectsAtIndexes:")
+    public native void removeObjectsAtIndexes(NSIndexSet indexes);
+    @Method(selector = "replaceObjectsAtIndexes:withObjects:")
+    public native void replaceObjectsAtIndexes(NSIndexSet indexes, NSArray<T> objects);
+    @Method(selector = "setObject:atIndexedSubscript:")
+    public native void setObjectAtIndexedSubscript(T obj, @MachineSizedUInt long idx);
+    @Method(selector = "sortUsingComparator:")
+    public native void sortUsingComparator(@Block Block2<NSObject, NSObject, NSComparisonResult> cmptr);
+    @Method(selector = "sortWithOptions:usingComparator:")
+    public native void sort(NSSortOptions opts, @Block Block2<NSObject, NSObject, NSComparisonResult> cmptr);
+    @Method(selector = "initWithContentsOfFile:")
+    protected native @Pointer long init(String path);
+    @Method(selector = "initWithContentsOfURL:")
+    protected native @Pointer long init(NSURL url);
+    @Method(selector = "arrayWithContentsOfFile:")
+    public static native NSMutableArray<?> read(String path);
+    @Method(selector = "arrayWithContentsOfURL:")
+    public static native NSMutableArray<?> read(NSURL url);
+    @Method(selector = "applyDifference:")
+    public native void applyDifference(NSOrderedCollectionDifference<T> difference);
+    @Method(selector = "sortUsingDescriptors:")
+    public native void sortUsingDescriptors(NSArray<NSSortDescriptor> sortDescriptors);
+    @Method(selector = "filterUsingPredicate:")
+    public native void filterUsingPredicate(NSPredicate predicate);
+    /*</methods>*/
+}

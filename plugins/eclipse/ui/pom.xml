@@ -1,0 +1,110 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.mobidevelop.robovm</groupId>
+        <artifactId>org.robovm.eclipse.parent</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>org.robovm.eclipse.ui</artifactId>
+    <name>RoboVM for Eclipse Core and UI</name>
+    <packaging>eclipse-plugin</packaging>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- include parent pom as bill of material to pick up dependency definitions from it -->
+            <dependency>
+                <groupId>com.mobidevelop.robovm</groupId>
+                <artifactId>robovm-parent</artifactId>
+                <version>${robovm.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>icons</directory>
+                <targetPath>icons</targetPath>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-compiler-plugin</artifactId>
+                <configuration>
+                    <compilerArgs>
+                        <arg>--module-path</arg>
+                        <arg>${java.home}/jmods</arg>
+                        <arg>--add-modules</arg>
+                        <arg>jdk.jdi</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>lib</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <configuration>
+                    <outputDirectory>lib</outputDirectory>
+                    <stripVersion>true</stripVersion>
+                    <stripClassifier>true</stripClassifier>
+                    <artifactItems>
+                        <artifactItem>
+                            <groupId>org.apache.commons</groupId>
+                            <artifactId>commons-compress</artifactId>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>com.mobidevelop.robovm</groupId>
+                            <artifactId>robovm-dist-compiler</artifactId>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>com.mobidevelop.robovm</groupId>
+                            <artifactId>robovm-ibxcode</artifactId>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>org.apache.bcel</groupId> <!-- required for ibxcode -->
+                            <artifactId>bcel</artifactId>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>com.mobidevelop.robovm</groupId>
+                            <artifactId>robovm-dist</artifactId>
+                            <classifier>nocompiler</classifier>
+                            <type>tar.gz</type>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>com.mobidevelop.robovm</groupId>
+                            <artifactId>robovm-templater</artifactId>
+                        </artifactItem>
+                    </artifactItems>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

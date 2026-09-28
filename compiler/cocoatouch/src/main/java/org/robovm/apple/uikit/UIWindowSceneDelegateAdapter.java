@@ -1,0 +1,85 @@
+/*
+ * Copyright (C) 2013-2015 RoboVM AB
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.robovm.apple.uikit;
+
+/*<imports>*/
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import org.robovm.objc.*;
+import org.robovm.objc.annotation.*;
+import org.robovm.objc.block.*;
+import org.robovm.rt.*;
+import org.robovm.rt.annotation.*;
+import org.robovm.rt.bro.*;
+import org.robovm.rt.bro.annotation.*;
+import org.robovm.rt.bro.ptr.*;
+import org.robovm.apple.foundation.*;
+import org.robovm.apple.coreanimation.*;
+import org.robovm.apple.coregraphics.*;
+import org.robovm.apple.coreimage.*;
+import org.robovm.apple.coretext.*;
+import org.robovm.apple.corelocation.*;
+import org.robovm.apple.usernotifications.*;
+/*</imports>*/
+
+/*<javadoc>*/
+/*</javadoc>*/
+/*<annotations>*//*</annotations>*/
+/*<visibility>*/public/*</visibility>*/ class /*<name>*/UIWindowSceneDelegateAdapter/*</name>*/ 
+    extends /*<extends>*/UISceneDelegateAdapter/*</extends>*/ 
+    /*<implements>*/implements UIWindowSceneDelegate/*</implements>*/ {
+
+    /*<ptr>*/
+    /*</ptr>*/
+    /*<bind>*/
+    /*</bind>*/
+    /*<constants>*//*</constants>*/
+    /*<constructors>*//*</constructors>*/
+    /*<properties>*/
+    @NotImplemented("window")
+    public UIWindow getWindow() { return null; }
+    @NotImplemented("setWindow:")
+    public void setWindow(UIWindow v) {}
+    /*</properties>*/
+    /*<members>*//*</members>*/
+    /*<methods>*/
+    /**
+     * @since Available in iOS 13.0 and later.
+     * @deprecated Deprecated in iOS 26.0. Use windowScene(_: didUpdateEffectiveGeometry:) to be notified of the scene's geometry changes, or use traits whose values are inherited from the scene via the traitCollection of views and view controllers instead.
+     */
+    @Deprecated
+    @NotImplemented("windowScene:didUpdateCoordinateSpace:interfaceOrientation:traitCollection:")
+    public void didUpdateCoordinateSpace(UIWindowScene windowScene, UICoordinateSpace previousCoordinateSpace, UIInterfaceOrientation previousInterfaceOrientation, UITraitCollection previousTraitCollection) {}
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @NotImplemented("windowScene:didUpdateEffectiveGeometry:")
+    public void didUpdateEffectiveGeometry(UIWindowScene windowScene, UIWindowSceneGeometry previousEffectiveGeometry) {}
+    /**
+     * @since Available in iOS 27.0 and later.
+     */
+    @NotImplemented("supportedInterfaceOrientationsForWindowScene:")
+    public UIInterfaceOrientationMask supportedInterfaceOrientationsForWindowScene(UIWindowScene windowScene) { return null; }
+    @NotImplemented("windowScene:performActionForShortcutItem:completionHandler:")
+    public void performAction(UIWindowScene windowScene, UIApplicationShortcutItem shortcutItem, @Block VoidBooleanBlock completionHandler) {}
+    /**
+     * @since Available in iOS 26.0 and later.
+     */
+    @NotImplemented("preferredWindowingControlStyleForScene:")
+    public UISceneWindowingControlStyle preferredWindowingControlStyleForScene(UIWindowScene windowScene) { return null; }
+    /*</methods>*/
+}

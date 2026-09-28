@@ -1,0 +1,640 @@
+package: org.robovm.apple.coreimage
+# tsbMobile (23.09.2026): the bindings are ours and only these frameworks exist; members typed with
+# a class of opengles, metal are skipped by the generator and listed in bro-gen/skipped.txt.
+include: [foundation.yaml, corefoundation.yaml, coregraphics.yaml, corevideo.yaml, imageio.yaml, uikit.yaml, iosurface.yaml, avfoundation.yaml]
+library: CoreImage
+framework: CoreImage
+clang_args: ['-x', 'objective-c']
+headers:
+    - /System/Library/Frameworks/CoreImage.framework/Headers/CoreImage.h
+typedefs: {}
+
+private_typedefs:
+    'AVDepthData *': org.robovm.apple.avfoundation.AVDepthData
+    'AVPortraitEffectsMatte *': org.robovm.apple.avfoundation.AVPortraitEffectsMatte
+
+enums:
+    CIRenderDestinationAlphaMode: {}
+    CIQRCodeErrorCorrectionLevel: {}
+    CIDataMatrixCodeECCVersion: {}
+
+classes:
+    CIColor: # DONE
+        properties:
+            'components':
+                visibility: protected
+            '(.*)Color':
+                omit_prefix: true
+        methods:
+            '-initWithCGColor:':
+                exclude: true
+            '-initWithRed:green:blue:alpha:':
+                exclude: true # as conflicts with constructors in ios9+
+            '-initWithRed:green:blue:':
+                exclude: true # as conflicts with constructors in ios9+
+            '-init.*':
+                name: init
+            '+color.*':
+                name: create # as conflicts with constructors in ios9+
+                visibility: protected
+                return_type: '@Pointer long'
+    CIColorKernel: # DONE
+        methods:
+            '-applyWithExtent:arguments:':
+                name: apply
+                parameters:
+                    args:
+                        type: NSArray<?>
+            '+kernelWithString:':
+                exclude: true # present in parent protocol
+
+    CIContext: # DONE
+        skip_def_constructor: true
+        methods:
+            '-initWithOptions:':
+                exclude: true # as it causes -[CIContext initWithOptions:]: unrecognized selector sent to instance on ios8 under ios10sdk
+            '-init.*':
+                name: init
+                visibility: protected
+                parameters:
+                    options:
+                        name: options
+                        type: CIContextOptions
+            '+context.*':
+                name: create
+                constructor: true
+                parameters:
+                    dict:
+                        name: options
+                        type: CIContextOptions
+                    options:
+                        name: options
+                        type: CIContextOptions
+            '-(inputImageMaximumSize|outputImageMaximumSize)':
+                property: true
+            '-drawImage.*':
+                name: drawImage
+            '-render.*':
+                name: render
+                annotations: ['@WeaklyLinked']
+            '-createCGImage.*':
+                name: createCGImage
+                return_marshaler: CFType.NoRetainMarshaler
+                annotations: ['@WeaklyLinked']
+            '-createCGLayer.*':
+                name: createCGLayer
+                return_marshaler: CFType.NoRetainMarshaler
+                annotations: ['@WeaklyLinked']
+            '-TIFFRepresentationOfImage:format:colorSpace:options:':
+                name: tiffRepresentationOfImage
+            '-JPEGRepresentationOfImage:colorSpace:options:':
+                name: jpegRepresentationOfImage
+            '-writeTIFFRepresentationOfImage:toURL:format:colorSpace:options:error:':
+                trim_after_first_colon: true
+            '-writeJPEGRepresentationOfImage:toURL:colorSpace:options:error:':
+                trim_after_first_colon: true
+            '-HEIFRepresentationOfImage:format:colorSpace:options:':
+                trim_after_first_colon: true
+            '-PNGRepresentationOfImage:format:colorSpace:options:':
+                trim_after_first_colon: true
+            '-writePNGRepresentationOfImage:toURL:format:colorSpace:options:error:':
+                trim_after_first_colon: true
+            '-writeHEIFRepresentationOfImage:toURL:format:colorSpace:options:error:':
+                trim_after_first_colon: true
+            '-startTaskToRender:fromRect:toDestination:atPoint:error:':
+                trim_after_first_colon: true
+            '-startTaskToRender:toDestination:error:':
+                trim_after_first_colon: true
+            '-prepareRender:fromRect:toDestination:atPoint:error:':
+                trim_after_first_colon: true
+            '-startTaskToClear:error:':
+                trim_after_first_colon: true
+            '-depthBlurEffectFilterForImageURL:options:':
+                name: depthBlurEffectFilter
+            '-depthBlurEffectFilterForImageData:options:':
+                name: depthBlurEffectFilter
+            '-depthBlurEffectFilterForImage:disparityImage:portraitEffectsMatte:orientation:options:':
+                name: depthBlurEffectFilter
+            '-depthBlurEffectFilterForImage:disparityImage:portraitEffectsMatte:hairSemanticSegmentation:orientation:options:':
+                name: depthBlurEffectFilter
+            '-depthBlurEffectFilterForImage:disparityImage:portraitEffectsMatte:hairSemanticSegmentation:glassesMatte:gainMap:orientation:options:':
+                name: depthBlurEffectFilter
+            '-HEIF10RepresentationOfImage:colorSpace:options:error:':
+                name: getHEIF10Representation
+            '-writeHEIF10RepresentationOfImage:toURL:colorSpace:options:error:':
+                name: writeHEIF10Representation
+            '-OpenEXRRepresentationOfImage:options:error:':
+                name: getOpenEXRRepresentation
+            '-writeOpenEXRRepresentationOfImage:toURL:options:error:':
+                name: writeOpenEXRRepresentation
+    CIDetector: # DONE
+        methods:
+            '+detectorOfType:context:options:':
+                name: init
+                visibility: protected
+                return_type: '@Pointer long'
+                parameters:
+                    type:
+                        type: CIDetectorType
+                    options:
+                        type: CIDetectorOptions
+            '-featuresInImage.*':
+                name: findFeatures
+                return_type: NSArray<CIFeature>
+                parameters:
+                    options:
+                        type: CIDetectorFeatureOptions
+    CIFaceFeature: {} # DONE
+    CIFeature: {} # DONE
+    CIFilter: # DONE
+        skip_def_constructor: true
+        methods:
+            '+serializedXMPFromFilters:inputImageExtent:':
+                name: serializeToXMP
+                parameters:
+                    filters:
+                        type: NSArray<CIFilter>
+            '+filterArrayFromSerializedXMP:inputImageExtent:error:':
+                name: deserializeFromXMP
+                return_type: NSArray<CIFilter>
+                throws: NSErrorException
+            '+filterWith.*':
+                name: create
+                constructor: true
+                parameters:
+                    params:
+                        type: CIFilterInputParameters
+                        options: CIFilterInputParameters
+            '+filterNames.*':
+                name: getFilterNames
+                return_type: '@org.robovm.rt.bro.annotation.Marshaler(NSArray.AsStringListMarshaler.class) List<String>'
+                parameters:
+                    category:
+                        type: CIFilterCategory
+                    categories:
+                        type: '@org.robovm.rt.bro.annotation.Marshaler(CIFilterCategory.AsListMarshaler.class) List<CIFilterCategory>'
+            '-name':
+                property: true
+            '-attributes':
+                property: true
+                return_type: CIFilterAttributes
+            '-(inputKeys|outputKeys)':
+                property: true
+                return_type: '@org.robovm.rt.bro.annotation.Marshaler(NSArray.AsStringListMarshaler.class) List<String>'
+            '+registerFilterName:constructor:classAttributes:':
+                name: register
+            '+localizedNameForFilterName:':
+                trim_after_first_colon: true
+            '+localizedNameForCategory:':
+                trim_after_first_colon: true
+            '+localizedDescriptionForFilterName:':
+                trim_after_first_colon: true
+            '+localizedReferenceDocumentationForFilterName:':
+                trim_after_first_colon: true
+
+    CIImage: # DONE
+        methods:
+            '-initWithCVPixelBuffer:.*':
+                name: init
+                annotations: ['@WeaklyLinked']
+            '-init.*':
+                name: init
+            '+imageWith.*':
+                exclude: true
+            '+emptyImage':
+                name: getEmptyImage
+            '-extent':
+                property: true
+            '-properties':
+                property: true
+                return_type: CGImageProperties
+            '-autoAdjustmentFilters.*':
+                name: getAutoAdjustmentFilters
+            '-regionOfInterestForImage:inRect:':
+                name: getRegionOfInterest
+            '-imageTransformForOrientation:':
+                name: getImageTransformForOrientation
+                annotations: ['@WeaklyLinked']
+                parameters:
+                    orientation:
+                        type: CGImagePropertyOrientation
+            '-imageByApplyingFilter:withInputParameters:':
+                name: newImageByApplyingFilter
+                parameters:
+                    params:
+                        type: CIFilterInputParameters
+            '-imageByApplyingOrientation:':
+                name: newImageByApplyingOrientation
+                annotations: ['@WeaklyLinked'] 
+                parameters:
+                    orientation:
+                        type: CGImagePropertyOrientation
+            '-image(By[^:]*).*':
+                name: 'newImage#{g[0]}'
+    CIKernel: # DONE
+        methods:
+            '-name':
+                property: true
+            '-applyWithExtent:roiCallback:arguments:':
+                name: apply
+                parameters:
+                    callback:
+                        type: '@Block("@ByVal (,@ByVal)") Block2<Integer, CGRect, CGRect>'
+                    args:
+                        type: NSArray<?>
+            '+kernelsWithString:':
+                name: createKernels
+                return_type: NSArray<CIKernel>
+            '+kernelWithString:':
+                name: create
+            '+kernelWithFunctionName:fromMetalLibraryData:error:':
+                throws: NSErrorException
+                name: create
+            '+kernelWithFunctionName:fromMetalLibraryData:outputPixelFormat:error:':
+                throws: NSErrorException
+                name: create
+            '+kernelNamesFromMetalLibraryData:':
+                name: getKernelNamesFromMetalLibraryData
+            '+kernelsWithMetalString:error:':
+                name: kernelsWithMetalString
+                throws: NSErrorException
+    CIQRCodeFeature: {} # DONE
+    CIRectangleFeature: {} # DONE
+    CIVector: # DONE
+        methods:
+            '+vectorWith.*':
+                exclude: true
+            '-(X|Y|Z|W|count|stringRepresentation|CGAffineTransformValue|CGPointValue|CGRectValue)':
+                property: true
+            '-valueAtIndex:':
+                name: getValueAtIndex
+            '-initWithValues:count:':
+                name: init
+                constructor: false
+            '-init.*':
+                name: init
+    CIWarpKernel: # DONE
+        methods:
+            '-applyWithExtent:roiCallback:inputImage:arguments:':
+                name: apply
+                parameters:
+                    callback:
+                        type: '@Block("@ByVal (,@ByVal)") Block2<Integer, CGRect, CGRect>'
+                    args:
+                        type: NSArray<?>
+            '+kernelWithString:':
+                exclude: true # present in parent protocol
+    # ios11 activities
+    CIAztecCodeDescriptor: #since 11.0
+        methods:
+            '-initWithPayload:isCompact:layerCount:dataCodewordCount:':
+                name: init
+            '+descriptorWithPayload:isCompact:layerCount:dataCodewordCount:':
+                name: descriptor
+    CIBarcodeDescriptor: {} #since 11.0
+    CIBlendKernel: #since 11.0
+        methods:
+            '-applyWithForeground:background:':
+                name: apply
+            '-applyWithForeground:background:colorSpace:':
+                name: apply
+    CIDataMatrixCodeDescriptor: #since 11.0
+        methods:
+            '-initWithPayload:rowCount:columnCount:eccVersion:':
+                name: init
+            '+descriptorWithPayload:rowCount:columnCount:eccVersion:':
+                name: descriptor
+    CIFilterShape: #since 9.0
+        methods:
+            '-transformBy:interior:':
+                name: transform
+            '-insetByX:Y:':
+                name: insetByXY
+            '-initWithRect:':
+                name: init
+            '-unionWith:':
+                name: union
+            '-unionWithRect:':
+                name: union
+            '-intersectWith:':
+                name: intersect
+            '-intersectWithRect:':
+                name: intersect
+            '+shapeWithRect:':
+                exclude: true
+    CIImageAccumulator: #since 9.0
+        methods:
+            '-initWithExtent:format:':
+                name: init
+            '-initWithExtent:format:colorSpace:':
+                name: init
+            '-setImage:dirtyRect:':
+                trim_after_first_colon: true
+            '+imageAccumulatorWithExtent:format:':
+                exclude: true
+            '+imageAccumulatorWithExtent:format:colorSpace:':
+                exclude: true
+    CIImageProcessorKernel: #since 10.0
+        methods:
+            '+processWithInputs:arguments:output:error:':
+                name: process
+            '+roiForInput:arguments:outputRect:':
+                trim_after_first_colon: true
+            '+applyWithExtent:inputs:arguments:error:':
+                name: apply
+            '+roiTileArrayForInput:arguments:outputRect:':
+                name: roiTileArrayForInput
+            '+processWithInputs:arguments:outputs:error:':
+                name: process
+                throws: NSErrorException
+            '+outputFormatAtIndex:arguments:':
+                name: getOutputFormat
+            '+applyWithExtents:inputs:arguments:error:':
+                name: apply
+                throws: NSErrorException
+    CIPDF417CodeDescriptor: #since 11.0
+        methods:
+            '-initWithPayload:isCompact:rowCount:columnCount:':
+                name: init
+            '+descriptorWithPayload:isCompact:rowCount:columnCount:':
+                name: descriptor
+    CIQRCodeDescriptor: #since 11.0
+        methods:
+            '-initWithPayload:symbolVersion:maskPattern:errorCorrectionLevel:':
+                name: init
+            '+descriptorWithPayload:symbolVersion:maskPattern:errorCorrectionLevel:':
+                name: descriptor
+    CIRenderDestination: #since 11.0
+        methods:
+            '-initWithMTLTexture:commandBuffer:':
+                name: init
+            '-initWithWidth:height:pixelFormat:commandBuffer:mtlTextureProvider:':
+                name: init
+            '-initWithGLTexture:target:width:height:':
+                name: init
+            '-initWithBitmapData:width:height:bytesPerRow:format:':
+                name: init
+            '-initWithPixelBuffer:':
+                name: init
+            '-initWithIOSurface:':
+                name: init
+    CIRenderInfo: {} #since 11.0
+    CIRenderTask: {} #since 11.0
+    CISampler: #since 9.0
+        methods:
+            '-initWithImage:keysAndValues:':
+                name: init
+            '-initWithImage:options:':
+                name: init
+            '-initWithImage:':
+                name: init
+            '+samplerWithImage:keysAndValues:':
+                exclude: true
+            '+samplerWithImage:options:':
+                exclude: true
+            '+samplerWithImage:':
+                exclude: true
+    CITextFeature: {} #since 9.0
+    CIRAWFilter: #since 15.0
+        skip_def_constructor: true
+        methods:
+            '+filterWithImageURL:':
+                name: create
+                constructor: true
+            '+filterWithImageData:identifierHint:':
+                name: create
+                constructor: true
+            '+filterWithCVPixelBuffer:properties:':
+                name: create
+                constructor: true
+protocols:
+    CIFilterConstructor:
+        protocols: [NSObjectProtocol]
+        skip_adapter: true
+        methods:
+            '-filterWithName:':
+                name: createFilter
+    CIImageProcessorInput: {} #since 10.0
+    CIImageProcessorOutput: {} #since 10.0
+
+functions:
+    # Make sure we don't miss any functions if new ones are introduced in a later version
+    (CI.*):
+        class: CoreImage
+        name: 'Function__#{g[0]}'
+
+typed_enums:
+    CIImageOption:
+        dictionary: CIImageOptions
+        type: CFString
+        prefix: kCIImage
+        methods:
+            ColorSpace:
+                type: CGColorSpace
+            Properties:
+                annotations: ['@WeaklyLinked']
+                type: CGImageProperties
+                hint: GlobalValueDictionaryWrapper<NSString>
+    CIImageRepresentationOption:
+        dictionary: CIImageRepresentationOptions
+        type: NSString
+        prefix: kCIImageRepresentation
+
+    CIImageAutoAdjustmentOption:
+        dictionary: CIImageAutoAdjustmentOptions
+        type: NSString
+        prefix: kCIImageAutoAdjust
+        methods:
+            Enhance:
+                name: appliesEnhancementFilter
+                type: boolean
+            RedEye:
+                name: appliesRedEyeFilter
+                type: boolean
+            Features:
+                type: List<CIFeature>
+            Crop:
+                name: appliesCropFilter
+                type: boolean
+            Level:
+                name: appliesAutoLevel
+                type: boolean
+
+    CIRAWFilterOption:
+        dictionary: CIRAWFilterOptions
+        type: NSString
+        prefix: kCIInput
+        suffix: Key
+    CIRAWDecoderVersion:
+        enum: CIRAWDecoderVersion
+        type: NSString
+        prefix: CIRAWDecoder
+    CIDynamicRangeOption:
+        enum: CIDynamicRangeOption
+        type: NSString
+        prefix: kCIDynamicRange
+
+values:
+    # CIContext
+    kCIContext(.*):
+        dictionary: CIContextOptions
+        name: '#{g[0]}'
+        type: NSString
+        methods:
+            OutputColorSpace:
+                type: CGColorSpace
+            WorkingColorSpace:
+                type: CGColorSpace
+            WorkingFormat:
+                type: CIFormat
+            UseSoftwareRenderer:
+                name: usesSoftwareRenderer
+                type: boolean
+            PriorityRequestLow:
+                name: requestsLowPriority
+                type: boolean
+
+    # CIDetector
+    CIDetectorType(.*):
+        enum: CIDetectorType
+        name: '#{g[0]}'
+        type: NSString
+    CIDetector(ImageOrientation|EyeBlink|Smile|FocalLength|AspectRatio):
+        dictionary: CIDetectorFeatureOptions
+        name: '#{g[0]}'
+        type: NSString
+        methods:
+            EyeBlink:
+                name: recognizesEyeBlinks
+                type: boolean
+            Smile:
+                name: recognizesSmiles
+                type: boolean
+            FocalLength:
+                type: double
+            AspectRatio:
+                type: double
+    CIDetectorAccuracy(Low|High):
+        enum: CIDetectorAccuracy
+        name: '#{g[0]}'
+        type: NSString
+    CIDetector(.*):
+        dictionary: CIDetectorOptions
+        name: '#{g[0]}'
+        type: NSString
+        methods:
+            Accuracy:
+                type: CIDetectorAccuracy
+            Tracking:
+                type: boolean
+            MinFeatureSize:
+                type: double
+
+    # CIFeature
+    CIFeatureTypeFace:
+        exclude: true
+
+    # CIFilter
+    kCIInput(.*)Key:
+        dictionary: CIFilterInputParameters
+        name: '#{g[0]}'
+        type: NSString
+    kCI(OutputImage)Key:
+        dictionary: CIFilterInputParameters
+        name: '#{g[0]}'
+        type: NSString
+        methods:
+            OutputImage:
+                type: CIImage
+            BackgroundImage:
+                type: CIImage
+            Image:
+                name: InputImage
+                type: CIImage
+            Version:
+                type: long
+    kCICategory(.*):
+        enum: CIFilterCategory
+        name: '#{g[0]}'
+        type: NSString
+    kCIAttributeFilter(.*):
+        dictionary: CIFilterAttributes
+        name: '#{g[0]}'
+        type: NSString
+        mutable: false
+        methods:
+            Name:
+                type: String
+            DisplayName:
+                type: String
+    kCIAttributeType(.+):
+        enum: CIFilterAttributeType
+        name: '#{g[0]}'
+        type: NSString
+    kCIAttribute(.*):
+        dictionary: CIFilterAttribute
+        name: '#{g[0]}'
+        type: NSString
+        mutable: false
+        methods:
+            Class:
+                name: AttributeClassName
+                type: String
+            Type:
+                type: CIFilterAttributeType
+            Min:
+                type: double
+            Max:
+                type: double
+            SliderMin:
+                type: double
+            SliderMax:
+                type: double
+            Default:
+                type: double
+            Identity:
+                type: double
+            Name:
+                type: String
+            DisplayName:
+                type: String
+
+    # CIFormat
+    kCIFormat(.*):
+        enum: CIFormat
+        name: '#{g[0]}'
+        type: int
+
+    # CIUIParameterSet
+    kCIUIParameterSet:
+        name: 'Set'
+        class: CIUIParameterSet
+    kCIUISet(.*):
+        name: '#{g[0]}'
+        class: CIUIParameterSet
+
+    #CIFeatureType
+    CIFeatureType(.*):
+        name: '#{g[0]}'
+        class: CIFeatureType
+
+    #CISamplerType
+    kCISampler(.*):
+        name: '#{g[0]}'
+        class: CISamplerType
+
+    #CIImageProvider
+    kCIImageProvider(.*):
+        name: 'getImageProvider#{g[0]}'
+        class: CIImage
+
+    # Make sure we don't miss any values if new ones are introduced in a later version
+    (k?CI.*):
+        class: CoreImage
+        name: 'Value__#{g[0]}'
+
+constants:
+    # Make sure we don't miss any constants if new ones are introduced in a later version
+    (k?CI.*):
+        class: CoreImage
+        name: 'Constant__#{g[0]}'
