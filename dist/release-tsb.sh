@@ -1,16 +1,19 @@
 #!/bin/bash
-# Publishes this fork's toolchain as a GitHub release — the build RapidFX and RapidJ pin to.
+# Publishes tsbTheMachine as a GitHub release — the build RapidFX and RapidJ pin to.
 #
-#   dist/release-tsb.sh 3.0.0-tsb.20260922
+#   dist/release-tsb.sh 27.1.0
 #
 # What comes out:
-#   tag      tsbmobile-<version>            on the current HEAD (must be pushed)
-#   asset    robovm-dist-<version>.tar.gz   unpacks to robovm-<version>/
-#   notes    the SHA-1 of the asset, to be written into Mobivm.java of both projects
+#   tag      tsbthemachine-<version>              on the current HEAD (must be pushed)
+#   asset    tsbthemachine-dist-<version>.tar.gz  unpacks to tsbthemachine-<version>/
+#   notes    the SHA-1 of the asset, to be written into TheMachine.java of both projects
 #
-# Why a release and not Sonatype: the fork is not published anywhere else, and RoboVM is GPL2 —
-# whoever hosts the binary owes the corresponding source. A release tagged on the commit it was
-# built from is that correspondence, in one place and at no cost.
+# Why a release and not Sonatype: this is GPL2, and whoever hosts the binary owes the corresponding
+# source. A release tagged on the commit it was built from is that correspondence, in one place and
+# at no cost. See NOTICE.
+#
+# Tags before tsbthemachine-27.1.0 were called tsbmobile-* and live in thorstenstueker/robovm,
+# which is archived and stays readable for exactly that reason.
 #
 # Prerequisites: JDK 21 as JAVA_HOME, the VM binaries under compiler/vm/target/binaries
 # (see README "Building"), a clean working tree, gh logged in.
@@ -44,15 +47,16 @@ if ! git branch -r --contains "$COMMIT" | grep -q origin/; then
     exit 1
 fi
 
-NAME="robovm-$VERSION"
-TAG="tsbmobile-$VERSION"
-ASSET="robovm-dist-$VERSION.tar.gz"
+NAME="tsbthemachine-$VERSION"
+TAG="tsbthemachine-$VERSION"
+ASSET="tsbthemachine-dist-$VERSION.tar.gz"
 
 # iCloud copies, out of the way before anything is packaged.
 #
 # This repository sits under ~/Documents, which is mirrored, and the file service resolves what it
 # thinks are conflicts by writing "Foo 2.class" beside "Foo.class" — including inside target/, where
-# nobody looks. On 28.09.2026 the 27.0.0 release went out with **502 of them inside robovm-rt.jar**:
+# nobody looks. On 28.09.2026 the tsbmobile-27.0.0 release went out with **502 of them inside
+# robovm-rt.jar**:
 # stale duplicates of real classes, carrying an older API. They declare the same internal class name
 # as the originals, so anything keyed by class name rather than by path reads whichever comes last
 # in the zip. ApiDelta did exactly that and reported 59 methods missing from java.util.Arrays that
@@ -90,21 +94,23 @@ SIZE=$(du -h "dist/package/target/$ASSET" | cut -f1)
 
 echo "== release $TAG on $COMMIT =="
 gh release create "$TAG" "dist/package/target/$ASSET" \
-    --repo thorstenstueker/robovm \
+    --repo thorstenstueker/tsbthemachine \
     --target "$COMMIT" \
-    --title "RoboVM $VERSION (tsbMobile toolchain)" \
+    --title "tsbTheMachine $VERSION" \
     --notes "$(cat <<EOF
-Toolchain build of this fork for RapidFX and RapidJ: class files up to version 61, a runtime library being filled in against Java 25, reduced CocoaTouch bindings, Swing on UIView.
+The mobile compiler and runtime for RapidFX and RapidJ: class files up to version 61, a runtime library being filled in against Java 25, CocoaTouch reduced to what a rendered interface needs, Swing on UIView, and the VM core running on Bionic.
+
+A fork of RoboVM/MobiVM for our own purposes — see NOTICE for the origin and the licence.
 
     asset   $ASSET ($SIZE)
     sha1    $SHA1
     commit  $COMMIT
 
-Unpacks to \`$NAME/\`. Pinned in \`Mobivm.java\` of both projects; the checksum there must match this one.
+Unpacks to \`$NAME/\`. Pinned in \`TheMachine.java\` of both projects; the checksum there must match this one.
 EOF
 )"
 
 echo
-echo "Now write into Mobivm.java (RapidFX and RapidJ):"
-echo "    MOBIVM_VERSION = \"$VERSION\""
-echo "    SHA1           = \"$SHA1\""
+echo "Now write into TheMachine.java (RapidFX and RapidJ):"
+echo "    MACHINE_VERSION = \"$VERSION\""
+echo "    SHA1            = \"$SHA1\""
