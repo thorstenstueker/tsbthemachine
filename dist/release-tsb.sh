@@ -69,6 +69,24 @@ if [ "$DUPES" != "0" ]; then
     find . -name "* [0-9].*" -not -path "./.git/*" -delete
 fi
 
+# The distribution ships the release libraries only, and the VM build does not know that.
+#
+# compiler/vm/build.sh defaults to BUILDS="debug release" and installs both into
+# compiler/vm/target/binaries, the debug ones suffixed -dbg.a. The assembly then takes **/* and
+# would pack fourteen archives per architecture where the published tsbmobile-27.0.2 has seven.
+#
+# That release was right by accident: whoever built it had a release-only tree. Checked against the
+# published artefact on 28.09.2026 — no -dbg.a anywhere in it. So the decision is written down here
+# instead of depending on the state somebody's build directory happens to be in.
+#
+# Removed rather than excluded in the assembly, because the assembly is upstream's and the next
+# import would lose the change.
+DBG=$(find compiler/vm/target/binaries -name "*-dbg.a" 2>/dev/null | wc -l | tr -d ' ')
+if [ "$DBG" != "0" ]; then
+    echo "removing $DBG debug libraries — the distribution ships release only"
+    find compiler/vm/target/binaries -name "*-dbg.a" -delete
+fi
+
 echo "== packaging $NAME =="
 mvn -q -pl dist/package clean package -DskipTests -Ddist.name="$NAME"
 cp "dist/package/target/$NAME.tar.gz" "dist/package/target/$ASSET"
