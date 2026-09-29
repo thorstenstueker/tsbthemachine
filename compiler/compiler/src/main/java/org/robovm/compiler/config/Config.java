@@ -459,7 +459,12 @@ public class Config {
     }
 
     public boolean hasSwiftSupport() {
-        return swiftSupport.isEnabled();
+        // Only on Apple's platforms, whatever the configuration says. Swift's runtime libraries
+        // live inside Xcode, and AbstractTarget looks them up with xcode-select — so on Android
+        // this question used to send an Android build to ask macOS where Xcode is, and an answer it
+        // did not like stopped the build with "The path '' does not appear to be a valid Xcode
+        // path". Which is true, and has nothing to do with anything. Narrowed 29.09.2026 (tsb).
+        return swiftSupport.isEnabled() && os != null && os.getFamily() == OS.Family.darwin;
     }
 
     public List<File> getSwiftLibPaths() {
