@@ -62,6 +62,13 @@ set(CMAKE_CXX_COMPILER "${LLVM}/bin/clang++")
 set(CMAKE_AR "${LLVM}/bin/llvm-ar" CACHE FILEPATH "")
 set(CMAKE_RANLIB "${LLVM}/bin/llvm-ranlib" CACHE FILEPATH "")
 
+# The linker and objcopy by full path, because MergeStaticLibObjectFiles.cmake calls them directly
+# rather than through the compiler driver. Bare `ld` on a macOS host is Apple's, which does not
+# know --whole-archive -- and that only shows in a release build, since the merge step is skipped
+# for CMAKE_BUILD_TYPE=debug. Added 28.09.2026 (tsb).
+set(CMAKE_LINKER "${LLVM}/bin/ld.lld" CACHE FILEPATH "")
+set(CMAKE_OBJCOPY "${LLVM}/bin/llvm-objcopy" CACHE FILEPATH "")
+
 # The compiler is asked to check nothing at configure time. It is a cross-compiler for a device
 # that is not here, so CMake's usual "compile and run a probe" tests cannot pass.
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)

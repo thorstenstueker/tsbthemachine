@@ -209,6 +209,23 @@ elseif(64_BIT)
 else()
   set(C_CXX_FLAGS "${C_CXX_FLAGS} -m32")
 endif()
+if(BIONIC)
+  # GC_NOT_DLL for everything that includes gc.h, not just for the GC's own build.
+  #
+  # gc.h expands GC_INIT() into GC_INIT_CONF_ROOTS, and on Android -- and only when GC_NOT_DLL is
+  # absent -- that registers the caller's static data by referring to __data_start. The pragma in
+  # gc.h makes the reference weak, so memory.c.o carries it as `w`, but lld still cannot resolve an
+  # absolute relocation against an undefined symbol in a PIE, and the AOT link fails with
+  # "undefined symbol: __data_start" pointing at initGC. _etext and __dso_handle beside it link
+  # fine because lld provides those itself.
+  #
+  # GC_NOT_DLL is the honest description of what is being built: the collector goes into the
+  # executable as a static archive. The GC's own translation units were already compiled with it
+  # (EXTGC_C_FLAGS below) -- robovm-core simply was not, and two halves of one header disagreeing
+  # about the same macro is the whole bug. With it set, Android takes gc.h's empty branch, exactly
+  # as Darwin does. Added 28.09.2026 (tsb).
+  set(C_CXX_FLAGS "${C_CXX_FLAGS} -DGC_NOT_DLL")
+endif()
 if(SYSROOT)
   set(CMAKE_OSX_SYSROOT "${SYSROOT}")
 endif()
@@ -390,6 +407,13 @@ elseif (BIONIC)
     set(EXT_HOST --host=x86_64-linux-android)
   endif()
 endif()
+# The GC's patch step. The symlink is upstream's arrangement for building libatomic_ops in place;
+# the two Bionic edits are ours and are described in bionic-bdwgc.py, which refuses to run quietly
+# if bdwgc ever moves under the pinned commit. Added 28.09.2026 (tsb).
+set(EXTGC_PATCH "rm -rf libatomic_ops && ln -s ../../../libatomic_ops-prefix/src/libatomic_ops libatomic_ops")
+if(BIONIC)
+  set(EXTGC_PATCH "${EXTGC_PATCH} && python3 '${CMAKE_CURRENT_SOURCE_DIR}/bionic-bdwgc.py' .")
+endif()
 ExternalProject_Add(libatomic_ops
   GIT_REPOSITORY https://github.com/ivmai/libatomic_ops.git
   GIT_TAG 4e22546e8a161b6bab93e43c115a22151daf45c5
@@ -404,8 +428,12 @@ ExternalProject_Add(extgc
   GIT_REPOSITORY https://github.com/mobivm/bdwgc.git
   GIT_TAG c1e985028101ec710937b6c721d9f79941a15bce
   UPDATE_COMMAND ""
-  PATCH_COMMAND bash -c "rm -rf libatomic_ops && ln -s ../../../libatomic_ops-prefix/src/libatomic_ops libatomic_ops"
-  CONFIGURE_COMMAND bash -c "CC=${CMAKE_C_COMPILER} CFLAGS='${EXTGC_C_FLAGS}' LDFLAGS='${EXTGC_LD_FLAGS}' ./configure ${EXT_HOST} ${EXTGC_PARAMS} --prefix=${CMAKE_BINARY_DIR}/gc"
+  PATCH_COMMAND bash -c "${EXTGC_PATCH}"
+  # AR and RANLIB alongside CC, or the archiving step falls back to the host's. Cross-compiling to
+  # Bionic from a Mac that way produced a *96-byte* libgc.a on 28.09.2026 (tsb): the objects were
+  # correct aarch64 ELF, Apple's ar simply put none of them in and exited 0. Nothing failed until
+  # the link, a long way downstream.
+  CONFIGURE_COMMAND bash -c "CC=${CMAKE_C_COMPILER} AR=${CMAKE_AR} RANLIB=${CMAKE_RANLIB} CFLAGS='${EXTGC_C_FLAGS}' LDFLAGS='${EXTGC_LD_FLAGS}' ./configure ${EXT_HOST} ${EXTGC_PARAMS} --prefix=${CMAKE_BINARY_DIR}/gc"
   BUILD_IN_SOURCE 1
 )
 install(FILES ${CMAKE_BINARY_DIR}/gc/lib/libgc.a DESTINATION ${INSTALL_DIR} RENAME libgc${LIB_SUFFIX})
@@ -415,4 +443,5 @@ add_subdirectory(debug/src)
 add_subdirectory(bc/src)
 add_subdirectory(../rt "rt")
 add_subdirectory(frameworksupport/src)
+add_subdirectory(androidsupport/src)
 add_subdirectory(bro/src)

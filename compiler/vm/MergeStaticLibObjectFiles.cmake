@@ -45,10 +45,31 @@ function(merge_static_lib_object_files lib)
       )
 
     else()
-      # Linux
-      set(EMULATION_MODE elf_i386)
-      if(64_BIT)
+      # Linux, and Bionic, which is Linux for every purpose in this file.
+      if(ARCH STREQUAL "arm64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+        set(EMULATION_MODE aarch64linux)
+      elseif(64_BIT)
         set(EMULATION_MODE elf_x86_64)
+      else()
+        set(EMULATION_MODE elf_i386)
+      endif()
+
+      # By full path when the toolchain names one. These three are invoked directly, not through
+      # the compiler driver, so on a cross build the bare names would resolve to the *host's* --
+      # and on a macOS host `ld` is Apple's, which does not know --whole-archive. It stayed hidden
+      # until 28.09.2026 (tsb) because this whole function is skipped for a debug build, and every
+      # Android measurement so far had been a debug build.
+      set(MERGE_LD ld)
+      set(MERGE_OBJCOPY objcopy)
+      set(MERGE_AR ar)
+      if(CMAKE_LINKER)
+        set(MERGE_LD "${CMAKE_LINKER}")
+      endif()
+      if(CMAKE_OBJCOPY)
+        set(MERGE_OBJCOPY "${CMAKE_OBJCOPY}")
+      endif()
+      if(CMAKE_AR)
+        set(MERGE_AR "${CMAKE_AR}")
       endif()
       message(STATUS "Format ${FORMAT}")
 
@@ -61,12 +82,12 @@ function(merge_static_lib_object_files lib)
       string(REPLACE ";" " " exported_symbols_args_joined "${exported_symbols_args}")
       add_custom_command(TARGET ${lib} POST_BUILD
         COMMAND echo Merging object files in $<TARGET_FILE:${lib}> with exported symbols: ${exported_symbols_joined}
-        COMMAND echo ld -m ${EMULATION_MODE} -r --whole-archive $<TARGET_FILE:${lib}> -o ${CMAKE_CURRENT_BINARY_DIR}/tmp.o
-        COMMAND ld -m ${EMULATION_MODE} -r --whole-archive $<TARGET_FILE:${lib}> -o ${CMAKE_CURRENT_BINARY_DIR}/tmp.o
-        COMMAND echo objcopy -w ${exported_symbols_args} ${CMAKE_CURRENT_BINARY_DIR}/tmp.o ${CMAKE_CURRENT_BINARY_DIR}/merged.o
-        COMMAND objcopy -w ${exported_symbols_args} ${CMAKE_CURRENT_BINARY_DIR}/tmp.o ${CMAKE_CURRENT_BINARY_DIR}/merged.o
+        COMMAND echo ${MERGE_LD} -m ${EMULATION_MODE} -r --whole-archive $<TARGET_FILE:${lib}> -o ${CMAKE_CURRENT_BINARY_DIR}/tmp.o
+        COMMAND ${MERGE_LD} -m ${EMULATION_MODE} -r --whole-archive $<TARGET_FILE:${lib}> -o ${CMAKE_CURRENT_BINARY_DIR}/tmp.o
+        COMMAND echo ${MERGE_OBJCOPY} -w ${exported_symbols_args} ${CMAKE_CURRENT_BINARY_DIR}/tmp.o ${CMAKE_CURRENT_BINARY_DIR}/merged.o
+        COMMAND ${MERGE_OBJCOPY} -w ${exported_symbols_args} ${CMAKE_CURRENT_BINARY_DIR}/tmp.o ${CMAKE_CURRENT_BINARY_DIR}/merged.o
         COMMAND rm -f $<TARGET_FILE:${lib}>
-        COMMAND ar rcs $<TARGET_FILE:${lib}> ${CMAKE_CURRENT_BINARY_DIR}/merged.o
+        COMMAND ${MERGE_AR} rcs $<TARGET_FILE:${lib}> ${CMAKE_CURRENT_BINARY_DIR}/merged.o
       )
 
     endif()

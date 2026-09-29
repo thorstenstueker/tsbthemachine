@@ -20,13 +20,23 @@ Options:
                              ios-arm64, ios-x86_64-simulator, ios-arm64-simulator
                           Linux:
                              linux-x86_64, linux-arm64
-                          Enclose multiple targets in quotes and 
+                          Android:
+                             android-arm64, android-x86_64
+                          Enclose multiple targets in quotes and
                           separate with spaces or specify --target multiple
                           times. If not set the current host OS determines the
                           targets. macosx-x86_64, ios-x86_64-simulator,
-                          ios-arm64-simulator, ios-thumbv7 and 
+                          ios-arm64-simulator, ios-thumbv7 and
                           ios-arm64 on MacOSX and
-                          linux-x86_64 on Linux.
+                          linux-x86_64 on Linux. Android is never a default:
+                          it needs an NDK, and a machine without one should
+                          not have its build fail over a target nobody asked
+                          for. Name it and it is built.
+  --android-api=N         API level to compile the Android targets against.
+                          Defaults to 26, which is MIN_SDK for this product --
+                          compiling at the floor is how a symbol that is too
+                          new becomes a build error here instead of a crash on
+                          a customer's phone.
   --verbose               Enable verbose output during the build.
   --clean                 Cleans the build dir before starting the build.
   --help                  Displays this information and exits.
@@ -42,6 +52,7 @@ while [ "${1:0:2}" = '--' ]; do
     '--clean') CLEAN=1 ;;
     '--verbose') VERBOSE=VERBOSE=1 ;;
     '--build') BUILDS="$BUILDS $VALUE" ;;
+    '--android-api') ANDROID_API=$VALUE ;;
     '--help')
       usage 0
       ;;
@@ -76,10 +87,13 @@ fi
 if [ "x$BUILDS" = 'x' ]; then
   BUILDS="debug release"
 fi
+if [ "x$ANDROID_API" = 'x' ]; then
+  ANDROID_API=26
+fi
 
 # Validate targets
 for T in $TARGETS; do
-  if ! [[ $T =~ (macosx-(x86_64|arm64))|(ios-(x86_64-simulator|arm64-simulator|thumbv7|arm64))|(linux-(x86_64|arm64)) ]] ; then
+  if ! [[ $T =~ (macosx-(x86_64|arm64))|(ios-(x86_64-simulator|arm64-simulator|thumbv7|arm64))|(linux-(x86_64|arm64))|(android-(x86_64|arm64)) ]] ; then
     echo "Unsupported target: $T"
     exit 1
   fi
@@ -153,7 +167,21 @@ for T in $TARGETS; do
     if command -v xcrun >/dev/null 2>&1; then
       SDK_PARAM="-DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path)"
     fi
-    bash -c "cd '$BASE/target/build/$T-$B'; cmake $SYSTEM_NAME_PARAM $SDK_PARAM -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DOS=$OS -DARCH=$ARCH '$BASE'; make -j $WORKERS $VERBOSE install"
+    if [ "$OS" = 'android' ]; then
+      # Android goes through bionic.toolchain.cmake and gets none of the above.
+      #
+      # The toolchain file picks the NDK's clang, ar, ranlib, linker and objcopy itself, and it has
+      # to: the host compiler found further up cannot produce Bionic binaries. CMAKE_OSX_SYSROOT is
+      # left out for the same reason it is left out there -- on a macOS host it would hand the
+      # Apple SDK to a cross build, and the failure surfaces deep inside rt/android as
+      # "unsupported option '-arch'", a long way from the cause. See the header of that file.
+      #
+      # Added 29.09.2026 (tsb), after A3a had to call cmake by hand to get an Android distribution.
+      CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE='$BASE/bionic.toolchain.cmake' -DANDROID_API=$ANDROID_API"
+    else
+      CMAKE_ARGS="$SYSTEM_NAME_PARAM $SDK_PARAM -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX"
+    fi
+    bash -c "cd '$BASE/target/build/$T-$B'; cmake $CMAKE_ARGS -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DOS=$OS -DARCH=$ARCH '$BASE'; make -j $WORKERS $VERBOSE install"
     R=$?
     if [[ $R != 0 ]]; then
       echo "$T-$B build failed"
