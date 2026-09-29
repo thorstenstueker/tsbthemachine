@@ -83,11 +83,15 @@ public class ConsoleTarget extends AbstractTarget {
             List<File> objectFiles, List<String> libArgs)
             throws IOException {
 
-        if (config.getOs() == OS.macosx) {
+        // Android needs the triple for the same reason macOS does, and more urgently: the NDK's
+        // clang++ runs on the host, so without --target it would happily build a Darwin binary.
+        // Measured 28.09.2026 (tsb): it accepts our arm64-none-linux-android26 -- CpuArch's "arm64"
+        // rather than "aarch64" -- and both compiles and links to AArch64 ELF against Bionic.
+        if (config.getOs() == OS.macosx || config.getOs() == OS.android) {
             ccArgs.add("--target=" + config.getClangTriple());
-            if (config.isDebug()) {
-                ccArgs.add("-Wl,-no_pie");
-            }
+        }
+        if (config.getOs() == OS.macosx && config.isDebug()) {
+            ccArgs.add("-Wl,-no_pie");
         }
         super.doBuild(outFile, ccArgs, objectFiles, libArgs);
     }

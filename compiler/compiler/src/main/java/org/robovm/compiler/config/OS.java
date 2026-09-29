@@ -23,7 +23,15 @@ import org.robovm.llvm.Target;
  *
  */
 public enum OS {
-    linux("linux",  "unknown","linux"),
+    // minVersion is appended to the llvm name by Config.getTriple(): cpuArch-vendor-llvmName+minVersion.
+    // Linux carried "linux" in that field and so produced `aarch64-unknown-linuxlinux`, which is not a
+    // triple at all. It never showed because every Linux and Android measurement so far went through
+    // CMake rather than through this compiler path. Emptied 28.09.2026 (tsb); the only other readers of
+    // getMinVersion() are actool and ibtool, both iOS-only.
+    linux("linux",  "unknown", ""),
+    // Android is Linux on Bionic, and the triple the NDK expects is aarch64-none-linux-android26.
+    // The API level lives here because it is part of the triple, not a separate compiler flag.
+    android("linux-android", "none", "26"),
     macosx("macosx", "apple", "10.9"),
     ios("ios", "apple", "8.0");
     
@@ -52,9 +60,10 @@ public enum OS {
     }
     
     public Family getFamily() {
-        return this == linux ? Family.linux : Family.darwin;
+        return (this == linux || this == android) ? Family.linux : Family.darwin;
     }
-    
+
+    // getDefaultOS() deliberately has no android branch: Android is a target, never the host.
     public static OS getDefaultOS() {
         String hostTriple = Target.getHostTriple();
         if (hostTriple.contains("linux")) {

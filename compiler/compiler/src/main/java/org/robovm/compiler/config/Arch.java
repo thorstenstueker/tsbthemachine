@@ -67,6 +67,10 @@ public class Arch implements Comparable<Arch> {
                 // missing on Linux was not codegen but three assembly stubs and an ABI rule.
                 // See core/src/call0-linux-arm64.s.
                 return new Arch[]{Arch.x86_64, Arch.arm64};
+            case android:
+                // arm64 is the device, x86_64 the emulator. Added 28.09.2026 (tsb) -- without this
+                // case any android build dies here with "Unexpected OS" before anything is compiled.
+                return new Arch[]{Arch.arm64, Arch.x86_64};
             case macosx:
                 return new Arch[]{Arch.x86_64, Arch.arm64};
             case ios:

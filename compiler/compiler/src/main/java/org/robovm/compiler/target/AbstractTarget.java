@@ -114,10 +114,22 @@ public abstract class AbstractTarget implements Target {
         if (config.isSkipInstall()) {
             libs.add("-lrobovm-debug" + libSuffix);
         }
-        libs.addAll(Arrays.asList(
-                "-lrobovm-core" + libSuffix, "-lgc" + libSuffix, "-lpthread", "-ldl", "-lm", "-lz"));
-        if (config.getOs().getFamily() == OS.Family.linux) {
+        libs.addAll(Arrays.asList("-lrobovm-core" + libSuffix, "-lgc" + libSuffix));
+        // Bionic has neither libpthread nor librt -- both were folded into libc years ago, and the
+        // NDK ships no stub archive for either. Measured 28.09.2026 (tsb) against NDK 30:
+        // "ld.lld: error: unable to find library -lpthread" and the same for -lrt. -ldl, -lm and
+        // -lz do exist there. Split out 28.09.2026 (tsb); glibc Linux is unaffected.
+        if (config.getOs() != OS.android) {
+            libs.add("-lpthread");
+        }
+        libs.addAll(Arrays.asList("-ldl", "-lm", "-lz"));
+        if (config.getOs() == OS.linux) {
             libs.add("-lrt");
+        }
+        // liblog, for __android_log_buf_print: the libcore fork logs through it, and on Android it
+        // is a library of its own rather than part of libc. Added 28.09.2026 (tsb).
+        if (config.getOs() == OS.android) {
+            libs.add("-llog");
         }
         if (config.getOs().getFamily() == OS.Family.darwin) {
             libs.add("-liconv");
@@ -128,6 +140,14 @@ public abstract class AbstractTarget implements Target {
 
         ccArgs.add("-L");
         ccArgs.add(config.getOsArchDepLibDir().getAbsolutePath());
+
+        // The NDK driver links libc++ dynamically by default, and a device has no libc++_shared.so
+        // outside an APK that ships one -- the binary dies before main with "CANNOT LINK
+        // EXECUTABLE". Measured 28.09.2026 (tsb). Static is what this target wants anyway: one
+        // file to push, nothing to install beside it.
+        if (config.getOs() == OS.android) {
+            ccArgs.add("-static-libstdc++");
+        }
 
         List<String> exportedSymbols = new ArrayList<String>();
         exportedSymbols.addAll(getTargetExportedSymbols());

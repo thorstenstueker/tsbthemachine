@@ -45,9 +45,11 @@
 #include <mach/mach_time.h>
 #endif
 
-#if defined(__ANDROID__)
-void android_get_LD_LIBRARY_PATH(char*, size_t);
-#endif
+// RoboVM note: android_get_LD_LIBRARY_PATH is a private entry point of the Android *system*
+// linker. It exists when libcore is built as part of the platform; it is in no NDK sysroot, and
+// linking an AOT binary against Bionic fails on it. This fork never builds inside the platform,
+// so the declaration and its one use below are gone and the existing "" fallback stands.
+// Removed 28.09.2026 (tsb).
 
 #define PUTPROP(props, key, val) \
     if (1) { \
@@ -210,12 +212,6 @@ Java_java_lang_System_specialProperties(JNIEnv* env, jclass ignored) {
 
 
     const char* library_path = getenv("LD_LIBRARY_PATH");
-#if defined(__ANDROID__)
-    if (library_path == NULL) {
-        android_get_LD_LIBRARY_PATH(path, sizeof(path));
-        library_path = path;
-    }
-#endif
     if (library_path == NULL) {
         library_path = "";
     }

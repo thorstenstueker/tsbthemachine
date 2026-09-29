@@ -20,6 +20,7 @@ package org.robovm.compiler.util;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.robovm.compiler.config.Config;
+import org.robovm.compiler.config.CpuArch;
 import org.robovm.compiler.config.OS;
 import org.robovm.compiler.config.tools.ActoolOptions;
 import org.robovm.compiler.config.tools.TextureAtlas;
@@ -31,6 +32,7 @@ import org.robovm.compiler.util.Executor.ExecuteException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -462,7 +464,13 @@ public class ToolchainUtil {
                 opts.add("-Wl,-filelist," + objectsFile.getAbsolutePath());
             }
         } else {
-            opts.add("-m64");
+            // -m64 is an x86 flag, and the non-Darwin branch used to hand it to every target. On
+            // AArch64 the driver rejects it outright -- the same mistake fixed in compiler/vm's
+            // CMakeLists.txt in A1. The condition is "64-bit *and* x86", not "not Darwin".
+            // Narrowed 28.09.2026 (tsb); linux/x86_64 is unaffected.
+            if (config.getArch().getCpuArch() == CpuArch.x86_64) {
+                opts.add("-m64");
+            }
             for (File objectsFile : objectsFiles) {
                 opts.add("@" + objectsFile.getAbsolutePath());
             }
@@ -473,12 +481,62 @@ public class ToolchainUtil {
     }
 
     private static String getCcPath(Config config) throws IOException {
-        String ccPath = config.getOs().getFamily() == OS.Family.darwin ? "clang++" : "g++";
+        // -ccbinpath still wins over everything, as before.
         if (config.getCcBinPath() != null) {
-            ccPath = config.getCcBinPath().getAbsolutePath();
-        } else if (config.getOs() == OS.ios) {
-            ccPath = getIOSDevClang();
+            return config.getCcBinPath().getAbsolutePath();
         }
-        return ccPath;
+        if (config.getOs() == OS.ios) {
+            return getIOSDevClang();
+        }
+        // Android is not Darwin, and the plain "g++" the non-Darwin branch falls back to cannot
+        // produce Bionic binaries -- on a Mac host it is not even a cross-compiler. Added
+        // 28.09.2026 (tsb).
+        if (config.getOs() == OS.android) {
+            return getAndroidClang();
+        }
+        return config.getOs().getFamily() == OS.Family.darwin ? "clang++" : "g++";
+    }
+
+    /**
+     * The NDK's own clang++, found the same way compiler/vm/bionic.toolchain.cmake finds it: the
+     * environment if it names an NDK, otherwise the newest one installed under the Android SDK.
+     * Kept deliberately in step with that file -- two different answers to "which NDK" would mean
+     * the VM core and the code linked against it could come from different toolchains.
+     */
+    private static String getAndroidClang() throws IOException {
+        String ndk = System.getenv("ANDROID_NDK_HOME");
+        if (ndk == null) {
+            ndk = System.getenv("ANDROID_NDK_ROOT");
+        }
+        if (ndk == null) {
+            String sdk = System.getenv("ANDROID_HOME");
+            if (sdk == null) {
+                String home = System.getProperty("user.home");
+                sdk = OS.getDefaultOS() == OS.macosx
+                        ? home + "/Library/Android/sdk"
+                        : home + "/Android/Sdk";
+            }
+            File[] candidates = new File(sdk, "ndk").listFiles(File::isDirectory);
+            if (candidates != null && candidates.length > 0) {
+                // Newest by name, as the toolchain file does with SORT + REVERSE.
+                Arrays.sort(candidates);
+                ndk = candidates[candidates.length - 1].getAbsolutePath();
+            }
+        }
+        if (ndk == null || !new File(ndk).isDirectory()) {
+            throw new IOException("No Android NDK found. Set ANDROID_NDK_HOME, "
+                    + "or install one under <sdk>/ndk/, or pass -ccbinpath.");
+        }
+
+        // One prebuilt host toolchain per NDK, named after the host it runs on.
+        File[] prebuilt = new File(ndk, "toolchains/llvm/prebuilt").listFiles(File::isDirectory);
+        if (prebuilt == null || prebuilt.length == 0) {
+            throw new IOException("No prebuilt LLVM toolchain in " + ndk + "/toolchains/llvm/prebuilt/");
+        }
+        File clang = new File(prebuilt[0], "bin/clang++");
+        if (!clang.exists()) {
+            throw new IOException("No clang++ at " + clang.getAbsolutePath());
+        }
+        return clang.getAbsolutePath();
     }
 }
