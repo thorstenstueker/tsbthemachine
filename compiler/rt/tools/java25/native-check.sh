@@ -72,6 +72,12 @@ for SRC in "$HERE"/native/*.java; do
     echo "== $NAME =="
     "$DIST/bin/robovm" -target console -os "$OS" -arch "$ARCH" \
         -cp "$WORK/classes" -d "$WORK/$NAME" -o "$NAME" "$NAME" > "$WORK/$NAME.log" 2>&1 \
-        || { echo "AOT compilation failed:"; tail -20 "$WORK/$NAME.log"; exit 1; }
+        || { echo "AOT compilation failed:"
+             # head, not tail. robovm prints the reason on the first line and then its whole usage
+             # text, so the last twenty lines are the tail of a help screen and say nothing. That
+             # cost a diagnosis on 29.09.2026 (tsb): a real failure looked like an argument error.
+             head -8 "$WORK/$NAME.log"
+             echo "  (full log: $WORK/$NAME.log)"
+             exit 1; }
     "$WORK/$NAME/$NAME"
 done

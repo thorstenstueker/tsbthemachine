@@ -329,4 +329,206 @@ public class AtomicReferenceArray<E> implements java.io.Serializable {
         U.putObjectVolatile(this, ARRAY, a);
     }
 
+    // The memory-order family Java 9 added alongside VarHandle. Added 29.09.2026 (tsb).
+    //
+    // Every one of them is implemented with a *stronger* ordering than its name asks for: plain,
+    // opaque and acquire reads all go through getObjectVolatile, and plain and opaque writes through
+    // putObjectVolatile. That is allowed -- the specification states a minimum each mode must provide, and
+    // providing more cannot break a caller -- and it is what this library can honestly offer,
+    // because sun.misc.Unsafe here has volatile, ordered and compare-and-swap and nothing between
+    // them. setRelease is the one exception: putOrderedObject *is* a release store, so that one is exact.
+    //
+    // The cost is on the weakest end. getPlain in a tight loop pays a volatile load per iteration
+    // where the JDK pays none, so code written to exploit plain access will run slower here rather
+    // than wrong. Correct and not literal, and better named than silently absent.
+
+    /**
+     * Returns the current value of the element at index {@code i}, with memory semantics of
+     * reading as if the variable was declared non-{@code volatile}.
+     *
+     * @param i the index
+     * @return the value
+     * @since 9
+     */
+    public final E getPlain(int i) {
+        return getRaw(checkedByteOffset(i));
+    }
+
+    /**
+     * Sets the element at index {@code i} to {@code newValue}, with memory semantics of setting
+     * as if the variable was declared non-{@code volatile} and non-{@code final}.
+     *
+     * @param i the index
+     * @param newValue the new value
+     * @since 9
+     */
+    public final void setPlain(int i, E newValue) {
+        U.putObjectVolatile(array, checkedByteOffset(i), newValue);
+    }
+
+    /**
+     * Returns the current value of the element at index {@code i}, with memory effects as
+     * specified by {@code VarHandle#getOpaque}.
+     *
+     * @param i the index
+     * @return the value
+     * @since 9
+     */
+    public final E getOpaque(int i) {
+        return getRaw(checkedByteOffset(i));
+    }
+
+    /**
+     * Sets the element at index {@code i} to {@code newValue}, with memory effects as specified
+     * by {@code VarHandle#setOpaque}.
+     *
+     * @param i the index
+     * @param newValue the new value
+     * @since 9
+     */
+    public final void setOpaque(int i, E newValue) {
+        U.putObjectVolatile(array, checkedByteOffset(i), newValue);
+    }
+
+    /**
+     * Returns the current value of the element at index {@code i}, with memory effects as
+     * specified by {@code VarHandle#getAcquire}.
+     *
+     * @param i the index
+     * @return the value
+     * @since 9
+     */
+    public final E getAcquire(int i) {
+        return getRaw(checkedByteOffset(i));
+    }
+
+    /**
+     * Sets the element at index {@code i} to {@code newValue}, with memory effects as specified
+     * by {@code VarHandle#setRelease}.
+     *
+     * @param i the index
+     * @param newValue the new value
+     * @since 9
+     */
+    public final void setRelease(int i, E newValue) {
+        U.putOrderedObject(array, checkedByteOffset(i), newValue);
+    }
+
+    /**
+     * Atomically sets the element at index {@code i} to {@code newValue} if the element's
+     * current value, referred to as the <em>witness value</em>, {@code ==} the expected value,
+     * with memory effects as specified by {@code VarHandle#compareAndExchange}.
+     *
+     * @param i the index
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return the witness value, which will be the same as the expected value if successful
+     * @since 9
+     */
+    public final E compareAndExchange(int i, E expectedValue, E newValue) {
+        // Unsafe gives back only whether the swap happened, not what stood in the way, so the
+        // witness has to be read. Re-reading after a failed swap rather than trusting the first
+        // read: between the two, another thread may have put the expected value there after all,
+        // and returning the stale witness would report a failure that did not happen.
+        long offset = checkedByteOffset(i);
+        E witness = getRaw(offset);
+        while (witness == expectedValue) {
+            if (compareAndSetRaw(offset, expectedValue, newValue)) {
+                return expectedValue;
+            }
+            witness = getRaw(offset);
+        }
+        return witness;
+    }
+
+    /**
+     * Atomically sets the element at index {@code i} to {@code newValue} if the element's
+     * current value, referred to as the <em>witness value</em>, {@code ==} the expected value,
+     * with memory effects as specified by {@code VarHandle#compareAndExchangeAcquire}.
+     *
+     * @param i the index
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return the witness value, which will be the same as the expected value if successful
+     * @since 9
+     */
+    public final E compareAndExchangeAcquire(int i, E expectedValue, E newValue) {
+        return compareAndExchange(i, expectedValue, newValue);
+    }
+
+    /**
+     * Atomically sets the element at index {@code i} to {@code newValue} if the element's
+     * current value, referred to as the <em>witness value</em>, {@code ==} the expected value,
+     * with memory effects as specified by {@code VarHandle#compareAndExchangeRelease}.
+     *
+     * @param i the index
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return the witness value, which will be the same as the expected value if successful
+     * @since 9
+     */
+    public final E compareAndExchangeRelease(int i, E expectedValue, E newValue) {
+        return compareAndExchange(i, expectedValue, newValue);
+    }
+
+    /**
+     * Possibly atomically sets the element at index {@code i} to {@code newValue} if the
+     * element's current value {@code ==} the expected value, with memory effects as specified by
+     * {@code VarHandle#weakCompareAndSetPlain}.
+     *
+     * @param i the index
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return {@code true} if successful
+     * @since 9
+     */
+    public final boolean weakCompareAndSetPlain(int i, E expectedValue, E newValue) {
+        return compareAndSet(i, expectedValue, newValue);
+    }
+
+    /**
+     * Possibly atomically sets the element at index {@code i} to {@code newValue} if the
+     * element's current value {@code ==} the expected value, with memory effects as specified by
+     * {@code VarHandle#weakCompareAndSet}.
+     *
+     * @param i the index
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return {@code true} if successful
+     * @since 9
+     */
+    public final boolean weakCompareAndSetVolatile(int i, E expectedValue, E newValue) {
+        return compareAndSet(i, expectedValue, newValue);
+    }
+
+    /**
+     * Possibly atomically sets the element at index {@code i} to {@code newValue} if the
+     * element's current value {@code ==} the expected value, with memory effects as specified by
+     * {@code VarHandle#weakCompareAndSetAcquire}.
+     *
+     * @param i the index
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return {@code true} if successful
+     * @since 9
+     */
+    public final boolean weakCompareAndSetAcquire(int i, E expectedValue, E newValue) {
+        return compareAndSet(i, expectedValue, newValue);
+    }
+
+    /**
+     * Possibly atomically sets the element at index {@code i} to {@code newValue} if the
+     * element's current value {@code ==} the expected value, with memory effects as specified by
+     * {@code VarHandle#weakCompareAndSetRelease}.
+     *
+     * @param i the index
+     * @param expectedValue the expected value
+     * @param newValue the new value
+     * @return {@code true} if successful
+     * @since 9
+     */
+    public final boolean weakCompareAndSetRelease(int i, E expectedValue, E newValue) {
+        return compareAndSet(i, expectedValue, newValue);
+    }
+
 }
