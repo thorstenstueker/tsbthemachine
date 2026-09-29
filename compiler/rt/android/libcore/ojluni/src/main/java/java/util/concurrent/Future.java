@@ -167,4 +167,131 @@ public interface Future<V> {
      */
     V get(long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException;
+
+    // Java 19 added a way to ask a *completed* Future what happened without the try/catch dance
+    // that get() forces. Added 29.09.2026 (tsb).
+    //
+    // All three are default methods built on isDone, isCancelled and get, so every Future in the
+    // library -- and every one a customer wrote -- gets them without changing. An implementation
+    // that can answer faster is free to override, as CompletableFuture does.
+
+    /**
+     * Represents the computation state.
+     *
+     * @since 19
+     */
+    enum State {
+        /** The task has not completed. */
+        RUNNING,
+        /** The task completed with a result. */
+        SUCCESS,
+        /** The task completed with an exception. */
+        FAILED,
+        /** The task was cancelled. */
+        CANCELLED
+    }
+
+    /**
+     * Returns the computation state.
+     *
+     * @return the computation state
+     * @since 19
+     */
+    default State state() {
+        if (!isDone()) {
+            return State.RUNNING;
+        }
+        if (isCancelled()) {
+            return State.CANCELLED;
+        }
+        // The task is done and was not cancelled, so get() returns at once and the only question
+        // left is whether it throws. The interrupt has to be restored rather than swallowed: this
+        // method cannot block, so an interrupt arriving here belongs to the caller's thread and is
+        // none of our business to consume.
+        boolean interrupted = false;
+        try {
+            while (true) {
+                try {
+                    get();
+                    return State.SUCCESS;
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                } catch (ExecutionException e) {
+                    return State.FAILED;
+                } catch (CancellationException e) {
+                    return State.CANCELLED;
+                }
+            }
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Returns the computed result, without waiting.
+     *
+     * @return the computed result
+     * @throws IllegalStateException if the task has not completed or the task did not complete
+     *         with a result
+     * @since 19
+     */
+    default V resultNow() {
+        if (!isDone()) {
+            throw new IllegalStateException("Task has not completed");
+        }
+        boolean interrupted = false;
+        try {
+            while (true) {
+                try {
+                    return get();
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                } catch (ExecutionException e) {
+                    throw new IllegalStateException("Task completed with exception");
+                } catch (CancellationException e) {
+                    throw new IllegalStateException("Task was cancelled");
+                }
+            }
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Returns the exception thrown by the task, without waiting.
+     *
+     * @return the exception thrown by the task
+     * @throws IllegalStateException if the task has not completed, the task completed normally,
+     *         or the task was cancelled
+     * @since 19
+     */
+    default Throwable exceptionNow() {
+        if (!isDone()) {
+            throw new IllegalStateException("Task has not completed");
+        }
+        if (isCancelled()) {
+            throw new IllegalStateException("Task was cancelled");
+        }
+        boolean interrupted = false;
+        try {
+            while (true) {
+                try {
+                    get();
+                    throw new IllegalStateException("Task completed with a result");
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                } catch (ExecutionException e) {
+                    return e.getCause();
+                }
+            }
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 }

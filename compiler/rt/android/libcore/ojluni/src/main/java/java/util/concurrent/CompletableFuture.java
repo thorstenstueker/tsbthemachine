@@ -2427,6 +2427,186 @@ public class CompletableFuture<T> implements Future<T>, CompletionStage<T> {
         return ASYNC_POOL;
     }
 
+    // The Java 12 exception-handling stages and the Java 19 state queries. Added 29.09.2026 (tsb).
+    //
+    // CompletionStage declares the five exceptionally* methods as defaults and those are correct;
+    // these override them only to narrow the return type from CompletionStage to CompletableFuture,
+    // which is what every other method on this class does and what callers expect. The bodies are
+    // the same shape: handle() sees both outcomes and hands back either this stage untouched or the
+    // recovery stage, and thenCompose flattens the stage-of-a-stage that produces.
+    //
+    // state(), resultNow() and exceptionNow() are different. Future's defaults reach the answer
+    // through get(), which for a completed future returns immediately but still walks the
+    // try/catch path. Here the answer is one field read: `result` is null while running, an
+    // AltResult when it completed exceptionally or with null, and the value itself otherwise.
+
+    /**
+     * Returns a new CompletableFuture that, when this stage completes
+     * exceptionally, is executed with this stage's exception as the
+     * argument to the supplied function, using this stage's default
+     * asynchronous execution facility.
+     *
+     * @param fn the function to use to compute the value of the
+     * returned CompletableFuture if this CompletableFuture completed
+     * exceptionally
+     * @return the new CompletableFuture
+     * @since 12
+     */
+    public CompletableFuture<T> exceptionallyAsync(
+        Function<Throwable, ? extends T> fn) {
+        return exceptionallyAsync(fn, defaultExecutor());
+    }
+
+    /**
+     * Returns a new CompletableFuture that, when this stage completes
+     * exceptionally, is executed with this stage's exception as the
+     * argument to the supplied function, using the supplied Executor.
+     *
+     * @param fn the function to use to compute the value of the
+     * returned CompletableFuture if this CompletableFuture completed
+     * exceptionally
+     * @param executor the executor to use for asynchronous execution
+     * @return the new CompletableFuture
+     * @since 12
+     */
+    public CompletableFuture<T> exceptionallyAsync(
+        Function<Throwable, ? extends T> fn, Executor executor) {
+        if (fn == null || executor == null) throw new NullPointerException();
+        return this.<CompletionStage<T>>handle((r, ex) -> (ex == null)
+                ? this
+                : this.<T>handleAsync((r1, ex1) -> fn.apply(ex1), executor))
+            .thenCompose(Function.identity());
+    }
+
+    /**
+     * Returns a new CompletableFuture that, when this stage completes
+     * exceptionally, is composed using the results of the supplied
+     * function applied to this stage's exception.
+     *
+     * @param fn the function to use to compute the returned
+     * CompletableFuture if this CompletableFuture completed exceptionally
+     * @return the new CompletableFuture
+     * @since 12
+     */
+    public CompletableFuture<T> exceptionallyCompose(
+        Function<Throwable, ? extends CompletionStage<T>> fn) {
+        if (fn == null) throw new NullPointerException();
+        return this.<CompletionStage<T>>handle((r, ex) -> (ex == null) ? this : fn.apply(ex))
+            .thenCompose(Function.identity());
+    }
+
+    /**
+     * Returns a new CompletableFuture that, when this stage completes
+     * exceptionally, is composed using the results of the supplied
+     * function applied to this stage's exception, using this stage's
+     * default asynchronous execution facility.
+     *
+     * @param fn the function to use to compute the returned
+     * CompletableFuture if this CompletableFuture completed exceptionally
+     * @return the new CompletableFuture
+     * @since 12
+     */
+    public CompletableFuture<T> exceptionallyComposeAsync(
+        Function<Throwable, ? extends CompletionStage<T>> fn) {
+        return exceptionallyComposeAsync(fn, defaultExecutor());
+    }
+
+    /**
+     * Returns a new CompletableFuture that, when this stage completes
+     * exceptionally, is composed using the results of the supplied
+     * function applied to this stage's exception, using the supplied
+     * Executor.
+     *
+     * @param fn the function to use to compute the returned
+     * CompletableFuture if this CompletableFuture completed exceptionally
+     * @param executor the executor to use for asynchronous execution
+     * @return the new CompletableFuture
+     * @since 12
+     */
+    public CompletableFuture<T> exceptionallyComposeAsync(
+        Function<Throwable, ? extends CompletionStage<T>> fn, Executor executor) {
+        if (fn == null || executor == null) throw new NullPointerException();
+        return this.<CompletionStage<T>>handle((r, ex) -> (ex == null)
+                ? this
+                : this.<CompletionStage<T>>handleAsync((r1, ex1) -> fn.apply(ex1), executor)
+                      .thenCompose(Function.identity()))
+            .thenCompose(Function.identity());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 19
+     */
+    @Override
+    public State state() {
+        Object r = result;
+        if (r == null) {
+            return State.RUNNING;
+        }
+        if (r instanceof AltResult) {
+            Throwable x = ((AltResult) r).ex;
+            // NIL is an AltResult with a null exception: a completed future whose value is null.
+            if (x == null) {
+                return State.SUCCESS;
+            }
+            return (x instanceof CancellationException) ? State.CANCELLED : State.FAILED;
+        }
+        return State.SUCCESS;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 19
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public T resultNow() {
+        Object r = result;
+        if (r == null) {
+            throw new IllegalStateException("Task has not completed");
+        }
+        if (r instanceof AltResult) {
+            Throwable x = ((AltResult) r).ex;
+            if (x == null) {
+                return null;
+            }
+            if (x instanceof CancellationException) {
+                throw new IllegalStateException("Task was cancelled");
+            }
+            throw new IllegalStateException("Task completed with exception");
+        }
+        return (T) r;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 19
+     */
+    @Override
+    public Throwable exceptionNow() {
+        Object r = result;
+        if (r == null) {
+            throw new IllegalStateException("Task has not completed");
+        }
+        if (!(r instanceof AltResult)) {
+            throw new IllegalStateException("Task completed with a result");
+        }
+        Throwable x = ((AltResult) r).ex;
+        if (x == null) {
+            throw new IllegalStateException("Task completed with a result");
+        }
+        if (x instanceof CancellationException) {
+            throw new IllegalStateException("Task was cancelled");
+        }
+        // The exception a caller sees from get() is wrapped in a CompletionException on the way in
+        // -- encodeThrowable does that unless it already was one. exceptionNow is specified to hand
+        // back what the task threw, so the wrapper comes off again here.
+        return (x instanceof CompletionException && x.getCause() != null) ? x.getCause() : x;
+    }
+
     /**
      * Returns a new CompletableFuture that is completed normally with
      * the same value as this CompletableFuture when it completes
