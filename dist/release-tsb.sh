@@ -116,7 +116,9 @@ gh release create "$TAG" "dist/package/target/$ASSET" \
     --target "$COMMIT" \
     --title "tsbTheMachine $VERSION" \
     --notes "$(cat <<EOF
-The mobile compiler and runtime for RapidFX and RapidJ: class files up to version 61, a runtime library being filled in against Java 25, CocoaTouch reduced to what a rendered interface needs, Swing on UIView, and the VM core running on Bionic.
+The mobile compiler and runtime for RapidFX and RapidJ: class files up to version 61, a runtime library being filled in against Java 25, CocoaTouch reduced to what a rendered interface needs, and Swing on UIView.
+
+Android compiles ahead of time now, not just the VM core. A Java file becomes an arm64 binary that runs under \`adb shell\`, or — with \`-target androidlib\` — the \`lib<name>.so\` an APK carries in \`lib/arm64-v8a/\`: it loads in ART, and our VM starts inside the ART process.
 
 A fork of RoboVM/MobiVM for our own purposes — see NOTICE for the origin and the licence.
 
