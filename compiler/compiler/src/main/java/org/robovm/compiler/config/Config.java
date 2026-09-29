@@ -39,6 +39,7 @@ import org.robovm.compiler.plugin.launch.LaunchPlugin;
 import org.robovm.compiler.plugin.objc.*;
 import org.robovm.compiler.target.console.ConsoleTarget;
 import org.robovm.compiler.target.Target;
+import org.robovm.compiler.target.androidlib.AndroidLibTarget;
 import org.robovm.compiler.target.framework.FrameworkTarget;
 import org.robovm.compiler.target.ios.IOSTarget;
 import org.robovm.compiler.target.ios.ProvisioningProfile;
@@ -991,6 +992,8 @@ public class Config {
                 target = new IOSTarget();
             } else if (FrameworkTarget.matches(targetType)) {
                 target = new FrameworkTarget(targetType);
+            } else if (AndroidLibTarget.TYPE.equals(targetType)) {
+                target = new AndroidLibTarget();
             } else {
                 for (TargetPlugin plugin : getTargetPlugins()) {
                     if (plugin.getTarget().getType().equals(targetType)) {
