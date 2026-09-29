@@ -61,9 +61,56 @@ void rvmRaiseException(Env* env, Object* e) {
     rvmAbort("Unhandled exception (probably in a @Callback method called from native code): %s", e->clazz->name);
 }
 
+/*
+ * The stack trace, not only the class name. Written 30.09.2026 (tsb).
+ *
+ * This said "Exception occurred: java/lang/Error" and nothing else, with a TODO where the frames
+ * should be. That is what JNI's ExceptionDescribe calls, so an exception thrown inside this VM and
+ * reported from outside it — from C, or from another VM through JNI — arrived as one line naming a
+ * class that half the runtime can throw. On Android that is the only report there is: ART's log
+ * shows what the glue printed, and the glue prints this.
+ *
+ * The same walk rvmThrow does under trace, which is the one place this information was available
+ * before. No message: getting it means calling getMessage() on the throwable, and a print routine
+ * that runs a Java method can throw while reporting a throw.
+ */
 void rvmExceptionPrintStackTrace(Env* env, Object* e, FILE* f) {
-    // TODO: Write the stack trace to the FILE*
-    fprintf(stderr, "Exception occurred: %s\n", e->clazz->name);
+    FILE* out = f ? f : stderr;
+    fprintf(out, "Exception occurred: %s\n", e->clazz->name);
+
+    /* Everything below is defensive, because this runs while something is already wrong. The
+     * first attempt read the backtrace field without checking that the field itself had been
+     * resolved, and on Android that took the process down between the first line and the second —
+     * turning a report into a crash. A print routine that can kill the program it is reporting on
+     * is worse than one that prints nothing. */
+    if (!backtraceField) {
+        fprintf(out, "    (no stack: the runtime is not far enough up to have one)\n");
+        fflush(out);
+        return;
+    }
+    jlong backtrace = rvmGetLongInstanceFieldValue(env, e, backtraceField);
+    if (rvmExceptionCheck(env)) {
+        rvmExceptionClear(env);
+        fprintf(out, "    (no stack: reading it threw)\n");
+        fflush(out);
+        return;
+    }
+    CallStack* callStack = (CallStack*) LONG_TO_PTR(backtrace);
+    if (!callStack || callStack->length == 0) {
+        fprintf(out, "    (no call stack)\n");
+        fflush(out);
+        return;
+    }
+
+    CallStackFrame* frame;
+    jint index = 0;
+    while ((frame = rvmGetNextCallStackMethod(env, callStack, &index)) != NULL) {
+        Method* m = frame->method;
+        fprintf(out, "    %s.%s%s:%d\n", m->clazz->name, m->name, m->desc, frame->lineNumber);
+    }
+    // Flushed, because the usual reader of this is a crash: whatever comes next may be the process
+    // ending, and a buffered trace would be lost exactly when it is needed.
+    fflush(out);
 }
 
 void rvmPrintStackTrace(Env* env, Object* throwable) {
