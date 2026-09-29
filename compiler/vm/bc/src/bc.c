@@ -483,6 +483,19 @@ static AddressClassLookup* getAddressClassLookups(Env* env) {
         iterateClassInfos(env, initAddressClassLookupsCallback, _bcBootClassesHash, &_lookups);
         iterateClassInfos(env, initAddressClassLookupsCallback, _bcClassesHash, &_lookups);
         qsort(lookups, count, sizeof(AddressClassLookup), addressClassLookupCompareQSort);
+        // Overlapping ranges mean the table cannot be searched: the qsort comparator orders by
+        // "a ends before b starts", which says nothing about ranges that overlap, so bsearch then
+        // resolves every program counter to whichever entry it happens to land on. That is silent
+        // -- stack traces and Reflection.getCallerClass() simply come back wrong. It happened on
+        // Android on 28.09.2026 (tsb), where unpatched DUMMY_METHOD_SIZE gave every class a 28 MB
+        // range, and it cost an evening because nothing on the way here said a word.
+        if (IS_TRACE_ENABLED) {
+            jint overlapping = 0, i;
+            for (i = 1; i < count; i++) {
+                if (lookups[i - 1].end > lookups[i].start) overlapping++;
+            }
+            TRACEF("addressClassLookups: %d entries, %d overlapping", count, overlapping);
+        }
         addressClassLookupsCount = count;
         addressClassLookups = lookups;
     }

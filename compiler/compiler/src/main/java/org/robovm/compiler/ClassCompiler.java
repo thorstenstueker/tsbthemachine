@@ -673,9 +673,17 @@ public class ClassCompiler {
         }
         
         String infoStructLabel = labelPrefix + Symbols.infoStructSymbol(clazz.getInternalName());
-        Pattern methodImplPattern = Pattern.compile("\\s*\\.(?:quad|long)\\s+\"?(" 
-                + Pattern.quote(labelPrefix + Symbols.methodSymbolPrefix(clazz.getInternalName())) 
+        // .xword and .word alongside .quad and .long: LLVM's AArch64 ELF printer emits GNU as
+        // spelling, where a pointer is .xword and a 32-bit value .word. Only Darwin and x86 ELF
+        // say .quad/.long. Without the ELF names this pattern never matched on Android, no size
+        // was ever patched, and every method kept DUMMY_METHOD_SIZE. Added 28.09.2026 (tsb).
+        Pattern methodImplPattern = Pattern.compile("\\s*\\.(?:quad|xword|long|word)\\s+\"?("
+                + Pattern.quote(labelPrefix + Symbols.methodSymbolPrefix(clazz.getInternalName()))
                 + "[^\\s\"]+)\"?.*");
+        // The directive of the line actually being replaced is reused rather than assumed: .word
+        // is four bytes on AArch64 but two on x86, so writing a fixed name would be wrong on one
+        // of them.
+        Pattern sizeDirectivePattern = Pattern.compile("\\s*\\.(long|word)\\s");
         
         BufferedReader in = null;
         BufferedWriter out = null;
@@ -714,6 +722,7 @@ public class ClassCompiler {
                 }
             }
             
+            int patched = 0;
             while ((line = in.readLine()) != null) {
                 out.write(line);
                 out.write('\n');
@@ -723,15 +732,28 @@ public class ClassCompiler {
                     if (functionNames.contains(functionName)) {
                         line = in.readLine();
                         if (line.contains(String.valueOf(DUMMY_METHOD_SIZE))) {
-                            out.write("\t.long\t");
+                            Matcher directive = sizeDirectivePattern.matcher(line);
+                            out.write("\t." + (directive.find() ? directive.group(1) : "long") + "\t");
                             out.write("\"" + localLabelPrefix + functionName + "_end\" - \"" + functionName + "\"");
                             out.write('\n');
+                            patched++;
                         } else {
                             out.write(line);
                             out.write('\n');
                         }
                     }
                 }
+            }
+            // Say so when nothing was patched. An unpatched method keeps DUMMY_METHOD_SIZE, which
+            // is 0x01abcdef -- 28 MB -- and every class then claims an address range covering most
+            // of the binary. findClassAt resolves every program counter to whichever class the
+            // search lands on, so stack traces, Reflection.getCallerClass() and every access check
+            // built on it go wrong, far from here and with nothing pointing back. Added 28.09.2026
+            // (tsb), after exactly that cost an evening on Android.
+            if (patched == 0 && !functionNames.isEmpty()) {
+                config.getLogger().warn("No method sizes patched in %s -- %d concrete methods keep "
+                        + "the dummy size. Stack traces and caller-class checks will be wrong.",
+                        clazz.getInternalName(), functionNames.size());
             }
         } finally {
             IOUtils.closeQuietly(in);

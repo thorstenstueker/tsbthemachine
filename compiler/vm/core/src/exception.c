@@ -88,7 +88,12 @@ void rvmThrow(Env* env, Object* e) {
             jint index = 0;
             while ((frame = rvmGetNextCallStackMethod(env, callStack, &index)) != NULL) {
                 Method* m = frame->method;
-                TRACEF("    %s.%s%s:%d", m->clazz->name, m->name, m->desc, frame->lineNumber);
+                // pc and fp alongside the method, added 28.09.2026 (tsb). Without them a wrong
+                // trace cannot be told apart from a wrong *reading* of a right one: repeated
+                // frames with one pc mean the frame chain stopped walking, repeated frames with
+                // distinct pcs mean findClassAt resolved them all to the same class.
+                TRACEF("    %s.%s%s:%d  pc=%p fp=%p", m->clazz->name, m->name, m->desc,
+                       frame->lineNumber, frame->pc, frame->fp);
             }
         }
     }
