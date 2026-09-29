@@ -22,7 +22,16 @@
 # frameworks.
 
 set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR aarch64)
+
+# From ARCH rather than fixed. It said aarch64 outright, which was true of the only Android target
+# that existed; android-x86_64 would have been told it was building for ARM, and
+# MergeStaticLibObjectFiles.cmake reads this variable to pick the linker emulation and would have
+# asked for aarch64linux on x86 objects. Made to follow ARCH on 29.09.2026 (tsb).
+if(ARCH STREQUAL "x86_64")
+  set(CMAKE_SYSTEM_PROCESSOR x86_64)
+else()
+  set(CMAKE_SYSTEM_PROCESSOR aarch64)
+endif()
 
 # The NDK, from the environment if it is named, else the newest under the Android SDK.
 if(DEFINED ENV{ANDROID_NDK_HOME})
