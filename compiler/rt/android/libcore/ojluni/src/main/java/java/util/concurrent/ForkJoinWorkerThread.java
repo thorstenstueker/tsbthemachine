@@ -92,7 +92,8 @@ public class ForkJoinWorkerThread extends Thread {
     ForkJoinWorkerThread(ForkJoinPool pool, ThreadGroup threadGroup,
                          AccessControlContext acc) {
         super(threadGroup, null, "aForkJoinWorkerThread");
-        U.putOrderedObject(this, INHERITEDACCESSCONTROLCONTEXT, acc);
+        // acc is accepted and ignored: this Thread has no inheritedAccessControlContext field to
+        // put it in, and no SecurityManager to read it. See the note by THREADLOCALS above.
         eraseThreadLocals(); // clear before registering
         this.pool = pool;
         this.workQueue = pool.registerWorker(this);
@@ -185,18 +186,31 @@ public class ForkJoinWorkerThread extends Thread {
     }
 
     // Set up to allow setting thread fields in constructor
+    //
+    // RoboVM note, 29.09.2026 (tsb): these looked up OpenJDK's field names -- threadLocals,
+    // inheritableThreadLocals, inheritedAccessControlContext -- and this Thread has none of them.
+    // Its thread-local storage is RoboVM's own, held in localValues and inheritableValues, and it
+    // carries no AccessControlContext at all.
+    //
+    // The consequence was not a missing feature but a dead one. getDeclaredField threw, the static
+    // initialiser turned that into an Error, and *every* worker thread the pool tried to create
+    // died on class initialisation. So ForkJoinPool could never start a worker, and with it
+    // CompletableFuture.supplyAsync, every *Async stage using the default executor, and parallel
+    // streams -- all of them failing with "NoSuchFieldException: threadLocals" from a stack trace
+    // that names ForkJoinWorkerThread and nothing about Thread's fields.
+    //
+    // The access control context is dropped rather than renamed: there is no field to put it in,
+    // and no SecurityManager here to read it. InnocuousForkJoinWorkerThread keeps its thread group
+    // and its erased thread locals, which are the parts that still mean something.
     private static final sun.misc.Unsafe U = sun.misc.Unsafe.getUnsafe();
     private static final long THREADLOCALS;
     private static final long INHERITABLETHREADLOCALS;
-    private static final long INHERITEDACCESSCONTROLCONTEXT;
     static {
         try {
             THREADLOCALS = U.objectFieldOffset
-                (Thread.class.getDeclaredField("threadLocals"));
+                (Thread.class.getDeclaredField("localValues"));
             INHERITABLETHREADLOCALS = U.objectFieldOffset
-                (Thread.class.getDeclaredField("inheritableThreadLocals"));
-            INHERITEDACCESSCONTROLCONTEXT = U.objectFieldOffset
-                (Thread.class.getDeclaredField("inheritedAccessControlContext"));
+                (Thread.class.getDeclaredField("inheritableValues"));
         } catch (ReflectiveOperationException e) {
             throw new Error(e);
         }
