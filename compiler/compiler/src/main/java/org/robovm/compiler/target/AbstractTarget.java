@@ -163,13 +163,31 @@ public abstract class AbstractTarget implements Target {
                 // Create an ld version script which makes the exported symbols global
                 // and all other symbols local.
                 StringBuilder sb = new StringBuilder();
-                sb.append("{\n    ");
-                sb.append(StringUtils.join(exportedSymbols, ";\n    "));
-                sb.append(";\n};\n");
+                if (exportiertNurGenannte()) {
+                    // A real version script, which is what the sentence above always claimed and
+                    // what --dynamic-list never did: that option *adds* names to the dynamic symbol
+                    // table and takes none away. For an executable that costs nothing, because
+                    // nothing is exported to begin with. For a shared library it costs everything:
+                    // the linker exports every global symbol by default, and an AOT image has one
+                    // per method.
+                    //
+                    // Measured on a Hello World library, 30.09.2026 (tsb): 293029 dynamic symbols,
+                    // of which four were wanted. .dynstr 19.4 MB, .dynsym 6.7 MB, .gnu.hash 1.9 MB
+                    // and much of .rela.dyn's 13.2 MB — against 16.6 MB of actual code.
+                    sb.append("{\n  global:\n    ");
+                    sb.append(StringUtils.join(exportedSymbols, ";\n    "));
+                    sb.append(";\n  local:\n    *;\n};\n");
+                } else {
+                    sb.append("{\n    ");
+                    sb.append(StringUtils.join(exportedSymbols, ";\n    "));
+                    sb.append(";\n};\n");
+                }
 
                 File dynamicListFile = new File(config.getTmpDir(), "exported_symbols");
                 FileUtils.writeStringToFile(dynamicListFile, sb.toString());
-                ccArgs.add("-Wl,--dynamic-list=" + dynamicListFile.getAbsolutePath());
+                ccArgs.add(exportiertNurGenannte()
+                        ? "-Wl,--version-script=" + dynamicListFile.getAbsolutePath()
+                        : "-Wl,--dynamic-list=" + dynamicListFile.getAbsolutePath());
             }
 
         } else if (config.getOs().getFamily() == OS.Family.darwin) {
@@ -298,6 +316,20 @@ public abstract class AbstractTarget implements Target {
             List<String> libs) throws IOException {
 
         ToolchainUtil.link(config, ccArgs, objectFiles, libs, outFile);
+    }
+
+    /**
+     * Whether the named symbols are the <em>only</em> ones this artefact exports.
+     *
+     * <p>False for an executable, where the question does not arise: nothing is exported unless it
+     * is asked for, and {@code --dynamic-list} is the right tool for asking.
+     *
+     * <p>True for a shared library, where it is the difference between a hundred megabytes and
+     * forty. The linker exports every global symbol of a library by default, and an ahead-of-time
+     * image has a global symbol per method — with the method's full signature in its name.
+     */
+    protected boolean exportiertNurGenannte() {
+        return false;
     }
 
     protected File getAppDir() {
