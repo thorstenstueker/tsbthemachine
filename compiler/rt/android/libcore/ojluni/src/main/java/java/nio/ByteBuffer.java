@@ -1755,6 +1755,56 @@ public abstract class ByteBuffer
     // RoboVM Note: added for Java 17 API parity (from OpenJDK 17u, adapted)
 
     /**
+     * Creates a new byte buffer whose content is a shared subsequence of this buffer's content,
+     * starting at the given index and with the given length (Java 13).
+     *
+     * <p> The index is absolute — it does not count from the position, which is why this cannot
+     * be expressed by moving the position and calling {@link #slice()}.
+     */
+    public abstract ByteBuffer slice(int index, int length);
+
+    /**
+     * Returns the memory address, pointing to the byte at the given index, modulo the given unit
+     * size (Java 9).
+     *
+     * <p> A heap buffer has no address of its own, and this class has no way to ask for one, so a
+     * non-direct buffer is treated as though it began on an aligned boundary: that is what
+     * OpenJDK does for a heap buffer whose {@code address} is zero.
+     */
+    public final int alignmentOffset(int index, int unitSize) {
+        if (index < 0)
+            throw new IndexOutOfBoundsException("Index less than zero: " + index);
+        if (unitSize < 1 || (unitSize & (unitSize - 1)) != 0)
+            throw new IllegalArgumentException("Unit size not a power of two: " + unitSize);
+        if (unitSize > 8 && !isDirect())
+            throw new UnsupportedOperationException("Unit size unsupported for non-direct buffers: "
+                                                    + unitSize);
+        return (int) ((address + index) % unitSize);
+    }
+
+    /**
+     * Creates a new byte buffer whose content is a shared and aligned subsequence of this
+     * buffer's content (Java 9).
+     */
+    public final ByteBuffer alignedSlice(int unitSize) {
+        int pos = position();
+        int lim = limit();
+
+        int pos_mod = alignmentOffset(pos, unitSize);
+        int lim_mod = alignmentOffset(lim, unitSize);
+
+        // Round up the position to the next unit boundary, and the limit down to the previous one
+        int aligned_pos = (pos_mod > 0) ? pos + (unitSize - pos_mod) : pos;
+        int aligned_lim = lim - lim_mod;
+
+        if (aligned_pos > lim || aligned_lim < pos) {
+            aligned_pos = aligned_lim = pos;
+        }
+
+        return slice(aligned_pos, aligned_lim - aligned_pos);
+    }
+
+    /**
      * Absolute bulk <i>get</i> method (Java 13).
      */
     public ByteBuffer get(int index, byte[] dst, int offset, int length) {

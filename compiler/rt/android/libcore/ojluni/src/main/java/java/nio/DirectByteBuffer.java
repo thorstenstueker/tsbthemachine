@@ -154,7 +154,7 @@ public class DirectByteBuffer extends MappedByteBuffer implements DirectBuffer {
     }
 
     @Override
-    public final ByteBuffer slice() {
+    public final MappedByteBuffer slice() {
         if (!memoryRef.isAccessible) {
             throw new IllegalStateException("buffer is inaccessible");
         }
@@ -167,8 +167,20 @@ public class DirectByteBuffer extends MappedByteBuffer implements DirectBuffer {
         return new DirectByteBuffer(memoryRef, -1, 0, rem, rem, off, isReadOnly);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public final MappedByteBuffer slice(int index, int length) {
+        if (!memoryRef.isAccessible) {
+            throw new IllegalStateException("buffer is inaccessible");
+        }
+        checkBounds(index, length, limit());
+        return new DirectByteBuffer(memoryRef, -1, 0, length, length, index + offset, isReadOnly);
+    }
+
     @Override
-    public final ByteBuffer duplicate() {
+    public final MappedByteBuffer duplicate() {
         if (memoryRef.isFreed) {
             throw new IllegalStateException("buffer has been freed");
         }
@@ -303,7 +315,7 @@ public class DirectByteBuffer extends MappedByteBuffer implements DirectBuffer {
     }
 
     @Override
-    public final ByteBuffer compact() {
+    public final MappedByteBuffer compact() {
         if (!memoryRef.isAccessible) {
             throw new IllegalStateException("buffer is inaccessible");
         }

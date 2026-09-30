@@ -64,6 +64,15 @@ class ByteBufferAsShortBuffer extends ShortBuffer {       // package-private
         return new ByteBufferAsShortBuffer(bb, -1, 0, rem, rem, off, order);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public ShortBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new ByteBufferAsShortBuffer(bb, -1, 0, length, length, (index << 1) + offset, order);
+    }
+
     public ShortBuffer duplicate() {
         return new ByteBufferAsShortBuffer(bb,
                 this.markValue(),

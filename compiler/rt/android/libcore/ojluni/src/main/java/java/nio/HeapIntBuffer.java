@@ -82,6 +82,15 @@ class HeapIntBuffer extends IntBuffer {
                 isReadOnly);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public IntBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new HeapIntBuffer(hb, -1, 0, length, length, index + offset, isReadOnly);
+    }
+
     public IntBuffer duplicate() {
         return new HeapIntBuffer(hb,
                 this.markValue(),

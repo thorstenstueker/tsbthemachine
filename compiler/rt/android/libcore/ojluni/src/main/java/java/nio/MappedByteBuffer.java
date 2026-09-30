@@ -212,6 +212,89 @@ public abstract class MappedByteBuffer
         return this;
     }
 
+    /**
+     * Forces any changes made to a region of this buffer's content to be written to the storage
+     * device containing the mapped file (Java 13).
+     *
+     * @param  index   The index of the first byte in the buffer region to be written back
+     * @param  length  The length of the region, in bytes
+     * @return  This buffer
+     */
+    public final MappedByteBuffer force(int index, int length) {
+        checkMapped();
+        checkBounds(index, length, limit());
+        if ((address != 0) && (capacity() != 0)) {
+            // Widen to whole pages: the kernel works in pages, and a region that begins mid-page
+            // would otherwise leave the first bytes of it unwritten.
+            int ps = Bits.pageSize();
+            long offset = mappingOffset() + index;
+            long start = (address + index) - (offset % ps);
+            long ende = address + index + length;
+            force0(fd, start, ende - start);
+        }
+        return this;
+    }
+
+    // RoboVM Note: added for Java 17 API parity. These are covariant overrides and nothing more —
+    // every one of them calls the ByteBuffer method and returns this. They exist because code
+    // written against Java 9 or later does `mapped.position(0).force()` and will not compile if
+    // position() answers a ByteBuffer. The four abstract ones are implemented by DirectByteBuffer,
+    // which is the only subclass.
+
+    @Override
+    public abstract MappedByteBuffer slice();
+
+    @Override
+    public abstract MappedByteBuffer slice(int index, int length);
+
+    @Override
+    public abstract MappedByteBuffer duplicate();
+
+    @Override
+    public abstract MappedByteBuffer compact();
+
+    @Override
+    public final MappedByteBuffer position(int newPosition) {
+        super.position(newPosition);
+        return this;
+    }
+
+    @Override
+    public final MappedByteBuffer limit(int newLimit) {
+        super.limit(newLimit);
+        return this;
+    }
+
+    @Override
+    public final MappedByteBuffer mark() {
+        super.mark();
+        return this;
+    }
+
+    @Override
+    public final MappedByteBuffer reset() {
+        super.reset();
+        return this;
+    }
+
+    @Override
+    public final MappedByteBuffer clear() {
+        super.clear();
+        return this;
+    }
+
+    @Override
+    public final MappedByteBuffer flip() {
+        super.flip();
+        return this;
+    }
+
+    @Override
+    public final MappedByteBuffer rewind() {
+        super.rewind();
+        return this;
+    }
+
     private native boolean isLoaded0(long address, long length, int pageCount);
     private native void load0(long address, long length);
     private native void force0(FileDescriptor fd, long address, long length);

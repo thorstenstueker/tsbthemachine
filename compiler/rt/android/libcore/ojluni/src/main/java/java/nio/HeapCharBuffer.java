@@ -82,6 +82,15 @@ class HeapCharBuffer extends CharBuffer {
                 isReadOnly);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public CharBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new HeapCharBuffer(hb, -1, 0, length, length, index + offset, isReadOnly);
+    }
+
     public CharBuffer duplicate() {
         return new HeapCharBuffer(hb,
                 this.markValue(),

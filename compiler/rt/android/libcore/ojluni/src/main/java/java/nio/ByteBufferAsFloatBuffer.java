@@ -64,6 +64,15 @@ class ByteBufferAsFloatBuffer extends FloatBuffer {       // package-private
         return new ByteBufferAsFloatBuffer(bb, -1, 0, rem, rem, off, order);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public FloatBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new ByteBufferAsFloatBuffer(bb, -1, 0, length, length, (index << 2) + offset, order);
+    }
+
     public FloatBuffer duplicate() {
         return new ByteBufferAsFloatBuffer(bb,
                 markValue(),

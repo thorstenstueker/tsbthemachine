@@ -50,6 +50,15 @@ class StringCharBuffer                                  // package-private
                                     offset + this.position());
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public CharBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new StringCharBuffer(str, -1, 0, length, length, offset + index);
+    }
+
     private StringCharBuffer(CharSequence s,
                              int mark,
                              int pos,

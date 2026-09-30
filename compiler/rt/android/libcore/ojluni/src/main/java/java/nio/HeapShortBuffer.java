@@ -82,6 +82,15 @@ class HeapShortBuffer extends ShortBuffer {
                                    isReadOnly);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public ShortBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new HeapShortBuffer(hb, -1, 0, length, length, index + offset, isReadOnly);
+    }
+
     public ShortBuffer duplicate() {
         return new HeapShortBuffer(hb,
                                    this.markValue(),

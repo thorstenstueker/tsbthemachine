@@ -65,6 +65,15 @@ class ByteBufferAsDoubleBuffer
         return new ByteBufferAsDoubleBuffer(bb, -1, 0, rem, rem, off, order);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public DoubleBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new ByteBufferAsDoubleBuffer(bb, -1, 0, length, length, (index << 3) + offset, order);
+    }
+
     public DoubleBuffer duplicate() {
         return new ByteBufferAsDoubleBuffer(bb,
                 markValue(),

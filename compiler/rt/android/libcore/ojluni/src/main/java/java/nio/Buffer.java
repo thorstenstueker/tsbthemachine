@@ -500,6 +500,28 @@ public abstract class Buffer {
      */
     public abstract boolean isDirect();
 
+    // RoboVM Note: added for Java 17 API parity. Java 16 pulled these three up from the seven
+    // typed buffers to here, so that code holding a Buffer can slice it without knowing which
+    // kind it is. Every subclass already declares them with its own return type — this only
+    // states the common shape.
+
+    /**
+     * Creates a new buffer whose content is a shared subsequence of this buffer's content
+     * (Java 16).
+     */
+    public abstract Buffer slice();
+
+    /**
+     * Creates a new buffer whose content is a shared subsequence of this buffer's content,
+     * starting at the given index and with the given length (Java 16).
+     */
+    public abstract Buffer slice(int index, int length);
+
+    /**
+     * Creates a new buffer that shares this buffer's content (Java 16).
+     */
+    public abstract Buffer duplicate();
+
 
     // -- Package-private methods for bounds checking, etc. --
 

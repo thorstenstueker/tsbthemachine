@@ -81,6 +81,15 @@ final class HeapByteBuffer extends ByteBuffer {
                 isReadOnly);
     }
 
+    /**
+     * Java 13. The index is absolute — it does not count from the position, which is why this
+     * cannot be expressed by moving the position and calling slice().
+     */
+    public ByteBuffer slice(int index, int length) {
+        checkBounds(index, length, limit());
+        return new HeapByteBuffer(hb, -1, 0, length, length, index + offset, isReadOnly);
+    }
+
     @Override
     public ByteBuffer duplicate() {
         return new HeapByteBuffer(hb,

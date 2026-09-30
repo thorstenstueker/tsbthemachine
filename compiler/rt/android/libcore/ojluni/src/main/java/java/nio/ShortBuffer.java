@@ -872,5 +872,97 @@ public abstract class ShortBuffer
      */
     public abstract ByteOrder order();
 
+    // RoboVM Note: added for Java 17 API parity (from OpenJDK 17u, adapted). The same block is in
+    // ByteBuffer, which had it already; these six are generated from the same shape by hand.
 
+    /**
+     * Creates a new buffer whose content is a shared subsequence of this buffer's content,
+     * starting at the given index and with the given length (Java 13).
+     */
+    public abstract ShortBuffer slice(int index, int length);
+
+    /**
+     * Absolute bulk <i>get</i> method (Java 16).
+     */
+    public ShortBuffer get(int index, short[] dst, int offset, int length) {
+        checkBounds(offset, length, dst.length);
+        if (index < 0 || length > limit() - index)
+            throw new IndexOutOfBoundsException();
+        for (int i = 0; i < length; i++) {
+            dst[offset + i] = get(index + i);
+        }
+        return this;
+    }
+
+    /**
+     * Absolute bulk <i>get</i> method (Java 16).
+     */
+    public ShortBuffer get(int index, short[] dst) {
+        return get(index, dst, 0, dst.length);
+    }
+
+    /**
+     * Absolute bulk <i>put</i> method (Java 16).
+     */
+    public ShortBuffer put(int index, short[] src, int offset, int length) {
+        checkBounds(offset, length, src.length);
+        if (index < 0 || length > limit() - index)
+            throw new IndexOutOfBoundsException();
+        if (isReadOnly())
+            throw new ReadOnlyBufferException();
+        for (int i = 0; i < length; i++) {
+            put(index + i, src[offset + i]);
+        }
+        return this;
+    }
+
+    /**
+     * Absolute bulk <i>put</i> method (Java 16).
+     */
+    public ShortBuffer put(int index, short[] src) {
+        return put(index, src, 0, src.length);
+    }
+
+    /**
+     * Absolute bulk <i>put</i> method (Java 16).
+     */
+    public ShortBuffer put(int index, ShortBuffer src, int offset, int length) {
+        if (index < 0 || length > limit() - index)
+            throw new IndexOutOfBoundsException();
+        if (offset < 0 || length > src.limit() - offset)
+            throw new IndexOutOfBoundsException();
+        if (isReadOnly())
+            throw new ReadOnlyBufferException();
+        if (src == this && index < offset + length && offset < index + length) {
+            // overlapping region within the same buffer: copy through temporary array
+            short[] tmp = new short[length];
+            src.get(offset, tmp, 0, length);
+            put(index, tmp, 0, length);
+            return this;
+        }
+        for (int i = 0; i < length; i++) {
+            put(index + i, src.get(offset + i));
+        }
+        return this;
+    }
+
+    /**
+     * Finds and returns the relative index of the first mismatch between this buffer and a
+     * given buffer (Java 11).
+     */
+    public int mismatch(ShortBuffer that) {
+        int thisPos = this.position();
+        int thisRem = this.limit() - thisPos;
+        int thatPos = that.position();
+        int thatRem = that.limit() - thatPos;
+        int length = Math.min(thisRem, thatRem);
+        if (length < 0)
+            return -1;
+        for (int i = 0; i < length; i++) {
+            if (this.get(thisPos + i) != that.get(thatPos + i)) {
+                return i;
+            }
+        }
+        return thisRem != thatRem ? length : -1;
+    }
 }
