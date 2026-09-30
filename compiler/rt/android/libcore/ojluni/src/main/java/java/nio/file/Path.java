@@ -377,6 +377,37 @@ public interface Path
      */
     Path resolve(String other);
 
+    // RoboVM Note: added for Java 22 API parity.
+
+    /**
+     * Resolves a sequence of paths against this one, left to right (Java 22).
+     *
+     * <p>{@code p.resolve(a, b, c)} is {@code p.resolve(a).resolve(b).resolve(c)}, and like the
+     * single-argument form, an absolute element discards everything to its left.
+     *
+     * @since 22
+     */
+    default Path resolve(Path first, Path... more) {
+        Path result = resolve(first);
+        for (Path p : more) {
+            result = result.resolve(p);
+        }
+        return result;
+    }
+
+    /**
+     * Resolves a sequence of path strings against this one, left to right (Java 22).
+     *
+     * @since 22
+     */
+    default Path resolve(String first, String... more) {
+        Path result = resolve(first);
+        for (String s : more) {
+            result = result.resolve(s);
+        }
+        return result;
+    }
+
     /**
      * Resolves the given path against this path's {@link #getParent parent}
      * path. This is useful where a file name needs to be <i>replaced</i> with

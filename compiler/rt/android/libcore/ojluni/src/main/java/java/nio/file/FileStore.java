@@ -93,6 +93,22 @@ public abstract class FileStore {
      */
     public abstract long getTotalSpace() throws IOException;
 
+    // RoboVM Note: added for Java 17 API parity (Java 10)
+
+    /**
+     * The number of bytes per block in this file store (Java 10).
+     *
+     * <p>Not implemented, and this is the default the specification provides for a file system
+     * that cannot answer: it throws rather than guessing 4096. A caller sizing a buffer against a
+     * made-up block size gets worse behaviour than one that catches this and picks its own.
+     *
+     * @throws UnsupportedOperationException always, on this platform
+     * @since 10
+     */
+    public long getBlockSize() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Returns the number of bytes available to this Java virtual machine on the
      * file store.

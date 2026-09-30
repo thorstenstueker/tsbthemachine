@@ -566,6 +566,33 @@ public abstract class Charset
         throw new UnsupportedCharsetException(charsetName);
     }
 
+    /**
+     * Returns a charset object for the named charset, or the given fallback (Java 18).
+     *
+     * <p>The point is the ordinary case of reading a charset name out of a header or a
+     * configuration file, where an unknown or malformed one should fall back rather than throw.
+     * Written by hand that is a try/catch around two different exceptions -- an illegal *name* and
+     * an unsupported one are separate failures -- and code that catches only the second is the
+     * reason this exists.
+     *
+     * <p>A null name is <i>not</i> one of the cases this covers: it throws, as the single-argument
+     * form does. The fallback is for a name that came from somewhere and turned out to be no good,
+     * not for one that was never there — and catching the common superclass
+     * IllegalArgumentException, which is the obvious way to write this, would quietly swallow it.
+     *
+     * @param  charsetName  the name of the requested charset
+     * @param  fallback     what to return if the name is malformed or unsupported; may be null
+     * @throws IllegalArgumentException if {@code charsetName} is null
+     * @since 18
+     */
+    public static Charset forName(String charsetName, Charset fallback) {
+        try {
+            return forName(charsetName);
+        } catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+            return fallback;
+        }
+    }
+
     // BEGIN Android-added: forNameUEE(String) method.
     /**
      * Equivalent to {@code forName} but only throws {@code UnsupportedEncodingException},

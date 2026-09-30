@@ -63,4 +63,30 @@ public final class StandardCharsets {
      * optional byte-order mark
      */
     public static final Charset UTF_16 = Charset.forName("UTF-16");
+
+    // RoboVM Note: added for Java 18 API parity. Every field in this class is initialised when the
+    // class loads, so a charset that is not actually present would not leave one field null -- it
+    // would throw out of the static initialiser and make the whole class unusable, taking UTF_8
+    // with it. NioCheck asks the running library whether these three exist before anyone relies
+    // on them; on 01.10.2026 the answer was yes for all three.
+
+    /**
+     * Thirty-two-bit UCS Transformation Format, big-endian byte order.
+     *
+     * @since 18
+     */
+    public static final Charset UTF_32BE = Charset.forName("UTF-32BE");
+    /**
+     * Thirty-two-bit UCS Transformation Format, little-endian byte order.
+     *
+     * @since 18
+     */
+    public static final Charset UTF_32LE = Charset.forName("UTF-32LE");
+    /**
+     * Thirty-two-bit UCS Transformation Format, byte order identified by an optional byte-order
+     * mark.
+     *
+     * @since 18
+     */
+    public static final Charset UTF_32 = Charset.forName("UTF-32");
 }

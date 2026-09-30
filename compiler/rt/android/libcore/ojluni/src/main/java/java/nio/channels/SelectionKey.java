@@ -198,6 +198,41 @@ public abstract class SelectionKey {
      */
     public abstract SelectionKey interestOps(int ops);
 
+    // RoboVM Note: added for Java 17 API parity (from OpenJDK 17u, adapted)
+
+    /**
+     * Atomically sets this key's interest set to the bitwise union of the existing interest set
+     * and the given value, and returns the previous set (Java 11).
+     *
+     * <p>Not atomic here: this class has no lock of its own and the implementation below is the
+     * read-modify-write the specification allows a subclass to replace. Two threads changing the
+     * interest set of one key can lose an update -- which is also true of the
+     * {@code interestOps(interestOps() | op)} that callers wrote before this method existed, and
+     * is why the method exists.
+     *
+     * @since 11
+     */
+    public int interestOpsOr(int ops) {
+        int oldVal = interestOps();
+        interestOps(oldVal | ops);
+        return oldVal;
+    }
+
+    /**
+     * Atomically sets this key's interest set to the bitwise intersection of the existing interest
+     * set and the given value, and returns the previous set (Java 11).
+     *
+     * <p>Unlike {@link #interestOpsOr}, this accepts bits that are not valid operations: the
+     * intersection can only clear bits, so nothing invalid can end up in the set.
+     *
+     * @since 11
+     */
+    public int interestOpsAnd(int ops) {
+        int oldVal = interestOps();
+        interestOps(oldVal & ops);
+        return oldVal;
+    }
+
     /**
      * Retrieves this key's ready-operation set.
      *

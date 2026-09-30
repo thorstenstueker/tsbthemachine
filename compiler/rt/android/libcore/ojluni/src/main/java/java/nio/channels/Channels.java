@@ -539,6 +539,23 @@ public final class Channels {
         return newReader(ch, Charset.forName(csName).newDecoder(), -1);
     }
 
+    // RoboVM Note: added for Java 17 API parity (Java 10)
+
+    /**
+     * Constructs a reader that decodes bytes from the given channel using the given charset
+     * (Java 10).
+     *
+     * <p>Unlike the {@code csName} version, this one cannot fail on the charset -- which is the
+     * whole reason it exists. It also replaces malformed input rather than reporting it, exactly
+     * as the name-taking version does, since both go through a decoder in its default state.
+     *
+     * @since 10
+     */
+    public static Reader newReader(ReadableByteChannel ch, Charset charset) {
+        checkNotNull(charset, "charset");
+        return newReader(ch, charset.newDecoder(), -1);
+    }
+
     /**
      * Constructs a writer that encodes characters using the given encoder and
      * writes the resulting bytes to the given channel.
@@ -606,5 +623,16 @@ public final class Channels {
     {
         checkNotNull(csName, "csName");
         return newWriter(ch, Charset.forName(csName).newEncoder(), -1);
+    }
+
+    /**
+     * Constructs a writer that encodes characters to the given channel using the given charset
+     * (Java 10).
+     *
+     * @since 10
+     */
+    public static Writer newWriter(WritableByteChannel ch, Charset charset) {
+        checkNotNull(charset, "charset");
+        return newWriter(ch, charset.newEncoder(), -1);
     }
 }
