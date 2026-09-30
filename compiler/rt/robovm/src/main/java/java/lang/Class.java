@@ -741,6 +741,126 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
      * [Ljava/lang/Object;.
      */
     final native String getName0();
+
+    // RoboVM Note: added for Java 22 API parity.
+
+    /**
+     * Returns the {@code Class} for the named primitive type, or null (Java 22).
+     *
+     * <p>The eight primitive names plus {@code void}, and nothing else: an array descriptor, a
+     * class name, or a misspelling all give null rather than an exception, which is what makes
+     * this usable as a first attempt before {@link #forName(String)}. Before it existed the same
+     * thing was written as a switch in a hundred places, and the ones that forgot {@code void}
+     * are why it exists.
+     *
+     * @since 22
+     */
+    public static Class<?> forPrimitiveName(String primitiveName) {
+        switch (primitiveName) {
+            case "boolean": return boolean.class;
+            case "byte":    return byte.class;
+            case "char":    return char.class;
+            case "short":   return short.class;
+            case "int":     return int.class;
+            case "long":    return long.class;
+            case "float":   return float.class;
+            case "double":  return double.class;
+            case "void":    return void.class;
+            default:        return null;
+        }
+    }
+
+    /**
+     * A description of this class including its modifiers and type parameters (Java 8).
+     *
+     * <p>"public final class java.lang.String", or "public interface java.util.List&lt;E&gt;".
+     * Intended for diagnostics, and the specification says so — nothing should parse it.
+     *
+     * @since 1.8
+     */
+    public String toGenericString() {
+        if (isPrimitive()) {
+            return toString();
+        }
+        StringBuilder sb = new StringBuilder();
+        Class<?> component = this;
+        int arrayDepth = 0;
+
+        if (isArray()) {
+            // An array gets its component's name and a pair of brackets per dimension, and no
+            // modifiers at all: int[].class is "int[]", not "public abstract final class [I".
+            do {
+                arrayDepth++;
+                component = component.getComponentType();
+            } while (component.isArray());
+            sb.append(component.getName());
+        } else {
+            // Printed exactly as the flags stand, with nothing inferred away. An interface is
+            // "public abstract interface List<E>" -- the ABSTRACT is redundant to a reader and
+            // the specification prints it anyway, so removing it would be a difference nobody
+            // asked for.
+            int modifiers = getModifiers() & Modifier.classModifiers();
+            if (modifiers != 0) {
+                sb.append(Modifier.toString(modifiers));
+                sb.append(' ');
+            }
+
+            if (isAnnotation()) {
+                sb.append('@');
+            }
+            if (isInterface()) {        // every annotation type is an interface too
+                sb.append("interface");
+            } else if (isEnum()) {
+                sb.append("enum");
+            } else if (isRecord()) {
+                sb.append("record");
+            } else {
+                sb.append("class");
+            }
+            sb.append(' ');
+            sb.append(getName());
+        }
+
+        TypeVariable<?>[] typeparms = component.getTypeParameters();
+        if (typeparms.length > 0) {
+            sb.append('<');
+            for (int i = 0; i < typeparms.length; i++) {
+                if (i > 0) {
+                    sb.append(',');
+                }
+                sb.append(typVariablenSchranken(typeparms[i]));
+            }
+            sb.append('>');
+        }
+
+        for (int i = 0; i < arrayDepth; i++) {
+            sb.append("[]");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * A type variable as it would be written in source: {@code E}, or {@code E extends Number}.
+     *
+     * <p>A bound of exactly Object is left out, because every type variable has it and writing it
+     * would turn every generic class into noise.
+     */
+    private static String typVariablenSchranken(TypeVariable<?> typeVar) {
+        Type[] bounds = typeVar.getBounds();
+        if (bounds.length == 1 && bounds[0].equals(Object.class)) {
+            return typeVar.getName();
+        }
+        StringBuilder sb = new StringBuilder(typeVar.getName());
+        sb.append(" extends ");
+        for (int i = 0; i < bounds.length; i++) {
+            if (i > 0) {
+                sb.append(" & ");
+            }
+            sb.append(bounds[i].getTypeName());
+        }
+        return sb.toString();
+    }
     
     /**
      * Returns the simple name of the class represented by this {@code Class} as

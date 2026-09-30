@@ -276,12 +276,109 @@ public class LangCheck {
         ok("and it ran", geerbt[1] == null);
     }
 
+    // ---------------------------------------------------------------- Class
+
+    interface Beispiel<E> {
+        // only its shape is of interest
+    }
+
+    static class Schranke<T extends Number & Comparable<T>> {
+        // likewise
+    }
+
+    static void classDescriptions() {
+        eq("a final class", String.class.toGenericString(),
+           "public final class java.lang.String");
+        eq("an interface keeps its abstract, as the specification prints it",
+           java.util.List.class.toGenericString(), "public abstract interface java.util.List<E>");
+        eq("two type parameters", java.util.Map.class.toGenericString(),
+           "public abstract interface java.util.Map<K,V>");
+        eq("a plain class", Object.class.toGenericString(), "public class java.lang.Object");
+
+        // A primitive answers toString(), and an array is the component name with brackets and no
+        // modifiers at all -- not "public abstract final class [I".
+        eq("a primitive", int.class.toGenericString(), "int");
+        eq("void is a primitive here", void.class.toGenericString(), "void");
+        eq("an array of primitives", int[].class.toGenericString(), "int[]");
+        eq("two dimensions", int[][].class.toGenericString(), "int[][]");
+        eq("an array of objects", String[].class.toGenericString(), "java.lang.String[]");
+        eq("an array of a generic type keeps the parameters before the brackets",
+           java.util.List[].class.toGenericString(), "java.util.List<E>[]");
+
+        // A bound of exactly Object is left out; anything else is written with "extends".
+        eq("an unbounded parameter", Beispiel.class.toGenericString(),
+           "abstract static interface LangCheck$Beispiel<E>");
+        eq("bounds are written out, joined with &", Schranke.class.toGenericString(),
+           "static class LangCheck$Schranke<T extends java.lang.Number"
+           + " & java.lang.Comparable<T>>");
+
+        eq("a primitive by name", Class.forPrimitiveName("int"), int.class);
+        eq("void by name", Class.forPrimitiveName("void"), void.class);
+        eq("and it is null rather than an exception for anything else",
+           Class.forPrimitiveName("java.lang.String"), null);
+        eq("including an array descriptor", Class.forPrimitiveName("[I"), null);
+        eq("and a misspelling", Class.forPrimitiveName("Int"), null);
+    }
+
+    // ---------------------------------------------------------------- Scanner
+
+    static void scannerStreamsAndCharsets() throws Exception {
+        java.util.Scanner s = new java.util.Scanner("eins zwei drei");
+        eq("tokens() yields the tokens", s.tokens().collect(java.util.stream.Collectors.toList())
+                                                  .toString(), "[eins, zwei, drei]");
+
+        // The stream and the scanner share one position: what next() took, tokens() will not see.
+        java.util.Scanner geteilt = new java.util.Scanner("eins zwei");
+        eq("next() first", geteilt.next(), "eins");
+        eq("then the stream sees the rest",
+           geteilt.tokens().collect(java.util.stream.Collectors.toList()).toString(), "[zwei]");
+
+        eq("an empty scanner yields nothing",
+           new java.util.Scanner("").tokens().collect(java.util.stream.Collectors.toList())
+                                    .toString(), "[]");
+
+        java.util.Scanner f = new java.util.Scanner("a1b22c333");
+        StringBuilder gefunden = new StringBuilder();
+        java.util.Iterator<java.util.regex.MatchResult> it = f.findAll("[0-9]+").iterator();
+        while (it.hasNext()) {
+            gefunden.append(it.next().group()).append(' ');
+        }
+        eq("findAll finds every match", gefunden.toString().trim(), "1 22 333");
+
+        java.util.Scanner g = new java.util.Scanner("x1y2");
+        StringBuilder stellen = new StringBuilder();
+        java.util.Iterator<java.util.regex.MatchResult> it2 =
+                g.findAll(java.util.regex.Pattern.compile("[0-9]")).iterator();
+        while (it2.hasNext()) {
+            java.util.regex.MatchResult m = it2.next();
+            stellen.append(m.start()).append(':').append(m.group()).append(' ');
+        }
+        eq("and reports where they were", stellen.toString().trim(), "1:1 3:2");
+
+        // The charset overloads: same result as the charsetName ones, without a name to misspell.
+        java.util.Scanner c = new java.util.Scanner(
+                new java.io.ByteArrayInputStream("hallo".getBytes("UTF-8")),
+                java.nio.charset.StandardCharsets.UTF_8);
+        eq("the Charset constructor reads the same bytes", c.next(), "hallo");
+
+        final java.util.Scanner zu = new java.util.Scanner("zu");
+        zu.close();
+        throwsToo("a closed scanner cannot be streamed", IllegalStateException.class,
+                  new Runnable() {
+                      public void run() {
+                          zu.tokens();
+                      }
+                  });
+    }
+
     public static void main(String[] args) throws Exception {
         rangedIndexOf();
         splitKeepingDelimiters();
         threadIdentityAndKind();
         sleepAndJoinWithDurations();
         inheritableThreadLocalsCanBeDeclined();
+        classDescriptions();
+        scannerStreamsAndCharsets();
 
         System.out.println("LangCheck: " + checked + " checked, " + failed + " failed");
         System.exit(failed > 0 ? 1 : 0);

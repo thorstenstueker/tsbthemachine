@@ -36,6 +36,8 @@ import java.nio.channels.*;
 import java.nio.charset.*;
 import java.text.*;
 import java.util.Locale;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import sun.misc.LRUCache;
 
@@ -589,6 +591,21 @@ public final class Scanner implements Iterator<String>, Closeable {
     }
 
     /**
+     * Constructs a new {@code Scanner} that produces values scanned from the specified input
+     * stream, using the given charset (Java 10).
+     *
+     * <p>The charset is named rather than looked up, so a misspelling is a compile error instead
+     * of an IllegalArgumentException at run time -- which is the whole point of the overload.
+     *
+     * @since 10
+     */
+    public Scanner(InputStream source, Charset charset) {
+        this(makeReadable(Objects.requireNonNull(source, "source"),
+                          Objects.requireNonNull(charset, "charset")),
+             WHITESPACE_PATTERN);
+    }
+
+    /**
      * Returns a charset object for the given charset name.
      * @throws NullPointerException          is csn is null
      * @throws IllegalArgumentException      if the charset is not supported
@@ -636,6 +653,17 @@ public final class Scanner implements Iterator<String>, Closeable {
         throws FileNotFoundException
     {
         this(Objects.requireNonNull(source), toDecoder(charsetName));
+    }
+
+    /**
+     * Constructs a new {@code Scanner} that produces values scanned from the specified file,
+     * using the given charset (Java 10).
+     *
+     * @since 10
+     */
+    public Scanner(File source, Charset charset) throws IOException {
+        this(Objects.requireNonNull(source),
+             Objects.requireNonNull(charset, "charset").newDecoder());
     }
 
     private Scanner(File source, CharsetDecoder dec)
@@ -701,8 +729,20 @@ public final class Scanner implements Iterator<String>, Closeable {
         this(Objects.requireNonNull(source), toCharset(charsetName));
     }
 
-    private Scanner(Path source, Charset charset)  throws IOException {
-        this(makeReadable(Files.newInputStream(source), charset));
+
+    /**
+     * Constructs a new {@code Scanner} that produces values scanned from the specified file,
+     * using the given charset (Java 10).
+     *
+     * <p>This constructor already existed as a private one, taking the charset the
+     * {@code charsetName} version had just looked up. Java 10 made it public, which is all that
+     * happened here.
+     *
+     * @since 10
+     */
+    public Scanner(Path source, Charset charset)  throws IOException {
+        this(makeReadable(Files.newInputStream(Objects.requireNonNull(source)),
+                          Objects.requireNonNull(charset, "charset")));
     }
 
     /**
@@ -745,6 +785,18 @@ public final class Scanner implements Iterator<String>, Closeable {
      */
     public Scanner(ReadableByteChannel source, String charsetName) {
         this(makeReadable(Objects.requireNonNull(source, "source"), toDecoder(charsetName)),
+             WHITESPACE_PATTERN);
+    }
+
+    /**
+     * Constructs a new {@code Scanner} that produces values scanned from the specified channel,
+     * using the given charset (Java 10).
+     *
+     * @since 10
+     */
+    public Scanner(ReadableByteChannel source, Charset charset) {
+        this(makeReadable(Objects.requireNonNull(source, "source"),
+                          Objects.requireNonNull(charset, "charset").newDecoder()),
              WHITESPACE_PATTERN);
     }
 
@@ -2640,5 +2692,91 @@ public final class Scanner implements Iterator<String>, Closeable {
         useRadix(10);
         clearCaches();
         return this;
+    }
+
+    // RoboVM Note: added for Java 17 API parity (Java 9 streams)
+
+    /**
+     * A stream of the tokens this scanner would produce (Java 9).
+     *
+     * <p>Lazy, and it consumes the scanner as it goes: the stream and the scanner share one
+     * position, so a token pulled from the stream is a token {@link #next()} will not return.
+     * OpenJDK builds this on a dedicated spliterator for speed; here it is the iterator that
+     * {@code hasNext}/{@code next} already are, which has the same semantics and none of the
+     * duplicated parsing.
+     *
+     * @throws IllegalStateException if this scanner is closed
+     * @since 9
+     */
+    public Stream<String> tokens() {
+        ensureOpen();
+        Iterator<String> lauf = new Iterator<String>() {
+            @Override
+            public boolean hasNext() {
+                return Scanner.this.hasNext();
+            }
+
+            @Override
+            public String next() {
+                return Scanner.this.next();
+            }
+        };
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(
+                        lauf, Spliterator.ORDERED | Spliterator.NONNULL),
+                false);
+    }
+
+    /**
+     * A stream of match results for the given pattern, found in the rest of the input (Java 9).
+     *
+     * @throws IllegalStateException if this scanner is closed
+     * @since 9
+     */
+    public Stream<MatchResult> findAll(Pattern pattern) {
+        Objects.requireNonNull(pattern);
+        ensureOpen();
+        Iterator<MatchResult> lauf = new Iterator<MatchResult>() {
+            private MatchResult naechster;
+            private boolean geholt;
+
+            @Override
+            public boolean hasNext() {
+                if (!geholt) {
+                    geholt = true;
+                    // Horizon 0 means no limit, which is what a stream over "the rest of the
+                    // input" needs; a positive horizon would silently stop at that many
+                    // characters and the stream would end early on a large input.
+                    naechster = findWithinHorizon(pattern, 0) != null ? match() : null;
+                }
+                return naechster != null;
+            }
+
+            @Override
+            public MatchResult next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                geholt = false;
+                return naechster;
+            }
+        };
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(
+                        lauf, Spliterator.ORDERED | Spliterator.NONNULL),
+                false);
+    }
+
+    /**
+     * A stream of match results for the given regular expression (Java 9).
+     *
+     * @throws PatternSyntaxException if the expression does not compile
+     * @throws IllegalStateException if this scanner is closed
+     * @since 9
+     */
+    public Stream<MatchResult> findAll(String patString) {
+        Objects.requireNonNull(patString);
+        ensureOpen();
+        return findAll(patternCache.forName(patString));
     }
 }
