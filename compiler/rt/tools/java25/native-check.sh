@@ -18,9 +18,17 @@
 # result worth having: List's new supertype reaches ArrayList, LinkedList, Arrays.asList, subList
 # and Collections.unmodifiableList without disturbing any of them.
 #
-# Needs a built distribution. Either pass one, or let it build:
-#   mvn -pl compiler/rt install -DskipTests
+# Needs a built distribution. Either pass one, or build one first:
+#   mvn -pl compiler/compiler install -DskipTests      # only if the compiler changed
+#   mvn -pl compiler/rt install -DskipTests            # only if the library changed
+#   mvn -pl dist/compiler clean install -DskipTests    # clean, see below
 #   mvn -pl dist/package clean package -DskipTests -Ddist.name=robovm-test
+#
+# The `clean` on dist/compiler is not decoration. That module shades robovm-compiler into the jar
+# the distribution actually runs, and maven-shade-plugin leaves an existing target jar alone: a
+# build without it reports success, takes seconds, and produces a distribution containing the
+# compiler as it was. Two fixes were verified against a distribution that did not contain them on
+# 30.09.2026, one of them twice.
 #
 # Usage: native-check.sh [/path/to/unpacked/dist]
 set -e

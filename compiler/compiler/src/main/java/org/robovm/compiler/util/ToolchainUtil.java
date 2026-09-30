@@ -56,6 +56,7 @@ public class ToolchainUtil {
     private static String FILE;
     private static String DSYMUTIL;
     private static String SYMBOLS;
+    private static String XCODE_PATH;
 
     private static String getIOSDevClang() throws IOException {
         if (IOS_DEV_CLANG == null) {
@@ -175,23 +176,54 @@ public class ToolchainUtil {
         throw new IllegalArgumentException(e.getMessage());
     }
 
+    /**
+     * Where Xcode is, according to {@code xcode-select}.
+     *
+     * <p>Asked once and then remembered, like every other tool location in this class. The Xcode
+     * path does not change during a compile, and this used to start a process each time it was
+     * wanted — which for an iOS build is dozens of times.
+     *
+     * <p>It also retries. On this machine {@code xcode-select --print-path} has intermittently
+     * come back empty, turning a working build into "The path '' does not appear to be a valid
+     * Xcode path" — a message that sends the reader to check their Xcode installation, which is
+     * fine. It has been chased twice without finding the cause; one hole was found and closed in
+     * {@link Executor} (it returned before the output had been collected) and the symptom
+     * outlived it. So the answer is now checked before it is believed, and an unbelievable one is
+     * asked for again rather than reported. Three attempts, because whatever this is has never
+     * been seen twice in a row.
+     */
     public static String findXcodePath() throws IOException {
-        try {
-            String path = new Executor(Logger.NULL_LOGGER, "xcode-select").args("--print-path").execCapture();
-            File f = new File(path);
-            if (f.exists() && f.isDirectory()) {
-                if (new File(f, "Platforms").exists() && new File(f, "Toolchains").exists()) {
-                    return path;
-                }
-            }
-            throw new IllegalArgumentException(String.format(
-                    "The path '%s' does not appear to be a valid Xcode path. Use "
-                            + "'sudo xcode-select -switch <path-to-xcode>' from a Terminal "
-                            + "to switch to the correct Xcode path.", path));
-        } catch (ExecuteException e) {
-            handleExecuteException(e);
-            return null;
+        if (XCODE_PATH != null) {
+            return XCODE_PATH;
         }
+        String zuletzt = null;
+        for (int versuch = 0; versuch < 3; versuch++) {
+            try {
+                zuletzt = new Executor(Logger.NULL_LOGGER, "xcode-select").args("--print-path")
+                        .execCapture();
+            } catch (ExecuteException e) {
+                // An exit code says something definite -- no Xcode, or an unaccepted licence --
+                // and repeating the question will not change the answer.
+                handleExecuteException(e);
+                return null;
+            }
+            File f = new File(zuletzt);
+            if (f.isDirectory() && new File(f, "Platforms").exists()
+                    && new File(f, "Toolchains").exists()) {
+                XCODE_PATH = zuletzt;
+                return XCODE_PATH;
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        throw new IllegalArgumentException(String.format(
+                "The path '%s' does not appear to be a valid Xcode path, asked three times. Use "
+                        + "'sudo xcode-select -switch <path-to-xcode>' from a Terminal "
+                        + "to switch to the correct Xcode path.", zuletzt));
     }
 
     public static boolean isXcodeInstalled() {

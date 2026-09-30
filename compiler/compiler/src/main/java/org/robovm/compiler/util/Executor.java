@@ -302,8 +302,27 @@ public class Executor {
      * and returns list of pump tasks to be started after process is started to pump data between process streams
      * in case custom streams are provided.
      */
-    private List<Consumer<Process>> setupRedirection(ProcessBuilder pb, OutputStream out, OutputStream err, InputStream in) {
-        List<Consumer<Process>> threads = new ArrayList<>();
+    /**
+     * A pump task and whether it reads <i>from</i> the process.
+     *
+     * <p>The distinction decides whether {@link #exec()} may wait for it. A task that reads the
+     * process's output stops of its own accord the moment the pipe reaches end of file, which a
+     * finished process guarantees — so waiting for it is safe and is the only way to know that
+     * everything the process wrote has arrived. A task that writes the process's input has no
+     * such guarantee: its source may be a console that never ends.
+     */
+    private static final class Pumpe {
+        final Consumer<Process> aufgabe;
+        final boolean liestVomProzess;
+
+        Pumpe(Consumer<Process> aufgabe, boolean liestVomProzess) {
+            this.aufgabe = aufgabe;
+            this.liestVomProzess = liestVomProzess;
+        }
+    }
+
+    private List<Pumpe> setupRedirection(ProcessBuilder pb, OutputStream out, OutputStream err, InputStream in) {
+        List<Pumpe> threads = new ArrayList<>();
 
         // combine stderr with stdout if they are redirected to the same stream
         if (out == err) pb.redirectErrorStream(true);
@@ -316,7 +335,7 @@ public class Executor {
             pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
             // custom stream provided, pump process output to it in a separate thread
             if (out != PIPE_OUTPUT)
-                threads.add(p -> pumpStreams(p.getInputStream(), out, closeOutputStreams));
+                threads.add(new Pumpe(p -> pumpStreams(p.getInputStream(), out, closeOutputStreams), true));
         }
 
         if (err == null || err == DISCARD_OUTPUT) {
@@ -327,19 +346,19 @@ public class Executor {
             pb.redirectError(ProcessBuilder.Redirect.PIPE);
             // custom stream provided, pump process err to it in a separate thread
             if (err != PIPE_OUTPUT)
-                threads.add(p -> pumpStreams(p.getErrorStream(), err, closeOutputStreams));
+                threads.add(new Pumpe(p -> pumpStreams(p.getErrorStream(), err, closeOutputStreams), true));
         }
 
         if (in == null) {
             // there is no input is expected to process, close the stream to let process know
-            threads.add( p -> closeSilently(p.getOutputStream()) );
+            threads.add(new Pumpe(p -> closeSilently(p.getOutputStream()), false));
         } else if (in == INHERIT_INPUT) {
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
         } else {
             pb.redirectInput(ProcessBuilder.Redirect.PIPE);
             // custom stream provided, pump it to process input in a separate thread
             if (in != PIPE_INPUT)
-                threads.add( p -> pumpStreams(in, p.getOutputStream(),false));
+                threads.add(new Pumpe(p -> pumpStreams(in, p.getOutputStream(), false), false));
         }
 
         return threads;
@@ -360,7 +379,7 @@ public class Executor {
         ProcessBuilder pb = initProcessBuilder(commandLine);
 
         // setup IO redirection
-        List<Consumer<Process>> pumpTasks = setupRedirection(pb,
+        List<Pumpe> pumpTasks = setupRedirection(pb,
             out != null ? out : (logger != null ? new InfoOutputStream(logger) : null),
             err != null ? err : (logger != null ? new ErrorOutputStream(logger) : null),
             in
@@ -368,17 +387,45 @@ public class Executor {
 
         Process process = pb.start();
         try {
-            // start pump threads for custom streams if there are any
-            // no need to bother for their completion:
-            // these will terminate as soon as stream ends, also these are daemon threads so they
-            // won't prevent JVM from exiting if something goes wrong
-            for (Consumer<Process> task : pumpTasks) {
-                Thread t = new Thread(() -> task.accept(process));
+            // Start a thread per pump. They are daemons so that a stuck one cannot keep the JVM
+            // alive, and the ones reading the process are collected so that we can wait for them
+            // below.
+            List<Thread> auszulesen = new ArrayList<>();
+            for (Pumpe task : pumpTasks) {
+                Thread t = new Thread(() -> task.aufgabe.accept(process));
                 t.setDaemon(true);
                 t.start();
+                if (task.liestVomProzess) {
+                    auszulesen.add(t);
+                }
             }
 
             int code = process.waitFor();
+
+            // Wait for the reading pumps before returning. A finished process does not mean a
+            // drained pipe: the last bytes it wrote can still be in the kernel buffer with the
+            // pump thread not yet scheduled, and a caller that reads its capture buffer at that
+            // moment sees a short answer or an empty one. ExecutorCaptureTest shows that without
+            // this wait execCapture() hands back the empty string from a command that succeeded.
+            //
+            // That is the shape of a failure seen here repeatedly: `xcode-select --print-path`
+            // answering "", reported as "The path '' does not appear to be a valid Xcode path",
+            // intermittently and never on a retry. Whether every one of those was this is not
+            // provable after the fact — but the hole was real, it produces exactly that symptom,
+            // and every execCapture() caller sat in it, including the one that locates clang.
+            //
+            // These threads end when the pipe reaches end of file, which a finished process
+            // guarantees, so the wait is bounded by how fast the data can be copied. The timeout
+            // is only there so that a pipe held open by a grandchild process cannot hang a build;
+            // reaching it means the capture is incomplete either way.
+            for (Thread t : auszulesen) {
+                t.join(60_000);
+                if (t.isAlive() && logger != null) {
+                    logger.warn("Still reading the output of '%s' after 60s; continuing without it",
+                                commandLine.get(0));
+                }
+            }
+
             if (code != 0) throw new ExecuteException(code, "Command '" +  String.join(" ",  commandLine) + "' failed ");
             return code;
         } catch (InterruptedException e) {
@@ -402,7 +449,7 @@ public class Executor {
         ProcessBuilder pb = initProcessBuilder(commandLine);
 
         // setup IO redirection
-        List<Consumer<Process>> pumpTasks = setupRedirection(pb,
+        List<Pumpe> pumpTasks = setupRedirection(pb,
             out != null ? out : PIPE_OUTPUT,
             err != null ? err :PIPE_OUTPUT,
             in != null ? in : PIPE_INPUT
@@ -413,8 +460,8 @@ public class Executor {
         // no need to bother for their completion:
         // these will terminate as soon as stream ends, also these are daemon threads so they
         // won't prevent JVM from exiting if something goes wrong
-        for (Consumer<Process> task : pumpTasks) {
-            Thread t = new Thread(() -> task.accept(process));
+        for (Pumpe task : pumpTasks) {
+            Thread t = new Thread(() -> task.aufgabe.accept(process));
             t.setDaemon(true);
             t.start();
         }
