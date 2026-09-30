@@ -1193,6 +1193,64 @@ public final class Pattern
         return matchList.subList(0, resultSize).toArray(result);
     }
 
+    // RoboVM Note: added for Java 21 API parity (from OpenJDK 21, adapted)
+
+    /**
+     * Splits the given input sequence around matches of this pattern and returns both the
+     * substrings and the matching delimiters (Java 21).
+     *
+     * <p>The result alternates: substring, delimiter, substring, delimiter, ..., substring. What
+     * that buys over {@link #split(CharSequence, int)} is that the input can be put back together
+     * from the result, which a split that throws the delimiters away cannot do.
+     *
+     * <p>{@code limit} counts substrings, not array elements, so a positive limit of n yields at
+     * most {@code n * 2 - 1} elements. A limit of zero drops trailing empty <i>substrings</i>, and
+     * stops at the first element that is not empty — a delimiter is never empty, so a trailing
+     * delimiter survives. That is what OpenJDK's own example shows:
+     * {@code "boo:and:foo".splitWithDelimiters("o", 0)} is
+     * {@code { "b", "o", "", "o", ":and:f", "o", "", "o" }}.
+     *
+     * @since 21
+     */
+    public String[] splitWithDelimiters(CharSequence input, int limit) {
+        int index = 0;
+        boolean matchLimited = limit > 0;
+        ArrayList<String> matchList = new ArrayList<>();
+        Matcher m = matcher(input);
+
+        while (m.find()) {
+            if (!matchLimited || matchList.size() < (limit - 1) * 2) {
+                if (index == 0 && index == m.start() && m.start() == m.end()) {
+                    // A zero-width match at the very beginning produces no empty leading
+                    // substring, the same rule split() follows.
+                    continue;
+                }
+                matchList.add(input.subSequence(index, m.start()).toString());
+                matchList.add(m.group());
+                index = m.end();
+            } else if (matchList.size() == (limit - 1) * 2) {
+                matchList.add(input.subSequence(index, input.length()).toString());
+                index = m.end();
+            }
+        }
+
+        if (index == 0) {
+            return new String[] {input.toString()};
+        }
+
+        if (!matchLimited || matchList.size() < limit * 2 - 1) {
+            matchList.add(input.subSequence(index, input.length()).toString());
+        }
+
+        int resultSize = matchList.size();
+        if (limit == 0) {
+            while (resultSize > 0 && matchList.get(resultSize - 1).isEmpty()) {
+                resultSize--;
+            }
+        }
+        return matchList.subList(0, resultSize).toArray(new String[resultSize]);
+    }
+
     // BEGIN Android-added: fastSplit() to speed up simple cases.
     private static final String FASTSPLIT_METACHARACTERS = "\\?*+[](){}^$.|";
 

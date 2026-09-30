@@ -1130,6 +1130,83 @@ outer:
         return start < _count ? start : _count;
     }
 
+    // RoboVM Note: added for Java 21 API parity.
+
+    /**
+     * Returns the index of the first occurrence of the given character within the given range, or
+     * -1 (Java 21).
+     *
+     * <p>Unlike {@link #indexOf(int, int)}, which quietly clamps an out-of-range start, this
+     * throws. That difference is in the specification and is the point of the method: a caller
+     * searching a region has a length it believes in, and clamping would search somewhere else and
+     * answer as though it had not.
+     *
+     * @throws StringIndexOutOfBoundsException
+     *             if {@code beginIndex} is negative, greater than {@code endIndex}, or
+     *             {@code endIndex} is greater than the length of this string
+     * @since 21
+     */
+    public int indexOf(int ch, int beginIndex, int endIndex) {
+        pruefeBereich(beginIndex, endIndex);
+        if (ch > 0xffff) {
+            int i = indexOfSupplementary(ch, beginIndex);
+            // A supplementary character takes two chars, so it only counts as found when both of
+            // them lie inside the range.
+            return (i >= 0 && i + 2 <= endIndex) ? i : -1;
+        }
+        char[] _value = value;
+        int _offset = offset;
+        for (int i = beginIndex; i < endIndex; i++) {
+            if (_value[_offset + i] == ch) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the index of the first occurrence of the given substring within the given range, or
+     * -1 (Java 21).
+     *
+     * <p>The whole of {@code str} has to lie within the range, not merely start in it.
+     *
+     * @throws StringIndexOutOfBoundsException
+     *             if {@code beginIndex} is negative, greater than {@code endIndex}, or
+     *             {@code endIndex} is greater than the length of this string
+     * @since 21
+     */
+    public int indexOf(String str, int beginIndex, int endIndex) {
+        pruefeBereich(beginIndex, endIndex);
+        int subCount = str.count;
+        if (subCount == 0) {
+            return beginIndex;
+        }
+        int letzterStart = endIndex - subCount;
+        char[] _value = value;
+        char[] target = str.value;
+        int subOffset = str.offset;
+        for (int i = beginIndex; i <= letzterStart; i++) {
+            int a = offset + i;
+            int b = subOffset;
+            int ende = subOffset + subCount;
+            while (b < ende && _value[a] == target[b]) {
+                a++;
+                b++;
+            }
+            if (b == ende) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void pruefeBereich(int beginIndex, int endIndex) {
+        if (beginIndex < 0 || beginIndex > endIndex || endIndex > count) {
+            throw new StringIndexOutOfBoundsException("begin " + beginIndex + ", end " + endIndex
+                                                      + ", length " + count);
+        }
+    }
+
     /**
      * Returns an interned string equal to this string. The VM maintains an internal set of
      * unique strings. All string literals found in loaded classes'
@@ -1910,6 +1987,20 @@ outer:
     public String[] split(String regularExpression, int limit) {
         String[] result = Pattern.fastSplit(regularExpression, this, limit);
         return result != null ? result : Pattern.compile(regularExpression).split(this, limit);
+    }
+
+    /**
+     * Splits this string around matches of the given regular expression, returning the delimiters
+     * along with the substrings (Java 21).
+     *
+     * <p>No fast path: {@link Pattern#fastSplit} does not keep what it matched, and the point of
+     * this method is to keep it.
+     *
+     * @see Pattern#splitWithDelimiters(CharSequence, int)
+     * @since 21
+     */
+    public String[] splitWithDelimiters(String regularExpression, int limit) {
+        return Pattern.compile(regularExpression).splitWithDelimiters(this, limit);
     }
 
     /**

@@ -402,7 +402,32 @@ public class Thread implements Runnable {
      * @see java.lang.ThreadGroup
      * @see java.lang.Runnable
      */
+    /**
+     * Constructs a new {@code Thread}, optionally without inheriting the creating thread's
+     * inheritable thread-locals (Java 9).
+     *
+     * <p>Not inheriting matters to a pool: a worker created while some request happened to be
+     * running would otherwise keep that request's inheritable values alive for as long as the pool
+     * lives, which is a leak and, where the value identifies a user, worse than a leak.
+     *
+     * @param inheritThreadLocals
+     *            whether to inherit the creating thread's inheritable thread-locals
+     * @since 9
+     */
+    public Thread(ThreadGroup group, Runnable runnable, String threadName, long stackSize,
+                  boolean inheritThreadLocals) {
+        if (threadName == null) {
+            throw new NullPointerException("threadName == null");
+        }
+        create(group, runnable, threadName, stackSize, inheritThreadLocals);
+    }
+
     private void create(ThreadGroup group, Runnable runnable, String threadName, long stackSize) {
+        create(group, runnable, threadName, stackSize, true);
+    }
+
+    private void create(ThreadGroup group, Runnable runnable, String threadName, long stackSize,
+                        boolean inheritThreadLocals) {
         Thread currentThread = Thread.currentThread();
         if (group == null) {
             group = currentThread.getThreadGroup();
@@ -432,7 +457,7 @@ public class Thread implements Runnable {
         this.contextClassLoader = currentThread.contextClassLoader;
 
         // Transfer over InheritableThreadLocals.
-        if (currentThread.inheritableValues != null) {
+        if (inheritThreadLocals && currentThread.inheritableValues != null) {
             inheritableValues = new ThreadLocal.Values(currentThread.inheritableValues);
         }
 
@@ -575,6 +600,35 @@ public class Thread implements Runnable {
      */
     public long getId() {
         return tid;
+    }
+
+    // RoboVM Note: added for Java 21 API parity.
+
+    /**
+     * Returns this thread's identifier (Java 19).
+     *
+     * <p>The same number {@link #getId()} returns; that one is deprecated because it is an
+     * instance method that can be overridden, and code that reads an identifier wants the real one.
+     * This is final.
+     *
+     * @since 19
+     */
+    public final long threadId() {
+        return tid;
+    }
+
+    /**
+     * Whether this is a virtual thread (Java 21).
+     *
+     * <p>Always false. There are no virtual threads here — there is no continuation support in the
+     * VM to build them on — and saying so plainly is better than the alternatives. Code that asks
+     * this question is usually deciding whether pinning a carrier thread matters or whether a
+     * pool is worth having, and for a platform thread the answers are the ordinary ones.
+     *
+     * @since 21
+     */
+    public final boolean isVirtual() {
+        return false;
     }
 
     /**
@@ -792,6 +846,35 @@ public class Thread implements Runnable {
      */
     public final void join(long millis) throws InterruptedException {
         join(millis, 0);
+    }
+
+    /**
+     * Waits at most the given duration for this thread to die, and says whether it did (Java 19).
+     *
+     * <p>The answer is the reason this overload exists. {@link #join(long)} returns nothing, so a
+     * caller cannot tell a thread that finished from a wait that ran out, and every use of it is
+     * followed by {@code isAlive()} — which is a second question with a gap in between.
+     *
+     * @return true if this thread has terminated
+     * @throws IllegalThreadStateException if this thread has not been started
+     * @throws NullPointerException if {@code duration} is null
+     * @since 19
+     */
+    public final boolean join(java.time.Duration duration) throws InterruptedException {
+        long nanos = nanosVon(duration);
+        synchronized (lock) {
+            if (!started) {
+                throw new IllegalThreadStateException("this thread has not been started");
+            }
+        }
+        if (!isAlive()) {
+            return true;
+        }
+        if (nanos <= 0) {
+            return false;
+        }
+        join(nanos / NANOS_PER_MILLI, (int) (nanos % NANOS_PER_MILLI));
+        return !isAlive();
     }
 
     /**
@@ -1021,6 +1104,42 @@ public class Thread implements Runnable {
      */
     public static void sleep(long time) throws InterruptedException {
         Thread.sleep(time, 0);
+    }
+
+    /**
+     * Sleeps for the given duration (Java 19).
+     *
+     * <p>A negative or zero duration returns at once rather than throwing: the specification does
+     * not list IllegalArgumentException, unlike {@link #sleep(long)} where a negative millisecond
+     * count does throw. A duration is a computed thing — a deadline minus now — and going
+     * negative is the ordinary way for one to say "no time left".
+     *
+     * @throws NullPointerException if {@code duration} is null
+     * @since 19
+     */
+    public static void sleep(java.time.Duration duration) throws InterruptedException {
+        long nanos = nanosVon(duration);
+        if (nanos <= 0) {
+            return;
+        }
+        Thread.sleep(nanos / NANOS_PER_MILLI, (int) (nanos % NANOS_PER_MILLI));
+    }
+
+    /**
+     * A duration in nanoseconds, saturating rather than overflowing.
+     *
+     * <p>{@code Duration.toNanos()} throws ArithmeticException past about 292 years, and a caller
+     * asking to wait longer than that means "forever" rather than "fail".
+     */
+    private static long nanosVon(java.time.Duration duration) {
+        if (duration == null) {
+            throw new NullPointerException("duration == null");
+        }
+        try {
+            return duration.toNanos();
+        } catch (ArithmeticException e) {
+            return duration.isNegative() ? Long.MIN_VALUE : Long.MAX_VALUE;
+        }
     }
 
     /**
