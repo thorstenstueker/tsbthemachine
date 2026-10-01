@@ -118,7 +118,9 @@ gh release create "$TAG" "dist/package/target/$ASSET" \
     --notes "$(cat <<EOF
 The mobile compiler and runtime for RapidFX and RapidJ: class files up to version 61, a runtime library being filled in against Java 25, CocoaTouch reduced to what a rendered interface needs, and Swing on UIView.
 
-Android compiles ahead of time now, not just the VM core. A Java file becomes an arm64 binary that runs under \`adb shell\`, or — with \`-target androidlib\` — the \`lib<name>.so\` an APK carries in \`lib/arm64-v8a/\`: it loads in ART, and our VM starts inside the ART process.
+Android compiles ahead of time, not just the VM core. A Java file becomes an arm64 binary that runs under \`adb shell\`, or — with \`-target androidlib\` — the \`lib<name>.so\` an APK carries in \`lib/arm64-v8a/\`: it loads in ART, and our VM starts inside the ART process.
+
+**An \`androidlib\` library is a third of the size it was.** It used to export 293,029 dynamic symbols in order to use four: the linker was asked to make the wanted ones global and was never told to make the rest local, which costs nothing for an executable and nearly everything for a shared library. With a version script and a release link that strips, a hello-world library went from 120 MB to 39 — and stack traces are unaffected, because the VM reads its own tables rather than the symbol table.
 
 A fork of RoboVM/MobiVM for our own purposes — see NOTICE for the origin and the licence.
 
