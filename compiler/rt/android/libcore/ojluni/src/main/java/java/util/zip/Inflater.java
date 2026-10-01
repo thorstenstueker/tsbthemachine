@@ -418,7 +418,12 @@ class Inflater {
     private void ensureOpen () {
         assert Thread.holdsLock(zsRef);
         if (zsRef.address() == 0)
-            throw new NullPointerException("Inflater has been closed");
+            // IllegalStateException and not the NullPointerException this threw until
+            // 01.10.2026. The specification has asked for it since the class grew close(), and
+            // with try-with-resources the case is no longer exotic: a null pointer out of
+            // deflate() sends the reader looking for a null argument that is not there.
+            // Measured on JDK 25, where both Deflater and Inflater answer IllegalStateException.
+            throw new IllegalStateException("Inflater has been closed");
     }
 
     boolean ended() {

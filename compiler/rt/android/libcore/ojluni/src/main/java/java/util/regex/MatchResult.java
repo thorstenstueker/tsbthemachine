@@ -185,4 +185,72 @@ public interface MatchResult {
      */
     public int groupCount();
 
+    // Java 20 added these five as default methods that throw. That is the shape on purpose: the
+    // interface grows without breaking anyone who implements it, and whoever wants them overrides
+    // namedGroups() and gets the other three for nothing. Measured against JDK 25 — all five throw
+    // UnsupportedOperationException by default, with the method's own name as the message.
+
+    /**
+     * The named capturing groups, as name to group number (Java 20).
+     *
+     * @throws UnsupportedOperationException unless an implementation provides them
+     * @since 20
+     */
+    public default java.util.Map<String, Integer> namedGroups() {
+        throw new UnsupportedOperationException("namedGroups()");
+    }
+
+    /**
+     * The start of the group with this name (Java 20).
+     *
+     * @throws IllegalArgumentException if no group of that name is in the pattern
+     * @throws IllegalStateException if no match has been attempted, or the last one failed
+     * @since 20
+     */
+    public default int start(String name) {
+        // The lookup is written out in each of the three rather than factored into a private
+        // interface method: those arrived in Java 9 and this library is compiled -source 8,
+        // because it *is* the boot class path. Three lines against a helper class nobody else
+        // would use.
+        Integer nummer = namedGroups().get(name);
+        if (nummer == null) throw new IllegalArgumentException("No group with name <" + name + ">");
+        return start(nummer.intValue());
+    }
+
+    /**
+     * The end of the group with this name (Java 20).
+     *
+     * @since 20
+     */
+    public default int end(String name) {
+        Integer nummer = namedGroups().get(name);
+        if (nummer == null) throw new IllegalArgumentException("No group with name <" + name + ">");
+        return end(nummer.intValue());
+    }
+
+    /**
+     * What the group with this name matched, or null (Java 20).
+     *
+     * @since 20
+     */
+    public default String group(String name) {
+        Integer nummer = namedGroups().get(name);
+        if (nummer == null) throw new IllegalArgumentException("No group with name <" + name + ">");
+        return group(nummer.intValue());
+    }
+
+    /**
+     * Whether this result has a match in it (Java 20).
+     *
+     * <p>The one question a {@code MatchResult} could not previously answer about itself: every
+     * other method throws {@code IllegalStateException} when there is no match, so asking meant
+     * catching. The default below does exactly that catching, once, in the place it belongs.
+     *
+     * @since 20
+     */
+    public default boolean hasMatch() {
+        throw new UnsupportedOperationException("hasMatch()");
+    }
+
+
 }

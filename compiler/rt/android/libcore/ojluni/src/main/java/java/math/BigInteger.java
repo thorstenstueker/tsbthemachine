@@ -355,6 +355,71 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      *         legal values (-1, 0, and 1), or {@code signum} is 0 and
      *         {@code magnitude} contains one or more non-zero bytes.
      */
+    /**
+     * Translates part of a byte array into a BigInteger (Java 9).
+     *
+     * <p>A copy of the range rather than an offset threaded through the parsing. OpenJDK avoids
+     * the copy for the sake of a large allocation it would otherwise make twice; here the shorter
+     * route is worth more than the byte array, and the result is the same number.
+     *
+     * <p>{@code len == 0} is <b>zero</b> and not an error — measured on JDK 25, and worth saying
+     * because the no-offset constructor throws {@code NumberFormatException} on an empty array.
+     * The two differ, and a reader would expect them not to.
+     *
+     * @throws IndexOutOfBoundsException if the range is not inside the array
+     * @since 9
+     */
+    public BigInteger(byte[] val, int off, int len) {
+        byte[] bereich = teilbereich(val, off, len);
+        if (bereich.length == 0) {
+            // Zero, where the no-offset constructor throws on an empty array. Measured on JDK 25,
+            // and worth a line because a reader would expect the two to agree.
+            this.mag = new int[0];
+            this.signum = 0;
+            return;
+        }
+        if (bereich[0] < 0) {
+            this.mag = makePositive(bereich);
+            this.signum = -1;
+        } else {
+            this.mag = stripLeadingZeroBytes(bereich);
+            this.signum = (this.mag.length == 0 ? 0 : 1);
+        }
+        if (this.mag.length >= MAX_MAG_LENGTH) {
+            checkRange();
+        }
+    }
+
+    /**
+     * Translates part of a byte array, with an explicit sign, into a BigInteger (Java 9).
+     *
+     * @throws NumberFormatException if {@code signum} is not -1, 0 or 1, or is 0 while the range
+     *         holds a non-zero byte
+     * @throws IndexOutOfBoundsException if the range is not inside the array
+     * @since 9
+     */
+    public BigInteger(int signum, byte[] magnitude, int off, int len) {
+        this(signum, teilbereich(magnitude, off, len));
+    }
+
+    /**
+     * The named range as an array of its own.
+     *
+     * <p>{@code Objects.checkFromIndexSize} rather than letting {@code Arrays.copyOfRange} fail:
+     * that one throws {@code ArrayIndexOutOfBoundsException} for a negative offset and
+     * {@code IllegalArgumentException} for a reversed range, and the specification asks for
+     * {@code IndexOutOfBoundsException} in both cases. Measured on JDK 25.
+     */
+    private static byte[] teilbereich(byte[] val, int off, int len) {
+        if (off < 0 || len < 0 || off > val.length - len) {
+            throw new IndexOutOfBoundsException(
+                    "off " + off + ", len " + len + ", length " + val.length);
+        }
+        byte[] teil = new byte[len];
+        System.arraycopy(val, off, teil, 0, len);
+        return teil;
+    }
+
     public BigInteger(int signum, byte[] magnitude) {
         this.mag = stripLeadingZeroBytes(magnitude);
 
@@ -1211,7 +1276,16 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
     /**
      * The BigInteger constant two.  (Not exported.)
      */
-    @NonNull private static final BigInteger TWO = valueOf(2);
+    /**
+     * The BigInteger constant two.
+     *
+     * <p>Private here since long before Java 9 made it public API — this class has always needed
+     * it internally. Raising the one that exists is the whole change; a second constant beside it
+     * would be two names for one number.
+     *
+     * @since 9
+     */
+    @NonNull public static final BigInteger TWO = valueOf(2);
 
     /**
      * The BigInteger constant -1.  (Not exported.)
@@ -1495,6 +1569,67 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      */
     @NonNull public BigInteger multiply(@NonNull BigInteger val) {
         return multiply(val, false);
+    }
+
+    /**
+     * The same product as {@link #multiply}, which on a larger machine would be computed in
+     * parallel (Java 19).
+     *
+     * <p>Here it is {@code multiply}. The specification allows that in so many words — it says the
+     * result is the same and only the manner of arriving at it may differ — and a phone has no
+     * ForkJoinPool worth starting for an arithmetic that is rarely the slow part of anything on
+     * one. Saying so plainly is better than a parallel implementation nobody measured.
+     *
+     * @since 19
+     */
+    @NonNull public BigInteger parallelMultiply(@NonNull BigInteger val) {
+        return multiply(val, false);
+    }
+
+    /**
+     * The integer square root, rounded down (Java 9).
+     *
+     * <p>Newton's method on integers, which converges and then oscillates between two neighbouring
+     * values — so the loop stops when the next guess is no longer smaller, and the smaller of the
+     * pair is the answer. The first guess comes from half the bit length, which is within a factor
+     * of two of the root and costs nothing to compute.
+     *
+     * <p>Measured against JDK 25: {@code sqrt(144)} is 12 and {@code sqrt(145)} is 12 as well;
+     * {@code sqrt(2)} and {@code sqrt(3)} are 1; zero and one answer themselves.
+     *
+     * @throws ArithmeticException if this BigInteger is negative
+     * @since 9
+     */
+    @NonNull public BigInteger sqrt() {
+        if (this.signum < 0) {
+            throw new ArithmeticException("Negative BigInteger");
+        }
+        if (this.signum == 0 || this.equals(ONE)) {
+            return this;
+        }
+
+        // 2^(bitLength/2) is at least the root and at most twice it, so Newton's method starts
+        // inside the range it converges on rather than from an arbitrary number.
+        BigInteger x = ONE.shiftLeft((bitLength() + 1) / 2);
+        while (true) {
+            BigInteger naechste = x.add(this.divide(x)).shiftRight(1);
+            if (naechste.compareTo(x) >= 0) {
+                return x;
+            }
+            x = naechste;
+        }
+    }
+
+    /**
+     * The integer square root and what is left over, in one array (Java 9).
+     *
+     * @return {@code {sqrt(), this - sqrt()*sqrt()}}
+     * @throws ArithmeticException if this BigInteger is negative
+     * @since 9
+     */
+    @NonNull public BigInteger[] sqrtAndRemainder() {
+        BigInteger wurzel = sqrt();
+        return new BigInteger[] {wurzel, this.subtract(wurzel.multiply(wurzel))};
     }
 
     /**

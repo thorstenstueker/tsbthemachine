@@ -993,6 +993,83 @@ public final class Pattern
      *
      * @return  The source of this pattern
      */
+    /**
+     * The named capturing groups of this pattern, as name to group number (Java 20).
+     *
+     * <h2>Why this is read out of the pattern text</h2>
+     *
+     * <p>ICU, which does the matching here, can resolve one name to one number and cannot list
+     * them — the native side offers {@code getMatchedGroupIndex(name)} and nothing that enumerates.
+     * So the pattern is scanned once, on demand, and the answer is kept.
+     *
+     * <p>The scan has to know three things that a naive search for {@code (?<} would get wrong:
+     * a backslash escapes whatever follows it, so {@code \\(?<a>} opens no group; a character
+     * class holds no groups at all, so {@code [(?<a>]} opens none either; and {@code (?<=} and
+     * {@code (?<!} are lookbehind rather than a group called "=" or "!". Each of those appears in
+     * real patterns, and each would otherwise produce a name that does not exist.
+     *
+     * <p>Counting is the other half: the map answers with the <em>group number</em>, so every
+     * plain {@code (} has to be counted as it goes past, while {@code (?:}, {@code (?=} and the
+     * rest do not count.
+     *
+     * @return an unmodifiable map, empty when the pattern has no named groups
+     * @since 20
+     */
+    public java.util.Map<String, Integer> namedGroups() {
+        java.util.Map<String, Integer> gefunden = namedGroups;
+        if (gefunden != null) {
+            return gefunden;
+        }
+        gefunden = java.util.Collections.unmodifiableMap(leseGruppennamen(pattern));
+        namedGroups = gefunden;
+        return gefunden;
+    }
+
+    /** Worked out once — a pattern does not change. */
+    private transient volatile java.util.Map<String, Integer> namedGroups;
+
+    /** The scan {@link #namedGroups()} describes. */
+    private static java.util.Map<String, Integer> leseGruppennamen(String muster) {
+        java.util.Map<String, Integer> namen = new java.util.LinkedHashMap<>();
+        int nummer = 0;
+        boolean inKlasse = false;
+
+        for (int i = 0; i < muster.length(); i++) {
+            char c = muster.charAt(i);
+            if (c == '\\') {
+                i++;                                  // whatever follows is a literal
+                continue;
+            }
+            if (inKlasse) {
+                if (c == ']') inKlasse = false;
+                continue;
+            }
+            if (c == '[') {
+                inKlasse = true;
+                continue;
+            }
+            if (c != '(') {
+                continue;
+            }
+            if (i + 1 >= muster.length() || muster.charAt(i + 1) != '?') {
+                nummer++;                             // a plain capturing group
+                continue;
+            }
+            if (i + 2 < muster.length() && muster.charAt(i + 2) == '<'
+                    && i + 3 < muster.length()
+                    && muster.charAt(i + 3) != '=' && muster.charAt(i + 3) != '!') {
+                int ende = muster.indexOf('>', i + 3);
+                if (ende > 0) {
+                    nummer++;
+                    namen.put(muster.substring(i + 3, ende), nummer);
+                    i = ende;
+                }
+            }
+            // everything else behind (? — (?:, (?=, (?!, (?i) … — captures nothing
+        }
+        return namen;
+    }
+
     public String pattern() {
         return pattern;
     }

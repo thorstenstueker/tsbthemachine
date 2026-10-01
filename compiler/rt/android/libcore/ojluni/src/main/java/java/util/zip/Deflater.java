@@ -25,6 +25,8 @@
 
 package java.util.zip;
 
+import java.nio.ByteBuffer;
+
 import dalvik.annotation.optimization.ReachabilitySensitive;
 import dalvik.system.CloseGuard;
 
@@ -74,7 +76,7 @@ import dalvik.system.CloseGuard;
  * @author      David Connelly
  */
 public
-class Deflater {
+class Deflater implements java.io.Closeable {
     // RoboVM note: invoking registerNatives to initialize missing native elements
     private static native void registerNatives();
     static {
@@ -241,6 +243,123 @@ class Deflater {
      */
     public void setInput(byte[] b) {
         setInput(b, 0, b.length);
+    }
+
+    /**
+     * The buffer a {@code setInput(ByteBuffer)} handed over, so that its position can be moved on
+     * as the data is consumed. Null whenever the input came as an array.
+     */
+    private ByteBuffer eingabePuffer;
+
+    /** What {@link #getBytesRead} said when that buffer was handed over. */
+    private long eingabeStand;
+
+    /**
+     * Sets input data for compression from a byte buffer (Java 11).
+     *
+     * <p>The buffer is <b>remembered rather than copied</b>, and its position stays where it is
+     * until the data is actually compressed. Measured on JDK 25: after {@code setInput} the
+     * position is still 0 and {@code needsInput()} already answers false; after the first
+     * {@code deflate} the position stands at the end of what was consumed.
+     *
+     * <p>Getting that wrong would be the quiet kind of wrong — a caller who reads the position
+     * between the two calls, or who hands the same buffer on, would see a buffer that claims to be
+     * spent when it is not.
+     *
+     * @since 11
+     */
+    public void setInput(ByteBuffer input) {
+        if (input == null) {
+            throw new NullPointerException();
+        }
+        synchronized (zsRef) {
+            // A copy of the remaining bytes, because everything below this works on a byte array
+            // and a direct buffer has none. The position is moved on afterwards, in deflate,
+            // which is what makes the copy invisible from the outside.
+            int wieViel = input.remaining();
+            byte[] kopie = new byte[wieViel];
+            input.duplicate().get(kopie);
+            this.buf = kopie;
+            this.off = 0;
+            this.len = wieViel;
+            this.eingabePuffer = input;
+            this.eingabeStand = getBytesRead();
+        }
+    }
+
+    /**
+     * Sets a preset dictionary from a byte buffer (Java 11).
+     *
+     * <p>Consumed at once, unlike the input: a dictionary is read in full by the call itself, so
+     * the buffer is spent when it returns. Same as the array version, which copies too.
+     *
+     * @since 11
+     */
+    public void setDictionary(ByteBuffer dictionary) {
+        if (dictionary == null) {
+            throw new NullPointerException();
+        }
+        synchronized (zsRef) {
+            int wieViel = dictionary.remaining();
+            byte[] kopie = new byte[wieViel];
+            dictionary.get(kopie);
+            setDictionary(kopie, 0, wieViel);
+        }
+    }
+
+    /**
+     * Compresses into a byte buffer (Java 11).
+     *
+     * @since 11
+     */
+    public int deflate(ByteBuffer output) {
+        return deflate(output, NO_FLUSH);
+    }
+
+    /**
+     * Compresses into a byte buffer, with a flush mode (Java 11).
+     *
+     * <p>Writes at the buffer's position and moves it on by what was written, which is what every
+     * other {@code ByteBuffer}-taking method in the platform does.
+     *
+     * @throws ReadOnlyBufferException if {@code output} cannot be written to
+     * @since 11
+     */
+    public int deflate(ByteBuffer output, int flush) {
+        if (output == null) {
+            throw new NullPointerException();
+        }
+        if (output.isReadOnly()) {
+            throw new java.nio.ReadOnlyBufferException();
+        }
+        synchronized (zsRef) {
+            byte[] ziel = new byte[output.remaining()];
+            int n = deflate(ziel, 0, ziel.length, flush);
+            output.put(ziel, 0, n);
+            nachziehen();
+            return n;
+        }
+    }
+
+    /**
+     * Moves a remembered input buffer's position on by what has been consumed since it arrived.
+     *
+     * <p>Called after every compression that may have read from it. {@link #getBytesRead} counts
+     * across the whole life of the deflater, so the difference against the reading taken in
+     * {@code setInput} is what this buffer gave up.
+     */
+    private void nachziehen() {
+        if (eingabePuffer == null) {
+            return;
+        }
+        long verbraucht = getBytesRead() - eingabeStand;
+        if (verbraucht > 0) {
+            eingabePuffer.position(eingabePuffer.position() + (int) verbraucht);
+            eingabeStand = getBytesRead();
+        }
+        if (len == 0) {
+            eingabePuffer = null;
+        }
     }
 
     /**
@@ -558,6 +677,20 @@ class Deflater {
      * finalize() method. Once this method is called, the behavior
      * of the Deflater object is undefined.
      */
+    /**
+     * Closes the compressor and discards any unprocessed input (Java 12).
+     *
+     * <p>The same as {@link #end()}, which this class has always had — the method is new, the
+     * behaviour is not. What it buys is {@code try (Deflater d = new Deflater())}, and that is why
+     * the class now declares {@code Closeable}.
+     *
+     * @since 12
+     */
+    @Override
+    public void close() {
+        end();
+    }
+
     public void end() {
         synchronized (zsRef) {
             // Android-added: CloseGuard support.
@@ -585,7 +718,12 @@ class Deflater {
     private void ensureOpen() {
         assert Thread.holdsLock(zsRef);
         if (zsRef.address() == 0)
-            throw new NullPointerException("Deflater has been closed");
+            // IllegalStateException and not the NullPointerException this threw until
+            // 01.10.2026. The specification has asked for it since the class grew close(), and
+            // with try-with-resources the case is no longer exotic: a null pointer out of
+            // deflate() sends the reader looking for a null argument that is not there.
+            // Measured on JDK 25, where both Deflater and Inflater answer IllegalStateException.
+            throw new IllegalStateException("Deflater has been closed");
     }
 
     // Android-changed: initIDs handled in register method.

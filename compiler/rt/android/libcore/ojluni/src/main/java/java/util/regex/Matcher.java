@@ -194,7 +194,32 @@ public final class Matcher implements MatchResult {
      */
     public MatchResult toMatchResult() {
         ensureMatch();
-        return new OffsetBasedMatchResult(text, groups);
+        return new OffsetBasedMatchResult(text, groups, parentPattern.namedGroups());
+    }
+
+    /**
+     * The named capturing groups of the pattern this matcher uses (Java 20).
+     *
+     * @since 20
+     */
+    @Override
+    public java.util.Map<String, Integer> namedGroups() {
+        return parentPattern.namedGroups();
+    }
+
+    /**
+     * Whether this matcher currently holds a match (Java 20).
+     *
+     * <p>Not "has a match ever been attempted" — the question is whether {@link #group} and its
+     * neighbours would answer rather than throw. Everything about the current match lives behind
+     * the same flag {@code ensureMatch} tests, so this reads it instead of catching the exception
+     * that flag produces.
+     *
+     * @since 20
+     */
+    @Override
+    public boolean hasMatch() {
+        return matchFound;
     }
 
     /**
@@ -1218,9 +1243,36 @@ public final class Matcher implements MatchResult {
         private final String input;
         private final int[] offsets;
 
-        OffsetBasedMatchResult(String input, int[] offsets) {
+        /**
+         * The pattern's group names, carried along because this result outlives the matcher.
+         *
+         * <p>Without them {@code group("jahr")} on a detached result could only throw: the offsets
+         * know where group 3 begins and nothing about what group 3 is called. ICU can resolve one
+         * name through the native matcher, which is gone by the time anyone asks this object.
+         */
+        private final java.util.Map<String, Integer> namen;
+
+        OffsetBasedMatchResult(String input, int[] offsets,
+                               java.util.Map<String, Integer> namen) {
             this.input = input;
             this.offsets = offsets.clone();
+            this.namen = namen;
+        }
+
+        @Override
+        public java.util.Map<String, Integer> namedGroups() {
+            return namen;
+        }
+
+        /**
+         * Always true.
+         *
+         * <p>A matcher only hands one of these out after {@code ensureMatch}, so an instance that
+         * exists is an instance with a match in it.
+         */
+        @Override
+        public boolean hasMatch() {
+            return true;
         }
 
         @Override
