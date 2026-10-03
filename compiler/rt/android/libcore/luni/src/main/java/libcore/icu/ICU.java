@@ -518,9 +518,6 @@ public final class ICU {
 
   private static native String[] getAvailableLocalesNative();
 
-  /** Temporary diagnosis, 03.10.2026: why ICU reports one locale with data linked in. */
-  public static native String dataDiagnosis();
-
     /**
      * Query ICU for the currency being used in the country right now.
      * @param countryCode ISO 3166 two-letter country code

@@ -66,8 +66,6 @@ public class FormatCheck {
 
             // The raw list, before libcore's ICU class filters or caches anything. If this is long
             // and Locale.getAvailableLocales() is short, the loss is on the Java side.
-            System.out.println("  ICU4C data: " + icu.getMethod("dataDiagnosis").invoke(null));
-
             java.lang.reflect.Method raw = icu.getDeclaredMethod("getAvailableLocalesNative");
             raw.setAccessible(true);
             String[] names = (String[]) raw.invoke(null);

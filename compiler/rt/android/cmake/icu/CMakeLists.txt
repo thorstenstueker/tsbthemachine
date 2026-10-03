@@ -17,34 +17,54 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-sign-compare -Wno-deprecated-declaratio
 file(GLOB SRC_COMMON "${COMMON_PATH}/*.cpp")
 file(GLOB SRC_I18N   "${I18N_PATH}/*.cpp")
 file(GLOB SRC_LIBCORE_BRIDGE "${LIBCORE_BRIDGE_PATH}/*.cpp")
-# The data: stubdata for now, and why that is still a defect.
+# The data: stubdata for now, and the defect is still open.
 #
 # stubdata.cpp is ICU's placeholder — a header with no data behind it. Linking it is why this
 # runtime knows exactly one locale: German numbers come out English on both telephones, a German
-# date comes out as "2026 M09 21", and Locale.getAvailableLocales() answers 1 where JDK 25 answers
-# 1158. Measured 03.10.2026, see tools/java25/native/FormatCheck.java.
+# date comes out "2026 M09 21", Locale.getAvailableLocales() answers 1 where JDK 25 answers 1158.
+# See tools/java25/native/FormatCheck.java, which reports it on every run.
 #
-# The replacement is prepared and does not work yet. Switching the two lines below links a real
-# icudt68l.dat, built by tools/icu-data.sh, and it gets ICU as far as reading supplementalData —
-# ulocdata_getCLDRVersion answers 38.1 out of the file, which it cannot do without it. The locale
-# resources are still not found: res_index opens without error and reports one installed locale,
-# and ures_open(NULL, "de") answers U_USING_DEFAULT_WARNING.
+# Switching the two lines at the bottom links a real icudt68l.dat built by tools/icu-data.sh. It
+# gets further than it looks and stops in a place nobody would guess, so here is the whole account.
 #
-# What was ruled out on the way, so that nobody repeats it:
+# WHAT WORKS with the data linked:
+#   * the file is in the archive whole — the .o is exactly the size of the .dat, 27.24 MB for the
+#     unfiltered one, and librobovm-rt.a grows to match
+#   * the symbol is global: 'icudt*' is in merge_static_lib_object_files's export list, nm shows D
+#   * ICU opens it. With -DUDATA_DEBUG the log reads "icudt68l/supplementalData.res: Found",
+#     "icudt68l/res_index.res: Found", "icudt68l/lang/de.res: Found"
+#   * ulocdata_getCLDRVersion answers 38.1, which it reads out of supplementalData and cannot
+#     answer without the file
 #
-#   * the filter — the unfiltered 27 MB file behaves identically
-#   * a stale stubdata.o — the build directory was removed and rebuilt
-#   * the symbol being local after merge_static_lib_object_files, which localises everything not
-#     named: 'icudt*' is in that list now, and nm shows _icudt68_dat as D
-#   * genccode instead of .incbin — worse: in C++ a file-scope const has internal linkage, so the
-#     compiler dropped the whole array and left a 336-byte object
+# WHAT DOES NOT: res_index's InstalledLocales table reports ONE entry, "en". uloc_countAvailable
+# answers 1, ures_open(NULL, "de") answers U_USING_DEFAULT_WARNING, and every locale-sensitive
+# answer stays at root.
 #
-# So the data is linked, global, and read, and the locale index still answers one. That is where it
-# stands.
+# The file is not the problem. Parsed by hand, outside ICU:
 #
-# enable_language(ASM) and the configure_file are left in place for the switch: .incbin cannot be
-# reached by an include directory or by a -D, both tried, so CMake writes the path into a generated
-# copy of the file.
+#     root table, 3 entries
+#       AliasLocales       URES_TABLE16   51 entries
+#       CLDRVersion        URES_STRING_V2
+#       InstalledLocales   URES_TABLE16   783 entries
+#
+#     formatVersion 2, indexes[] = (7, 1236, 2079, 2079, 783, 1, 2074)
+#
+# 783 entries, as a TABLE16 — and this ICU reports its size as 1. res_countArrayItems reads a
+# TABLE16's length out of p16BitUnits, which res_init only populates when formatVersion[0] > 1;
+# formatVersion here is 2, so it should be populated. uresdata.cpp, uresbund.cpp and
+# locavailable.cpp are all byte-identical with ICU 68.2 as published, so the reader is not patched.
+#
+# Also ruled out: the filter (the unfiltered 27 MB file behaves identically, rebuilt clean), a
+# stale stubdata.o, and genccode instead of .incbin — that one is worse and instructive, because a
+# file-scope const in C++ has internal linkage and the compiler dropped the 10 MB array entirely,
+# leaving a 336-byte object.
+#
+# Where to pick it up: p16BitUnits after res_init, for this bundle, in a debugger. Either it is
+# null-ish — in which case the question is why, with formatVersion 2 — or it is fine and the fault
+# is further up.
+#
+# enable_language(ASM) and the configure_file stay for the switch: .incbin is resolved by the
+# assembler, which reads neither an include directory nor a -D, both tried.
 enable_language(ASM)
 configure_file("${ICU_PATH}/data/icudata.S.in"
                "${CMAKE_CURRENT_BINARY_DIR}/icudata.S" @ONLY)
