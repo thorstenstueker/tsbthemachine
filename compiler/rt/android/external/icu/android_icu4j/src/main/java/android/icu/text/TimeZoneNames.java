@@ -140,7 +140,28 @@ public abstract class TimeZoneNames implements Serializable {
         }
 
         if (factory == null) {
-            factory = new DefaultTimeZoneNames.FactoryImpl();
+            // RoboVM note: Start change. 03.10.2026 (tsb): the real factory, not the empty one.
+            //
+            // Class.forName above was the only reference to TimeZoneNamesFactoryImpl in the whole
+            // library, and an ahead-of-time image holds what is reachable. The class was therefore
+            // absent on a device, Class.forName threw ClassNotFoundException, and this line
+            // installed DefaultTimeZoneNames — which answers null to every name. So
+            //
+            //     TimeZone.getTimeZone("Europe/Berlin").getDisplayName(false, LONG, GERMANY)
+            //
+            // answered "GMT+01:00" where "Mitteleuropäische Normalzeit" belonged, because
+            // java.util.TimeZone falls back to a GMT offset when ICU hands it null. Measured
+            // 03.10.2026 on an AOT binary; with -forcelinkclasses naming the class, correct.
+            //
+            // Nothing is worked around here. The data was present all along, in zone/de.res —
+            // what was missing was a reference the compiler could see. Naming the class here
+            // makes it reachable, and only for a program that uses TimeZoneNames at all.
+            //
+            // DefaultTimeZoneNames is ICU's answer for "this build has no name data". That is not
+            // our case: the class is in robovm-rt.jar either way, so reaching it meant a bug
+            // rather than a configuration.
+            factory = new android.icu.impl.TimeZoneNamesFactoryImpl();
+            // RoboVM note: End change.
         }
         TZNAMES_FACTORY = factory;
     }

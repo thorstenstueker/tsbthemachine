@@ -45,20 +45,28 @@ file(GLOB SRC_LIBCORE_BRIDGE "${LIBCORE_BRIDGE_PATH}/*.cpp")
 # and it fails with "pool.res has a different checksum than this bundle", because the two halves
 # then come from different builds.
 #
-# THE WAY IN IS findCustomICUData, which looks for icudt<version>l.dat beside the executable — and
-# only on Apple platforms. For Linux and Android it is a hard-coded "/usr/share/icu" with a TODO
-# beside it.
+# THE WAY IN IS IcuDataGzip — the second branch above, and not findCustomICUData.
 #
-# What that means for each target:
+# findCustomICUData was the obvious candidate and it is the wrong one: it only works on Apple
+# platforms, because elsewhere it is a hard-coded "/usr/share/icu" with a TODO beside it. Taking it
+# would have meant a bundle resource on iOS and an -rvm:ResourcesPath= lookup on Android — two
+# mechanisms, one of them to be written.
 #
-#   macOS/iOS   the file goes next to the binary, which for an app means into the bundle. rfxmobile
-#               already copies resources there.
-#   Android     findCustomICUData needs a path it can actually use. The machine is already told
-#               where its resources are, through -rvm:ResourcesPath=, which is how FlatLaf's
-#               .properties were found in A4 — the same hook fits here.
+# IcuDataGzip needs neither. It inflates a C array compiled into this very library, so it serves
+# iOS, Android, macOS and Linux with the same code and no file system at all. The array was already
+# there, holding the minimal package; it is now the filtered 28-language one.
 #
-# tools/icu-data.sh builds the file. Measured: 27.2 MB everything, 15.6 MB for 28 European
-# languages, 9.8 MB once transliterations and the old converters go.
+#   compiler/rt/tools/icu-data.sh      builds icudt68l.dat     — 10.6 MB
+#   compiler/rt/tools/icu-header.py    gzips it and writes the header — 4.4 MB packed
+#   libcore.luni4/.../icudt68l.dat.gz  is what the history holds; the header is generated
+#
+# Sizes measured: 27.2 MB for everything, 15.6 MB for the 28 European languages, 9.8 MB once
+# transliterations and the old converters go, 10.1 MB after the five entries ICU's archive does not
+# carry were added back. The cost at run time is 10 MB of heap, malloc'd and inflated at startup
+# instead of paged in from a mapping — the price of one mechanism rather than two.
+#
+# Verified by compiler/rt/tools/java25/native/IcuDataCheck.java: 23 assertions, on an AOT binary,
+# where before this change 15 of them failed.
 set(SRC
   ${SRC_COMMON}
   ${SRC_I18N}

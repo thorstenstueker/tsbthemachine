@@ -23,6 +23,34 @@ add_definitions(-DBORINGSSL_IMPLEMENTATION)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DU_USING_ICU_NAMESPACE=0")
 
+# The ICU data, as a C array for android_icu_impl_ICUBinary.cpp to inflate at startup.
+#
+# 03.10.2026 (tsb): this used to be a 3.7 MB header checked in beside the .cpp, holding ICU's
+# minimal builtin package — 47 entries and exactly one locale, "en". Everything locale-sensitive
+# therefore fell back to root: 1,234.5 for German, "de" where "Deutsch" belonged, and no
+# zoneinfo64.res at all. See IcuDataCheck.java and tools/icu-data.sh for the measurements.
+#
+# What is checked in now is icudt68l.dat.gz, 4.4 MB of the filtered 28-language package, and the
+# header is expanded from it here. The header is not in the history because as C source it is
+# 27 MB — six bytes of text per byte of data.
+#
+# The gzip route rather than a file beside the binary: android_icu_impl_ICUBinary.cpp tries
+# findCustomICUData first and falls back to this array, and findCustomICUData only works on Apple
+# platforms (elsewhere it is a hard-coded "/usr/share/icu" with a TODO). The array is therefore the
+# one path that serves iOS, Android, macOS and Linux alike, with no bundle resource to copy and no
+# -rvm:ResourcesPath= to set.
+set(ICU_DATA_HEADER "${LUNI4_PATH}/icudt68l.dat.gz.h")
+add_custom_command(
+  OUTPUT "${ICU_DATA_HEADER}"
+  COMMAND "${CMAKE_COMMAND}" -E echo "Expanding ICU data header"
+  COMMAND python3 "${ANDROID_RT_PATH}/../tools/icu-header.py"
+  DEPENDS "${LUNI4_PATH}/icudt68l.dat.gz"
+          "${ANDROID_RT_PATH}/../tools/icu-header.py"
+  COMMENT "Generating icudt68l.dat.gz.h from icudt68l.dat.gz"
+  VERBATIM
+)
+add_custom_target(icu-data-header DEPENDS "${ICU_DATA_HEADER}")
+
 # luni files
 set(SRC
   ${LUNI_PATH}/ExecStrings.cpp
@@ -149,4 +177,10 @@ else()
 endif()
 
 add_library(android-libcore OBJECT ${SRC})
+# The header has to exist before ICUBinary.cpp is compiled, and on a fresh clone it does not —
+# only the gzip beside it is in the history. Naming the generated file as a source of this target
+# is what ties the custom command above into the build; add_custom_target alone would never run.
+add_dependencies(android-libcore icu-data-header)
+set_source_files_properties("${LUNI4_PATH}/android_icu_impl_ICUBinary.cpp"
+  PROPERTIES OBJECT_DEPENDS "${ICU_DATA_HEADER}")
 set(LIBCORE_OBJECTS $<TARGET_OBJECTS:android-libcore> PARENT_SCOPE)

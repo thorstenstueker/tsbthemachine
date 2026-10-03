@@ -85,10 +85,14 @@ languages = set(os.environ["LANGUAGES"].split())
 
 # Not languages: shared tables and indexes. Without them the file is broken rather than small —
 # pool.res is a shared string pool every .res in its directory refers into.
+#
+# langInfo was added 03.10.2026: it is a table and not a locale, and removing it left ICU4J throwing
+# MissingResourceException out of UPropertyAliases. Found by the MANIFEST check below, which is the
+# whole reason that check exists.
 infrastructure = {"pool", "res_index", "supplementalData", "metaZones", "zoneinfo64",
                   "windowsZones", "keyTypeData", "likelySubtags", "metadata",
                   "numberingSystems", "plurals", "genderList", "pluralRanges",
-                  "timezoneTypes", "icuver", "icustd", "sprepdata"}
+                  "timezoneTypes", "icuver", "icustd", "sprepdata", "langInfo"}
 
 entries = pathlib.Path(sys.argv[1]).read_text().split()
 remove = []
@@ -105,6 +109,10 @@ for entry in entries:
     base = name[:-4]
     # An upper-case first letter is a converter alias table or similar, never a locale.
     if base in infrastructure or base[0].isupper():
+        continue
+    # zone/tzdbNames.res is the one file under zone/ that is not a locale, and it was removed by
+    # the rule below until 03.10.2026 because "tzdbNames" is not a language either.
+    if entry == "zone/tzdbNames.res":
         continue
     if base.split("_")[0] not in languages:
         remove.append(entry)
@@ -130,8 +138,46 @@ if [ "$AFTER" -ge "$BEFORE" ]; then
     exit 1
 fi
 
+# The five entries ICU's published data archive does not carry
+# ---------------------------------------------------------------
+# pnames.icu, uprops.icu, ucase.icu, ubidi.icu and nfc.nrm are the character-property tables. ICU4C
+# compiles them into its own code, so the release archive leaves them out — measured 03.10.2026:
+# zero of the five appear in icu4c-68.2-data-bin-l.zip's 3823 entries.
+#
+# ICU4J has no C code and reads them as package entries. Without pnames.icu, android.icu's
+# UPropertyAliases throws MissingResourceException on its first use, which arrives through
+# NumberFormat.format by way of CurrencySpacingEnabledModifier — a stack with nothing about
+# character properties in it.
+#
+# They are therefore checked in, at 269 KB for all five, because there is nowhere to fetch them
+# from. They came out of the minimal builtin package that shipped before this file existed.
+echo "== adding the five the archive does not have =="
+BUILTIN="$HERE/icu-builtin"
+# The list has to be a real file whose name ends in .txt: anything else is taken as a single item
+# name and joined to -s, which is how a process substitution ends up as "icu-builtin//dev/fd/63".
+(cd "$BUILTIN" && ls *.icu *.nrm) > "$WORK/add.txt"
+"$ICUPKG" -a "$WORK/add.txt" -s "$BUILTIN" "$WORK/out/icudt${MAJOR}l.dat"
+
+# Nothing the old package had may go missing
+# ------------------------------------------
+# icu-builtin/MANIFEST is the entry list of the minimal package this file replaced. Every one of its
+# 47 entries has to be in the result, because that package demonstrably worked: a smaller set is a
+# regression however much larger the file around it has become.
+echo "== checking against the old package =="
+"$ICUPKG" -l "$WORK/out/icudt${MAJOR}l.dat" | sort > "$WORK/result.txt"
+MISSING=$(comm -23 "$BUILTIN/MANIFEST" "$WORK/result.txt")
+if [ -n "$MISSING" ]; then
+    echo "These entries were in the old minimal package and are not in the new file:" >&2
+    echo "$MISSING" | sed 's/^/   /' >&2
+    echo >&2
+    echo "Either add them to 'infrastructure' in the filter above, or to icu-builtin/." >&2
+    exit 1
+fi
+echo "   all $(wc -l < "$BUILTIN/MANIFEST" | tr -d ' ') entries of the old package are present"
+
 mkdir -p "$(dirname "$TARGET")"
 cp "$WORK/out/icudt${MAJOR}l.dat" "$TARGET"
+AFTER=$(stat -f%z "$TARGET" 2>/dev/null || stat -c%s "$TARGET")
 echo "== done =="
 printf "   %s -> %s\n" "$(numfmt --to=iec "$BEFORE" 2>/dev/null || echo "$BEFORE")" \
                        "$(numfmt --to=iec "$AFTER" 2>/dev/null || echo "$AFTER")"
