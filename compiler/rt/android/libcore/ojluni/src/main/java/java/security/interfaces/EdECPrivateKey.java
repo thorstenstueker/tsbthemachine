@@ -57,12 +57,18 @@ public interface EdECPrivateKey extends EdECKey, PrivateKey {
     Optional<byte[]> getBytes();
 
     /**
-     * {@inheritDoc java.security.AsymmetricKey}
+     * Returns the parameters associated with this key.
+     *
+     * <p>tsb 03.10.2026: spelled out rather than inherited. OpenJDK inherits this paragraph from
+     * java.security.AsymmetricKey, and this runtime has no such interface — these extend
+     * {@code Key} directly. Javadoc stops on that with "cannot find the overridden method", which
+     * is why this library had no javadoc at all until today: the build passed
+     * -Dmaven.javadoc.skip=true and so nobody ever saw the failure.
      *
      * @implSpec
      * The default implementation returns {@code null}.
      *
-     * @return {@inheritDoc java.security.AsymmetricKey}
+     * @return the associated parameters, which may be null
      */
     @Override
     default NamedParameterSpec getParams() {
