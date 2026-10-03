@@ -17,64 +17,53 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-sign-compare -Wno-deprecated-declaratio
 file(GLOB SRC_COMMON "${COMMON_PATH}/*.cpp")
 file(GLOB SRC_I18N   "${I18N_PATH}/*.cpp")
 file(GLOB SRC_LIBCORE_BRIDGE "${LIBCORE_BRIDGE_PATH}/*.cpp")
-# The data: stubdata for now, and the defect is still open.
+# stubdata stays, and the ICU data arrives a different way entirely.
 #
-# stubdata.cpp is ICU's placeholder — a header with no data behind it. Linking it is why this
-# runtime knows exactly one locale: German numbers come out English on both telephones, a German
-# date comes out "2026 M09 21", Locale.getAvailableLocales() answers 1 where JDK 25 answers 1158.
-# See tools/java25/native/FormatCheck.java, which reports it on every run.
+# This file spent 03.10.2026 linking a real icudt68l.dat here and it could never have worked. The
+# reason is in libcore.luni4/.../android_icu_impl_ICUBinary.cpp:
 #
-# Switching the two lines at the bottom links a real icudt68l.dat built by tools/icu-data.sh. It
-# gets further than it looks and stops in a place nobody would guess, so here is the whole account.
+#     // RoboVM note: Look for custom ICU data and fall back to builtin minimal data if not found.
+#     if (findCustomICUData(path))  icu_data_ = IcuDataMap::Create(path);
+#     else                          icu_data_ = IcuDataGzip::Create();
+#     udata_setCommonData(icu_data_->data_, &status);
+#     udata_setFileAccess(UDATA_NO_FILES, &status);
 #
-# WHAT WORKS with the data linked:
-#   * the file is in the archive whole — the .o is exactly the size of the .dat, 27.24 MB for the
-#     unfiltered one, and librobovm-rt.a grows to match
-#   * the symbol is global: 'icudt*' is in merge_static_lib_object_files's export list, nm shows D
-#   * ICU opens it. With -DUDATA_DEBUG the log reads "icudt68l/supplementalData.res: Found",
-#     "icudt68l/res_index.res: Found", "icudt68l/lang/de.res: Found"
-#   * ulocdata_getCLDRVersion answers 38.1, which it reads out of supplementalData and cannot
-#     answer without the file
+# udata_setCommonData registers a package that takes precedence over the linked-in entry point, so
+# whatever is linked here is shadowed. The builtin fallback is a minimal package of 47 entries —
+# visible in a UDATA_DEBUG log as "entry 34 of 47" for res_index against "entry 1468 of 3823" for
+# a file that was linked beside it. That minimal res_index lists one locale, "en", which is where
+# the single available locale comes from.
 #
-# WHAT DOES NOT: res_index's InstalledLocales table reports ONE entry, "en". uloc_countAvailable
-# answers 1, ures_open(NULL, "de") answers U_USING_DEFAULT_WARNING, and every locale-sensitive
-# answer stays at root.
+# And ICU4J reads the same package and nothing else. ICUBinary.java:
 #
-# The file is not the problem. Parsed by hand, outside ICU:
+#     // RoboVM Note: will not provide both icu4j resources and .dat file for native part
+#     // instead asking for data file from native part
+#     ByteBuffer pkgBytes = getIcuData();
 #
-#     root table, 3 entries
-#       AliasLocales       URES_TABLE16   51 entries
-#       CLDRVersion        URES_STRING_V2
-#       InstalledLocales   URES_TABLE16   783 entries
+# So java.text.NumberFormat, java.text.Collator and java.time all come out of that one 47-entry
+# package. Putting the icu4j data jar's resources into robovm-rt.jar does not help either: tried,
+# and it fails with "pool.res has a different checksum than this bundle", because the two halves
+# then come from different builds.
 #
-#     formatVersion 2, indexes[] = (7, 1236, 2079, 2079, 783, 1, 2074)
+# THE WAY IN IS findCustomICUData, which looks for icudt<version>l.dat beside the executable — and
+# only on Apple platforms. For Linux and Android it is a hard-coded "/usr/share/icu" with a TODO
+# beside it.
 #
-# 783 entries, as a TABLE16 — and this ICU reports its size as 1. res_countArrayItems reads a
-# TABLE16's length out of p16BitUnits, which res_init only populates when formatVersion[0] > 1;
-# formatVersion here is 2, so it should be populated. uresdata.cpp, uresbund.cpp and
-# locavailable.cpp are all byte-identical with ICU 68.2 as published, so the reader is not patched.
+# What that means for each target:
 #
-# Also ruled out: the filter (the unfiltered 27 MB file behaves identically, rebuilt clean), a
-# stale stubdata.o, and genccode instead of .incbin — that one is worse and instructive, because a
-# file-scope const in C++ has internal linkage and the compiler dropped the 10 MB array entirely,
-# leaving a 336-byte object.
+#   macOS/iOS   the file goes next to the binary, which for an app means into the bundle. rfxmobile
+#               already copies resources there.
+#   Android     findCustomICUData needs a path it can actually use. The machine is already told
+#               where its resources are, through -rvm:ResourcesPath=, which is how FlatLaf's
+#               .properties were found in A4 — the same hook fits here.
 #
-# Where to pick it up: p16BitUnits after res_init, for this bundle, in a debugger. Either it is
-# null-ish — in which case the question is why, with formatVersion 2 — or it is fine and the fault
-# is further up.
-#
-# enable_language(ASM) and the configure_file stay for the switch: .incbin is resolved by the
-# assembler, which reads neither an include directory nor a -D, both tried.
-enable_language(ASM)
-configure_file("${ICU_PATH}/data/icudata.S.in"
-               "${CMAKE_CURRENT_BINARY_DIR}/icudata.S" @ONLY)
-
+# tools/icu-data.sh builds the file. Measured: 27.2 MB everything, 15.6 MB for 28 European
+# languages, 9.8 MB once transliterations and the old converters go.
 set(SRC
   ${SRC_COMMON}
   ${SRC_I18N}
   ${SRC_LIBCORE_BRIDGE}
   ${ICU_PATH}/stubdata/stubdata.cpp
-  # ${CMAKE_CURRENT_BINARY_DIR}/icudata.S  <- the real data; see above
 )
 
 
