@@ -5,3 +5,7 @@
 .idea/
 .DS_Store
 dependency-reduced-pom.xml
+
+# The ICU data file: 10 MB, and tools/icu-data.sh builds it from the published release in a minute.
+# Checking it in would put a binary in the history for something a script reproduces exactly.
+compiler/rt/android/external/icu/icu4c/source/data/icudt*.dat

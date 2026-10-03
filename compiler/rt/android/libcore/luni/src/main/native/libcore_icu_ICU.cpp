@@ -32,6 +32,7 @@
 #include "unicode/char16ptr.h"
 #include "unicode/uchar.h"
 #include "unicode/uloc.h"
+#include "unicode/ures.h"
 #include "unicode/ulocdata.h"
 #include "unicode/ustring.h"
 #include "unicode/uversion.h"
@@ -81,6 +82,29 @@ extern "C" JNIEXPORT jobjectArray Java_libcore_icu_ICU_getISOLanguagesNative(JNI
 
 extern "C" JNIEXPORT jobjectArray Java_libcore_icu_ICU_getAvailableLocalesNative(JNIEnv* env, jclass) {
     return toStringArray(env, uloc_countAvailable, uloc_getAvailable);
+}
+
+// Temporary: why uloc_countAvailable answers 1 with the data linked in. 03.10.2026.
+extern "C" JNIEXPORT jstring Java_libcore_icu_ICU_dataDiagnosis(JNIEnv* env, jclass) {
+    char out[512];
+    UErrorCode s1 = U_ZERO_ERROR;
+    UResourceBundle* index = ures_openDirect(NULL, "res_index", &s1);
+    int32_t installed = -1;
+    UErrorCode s2 = U_ZERO_ERROR;
+    if (U_SUCCESS(s1)) {
+        UResourceBundle* list = ures_getByKey(index, "InstalledLocales", NULL, &s2);
+        if (U_SUCCESS(s2)) installed = ures_getSize(list);
+        if (list) ures_close(list);
+    }
+    if (index) ures_close(index);
+
+    UErrorCode s3 = U_ZERO_ERROR;
+    UResourceBundle* de = ures_open(NULL, "de", &s3);
+    if (de) ures_close(de);
+
+    snprintf(out, sizeof(out), "res_index=%s InstalledLocales=%d(%s) open(de)=%s count=%d",
+             u_errorName(s1), installed, u_errorName(s2), u_errorName(s3), uloc_countAvailable());
+    return env->NewStringUTF(out);
 }
 
 extern "C" JNIEXPORT jstring Java_libcore_icu_ICU_getDefaultLocale(JNIEnv* env, jclass) {

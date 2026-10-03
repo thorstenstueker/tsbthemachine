@@ -52,6 +52,31 @@ public class FormatCheck {
         line("displayName de", Locale.GERMAN.getDisplayLanguage(Locale.GERMAN), "Deutsch");
         System.out.println("  available locales: " + Locale.getAvailableLocales().length
                            + "  (JDK 25 has 1158)");
+
+        // Straight at ICU, to tell "no data" from "data that nothing reads". getIcuVersion is
+        // compiled into the library and answers either way; getCldrVersion has to be read out of
+        // the data file, so it is the one that distinguishes them.
+        try {
+            Class<?> icu = Class.forName("libcore.icu.ICU");
+            Object version = icu.getMethod("getIcuVersion").invoke(null);
+            Object cldr = icu.getMethod("getCldrVersion").invoke(null);
+            Object unicode = icu.getMethod("getUnicodeVersion").invoke(null);
+            System.out.println("  ICU4C: version=" + version + " cldr=" + cldr
+                               + " unicode=" + unicode);
+
+            // The raw list, before libcore's ICU class filters or caches anything. If this is long
+            // and Locale.getAvailableLocales() is short, the loss is on the Java side.
+            System.out.println("  ICU4C data: " + icu.getMethod("dataDiagnosis").invoke(null));
+
+            java.lang.reflect.Method raw = icu.getDeclaredMethod("getAvailableLocalesNative");
+            raw.setAccessible(true);
+            String[] names = (String[]) raw.invoke(null);
+            System.out.println("  ICU4C locales: " + (names == null ? "null" : names.length)
+                               + (names != null && names.length > 3
+                                  ? "  first: " + names[0] + " " + names[1] + " " + names[2] : ""));
+        } catch (Throwable noIcu) {
+            System.out.println("  ICU4C: unreadable — " + noIcu.getCause());
+        }
         System.out.println("0 checked, 0 failed");
     }
 }
