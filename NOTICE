@@ -44,10 +44,27 @@ the bindings, what upstream did about it is worth a look — as a reference, not
 Licence
 -------
 
-GPL version 2, as RoboVM and MobiVM are. Per-module LICENSE.txt and NOTICE.txt files carry the
-terms and the copyright notices of each part, and they are unchanged; parts of the runtime carry
-the GPL's Classpath exception (compiler/rt/LICENSE_GPL_CE.txt) and parts are Apache 2.0, because
-the runtime descends from Android's libcore, which descends from OpenJDK.
+GPL version 2, as RoboVM and MobiVM are; the full text is in LICENSE. Per-module LICENSE.txt and
+NOTICE.txt files carry the terms and the copyright notices of each part, and they are unchanged.
+
+The division matters more than the headline, because the parts are not all GPL and the ones that
+are not are precisely the ones that end up in somebody's application:
+
+  compiler/compiler  the compiler         GPL 2        executed, not linked
+  compiler/vm        the virtual machine  Apache 2.0   linked into your program
+  compiler/rt        the class library    Apache 2.0   linked into your program
+                                          and GPL 2 with the Classpath exception
+                                          for what descends from OpenJDK
+
+A PROGRAM COMPILED WITH THIS DOES NOT BECOME GPL. The compiler is run over your source the way GCC
+is, which has never put anybody's source under the GPL; and what is actually linked into the
+finished application is Apache 2.0 or carries the Classpath exception, which grants permission to
+link "regardless of the license terms of these independent modules, and to copy and distribute the
+resulting executable under terms of your choice".
+
+What remains owed is the Apache notices — they have to travel with a distribution, which is what
+RapidFX's THIRD-PARTY-NOTICES.txt does — and the source of tsbTheMachine itself if you ship a
+modified one. See the Licence section of README.md for the long form.
 
 **Corresponding source.** Every released binary is built from a commit in this repository, and the
 release tag names that commit. That is how the GPL's corresponding-source obligation is met: take
