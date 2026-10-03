@@ -139,8 +139,29 @@ public abstract class ZoneRulesProvider {
 
     static {
         // Android-changed: use a single hard-coded provider.
-        ZoneRulesProvider provider = new IcuZoneRulesProvider();
-        registerProvider(provider);
+        // RoboVM-changed: and a second one where the first has nothing to say.
+        //
+        // ICU first, which is Android's answer and is right on a telephone running Android, where
+        // the ICU data is part of the system.
+        //
+        // On iOS it is empty. Measured 03.10.2026 in a simulator: java.util.TimeZone offered 624
+        // zones and java.time offered none, so ZoneId.systemDefault() threw "No time-zone data
+        // files registered" — and with it LocalDateTime.now(), which is the first line anybody
+        // writes. The two have unrelated sources: java.util reads the Olson files under
+        // /usr/share/zoneinfo through ZoneInfoDb, which an iPhone has, and ICU reads data that is
+        // not in an iOS image.
+        //
+        // So the fallback is not a database to ship. It is the second front door onto the data the
+        // device already has.
+        try {
+            registerProvider(new IcuZoneRulesProvider());
+        } catch (Throwable icuUnavailable) {
+            // Not fatal on its own — the Olson provider below may still answer, and if neither
+            // does, the exception a caller gets is the clear one from getProvider.
+        }
+        if (ZONES.isEmpty() && OlsonZoneRulesProvider.hasData()) {
+            registerProvider(new OlsonZoneRulesProvider());
+        }
     }
 
     //-------------------------------------------------------------------------
