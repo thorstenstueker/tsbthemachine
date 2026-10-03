@@ -492,6 +492,30 @@ class Character implements java.io.Serializable, Comparable<Character> {
     public static final byte DIRECTIONALITY_POP_DIRECTIONAL_FORMAT = 18;
 
     /**
+     * Strong bidirectional character type "LRI" in the Unicode specification.
+     * @since 9
+     */
+    public static final byte DIRECTIONALITY_LEFT_TO_RIGHT_ISOLATE = 19;
+
+    /**
+     * Strong bidirectional character type "RLI" in the Unicode specification.
+     * @since 9
+     */
+    public static final byte DIRECTIONALITY_RIGHT_TO_LEFT_ISOLATE = 20;
+
+    /**
+     * Strong bidirectional character type "FSI" in the Unicode specification.
+     * @since 9
+     */
+    public static final byte DIRECTIONALITY_FIRST_STRONG_ISOLATE = 21;
+
+    /**
+     * Weak bidirectional character type "PDI" in the Unicode specification.
+     * @since 9
+     */
+    public static final byte DIRECTIONALITY_POP_DIRECTIONAL_ISOLATE = 22;
+
+    /**
      * The minimum value of a
      * <a href="http://www.unicode.org/glossary/#high_surrogate_code_unit">
      * Unicode high-surrogate code unit</a>
@@ -597,7 +621,21 @@ class Character implements java.io.Serializable, Comparable<Character> {
             DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING,
             DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE,
             DIRECTIONALITY_POP_DIRECTIONAL_FORMAT,
-            DIRECTIONALITY_NONSPACING_MARK, DIRECTIONALITY_BOUNDARY_NEUTRAL };
+            DIRECTIONALITY_NONSPACING_MARK, DIRECTIONALITY_BOUNDARY_NEUTRAL,
+            // The four isolate types, which ICU has had since Unicode 6.3 and this table did not.
+            // Without them getDirectionality answered DIRECTIONALITY_UNDEFINED for U+2066 to
+            // U+2069 — a wrong answer rather than a missing constant, and the sort that nothing
+            // reports.
+            //
+            // The order is ICU's and not Java's, and the two disagree: ICU numbers FSI 19 and LRI
+            // 20, Java the other way round. That is what this table is for — it maps ICU's
+            // UCharDirection onto Java's constants and has always been a reordering. Measured
+            // against JDK 25 rather than read off the headers, because reading them is exactly
+            // how LRI and FSI would have ended up swapped.
+            DIRECTIONALITY_FIRST_STRONG_ISOLATE,
+            DIRECTIONALITY_LEFT_TO_RIGHT_ISOLATE,
+            DIRECTIONALITY_RIGHT_TO_LEFT_ISOLATE,
+            DIRECTIONALITY_POP_DIRECTIONAL_ISOLATE };
     // END Android-added: Use ICU.
 
     /**
