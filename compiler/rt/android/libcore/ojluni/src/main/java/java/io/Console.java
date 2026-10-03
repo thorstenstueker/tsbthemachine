@@ -173,6 +173,42 @@ public final class Console implements Flushable
     }
 
    /**
+    * Writes a formatted string to this console's output stream using
+    * the specified format string and arguments with the specified locale.
+    *
+    * @param  locale
+    *         The {@linkplain java.util.Locale locale} to apply during
+    *         formatting. If {@code locale} is {@code null} then no localization
+    *         is applied.
+    *
+    * @param  format
+    *         A format string as described in <a
+    *         href="../util/Formatter.html#syntax">Format string syntax</a>
+    *
+    * @param  args
+    *         Arguments referenced by the format specifiers in the format
+    *         string.
+    *
+    * @throws  java.util.IllegalFormatException
+    *          If a format string contains an illegal syntax, a format
+    *          specifier that is incompatible with the given arguments,
+    *          insufficient arguments given the format string, or other
+    *          illegal conditions.
+    *
+    * @return  This console
+    *
+    * @since 23
+    */
+    public Console format(Locale locale, String format, Object ... args) {
+        // Android-changed: this Console is the concrete class rather than JDK 23's base, where
+        // the method throws and a provider implements it. The formatter already takes a locale,
+        // so the whole addition is one argument further in — and a null locale is what Formatter
+        // reads as "do not localise", which is the documented behaviour.
+        formatter.format(locale, format, args).flush();
+        return this;
+    }
+
+   /**
     * A convenience method to write a formatted string to this console's
     * output stream using the specified format string and arguments.
     *
@@ -211,6 +247,36 @@ public final class Console implements Flushable
     }
 
    /**
+    * A convenience method to write a formatted string to this console's
+    * output stream using the specified format string and arguments
+    * with the specified locale.
+    *
+    * <p> An invocation of this method of the form {@code con.printf(locale,
+    * format, args)} behaves in exactly the same way as the invocation of
+    * {@code con.format(locale, format, args)}.
+    *
+    * @param  locale
+    *         The {@linkplain java.util.Locale locale} to apply during
+    *         formatting. If {@code locale} is {@code null} then no localization
+    *         is applied.
+    *
+    * @param  format
+    *         A format string as described in <a
+    *         href="../util/Formatter.html#syntax">Format string syntax</a>.
+    *
+    * @param  args
+    *         Arguments referenced by the format specifiers in the format
+    *         string.
+    *
+    * @return  This console
+    *
+    * @since 23
+    */
+    public Console printf(Locale locale, String format, Object ... args) {
+        return format(locale, format, args);
+    }
+
+   /**
     * Provides a formatted prompt, then reads a single line of text from the
     * console.
     *
@@ -242,11 +308,51 @@ public final class Console implements Flushable
     *          if an end of stream has been reached.
     */
     public String readLine(String fmt, Object ... args) {
+        return readLine(null, fmt, args);
+    }
+
+   /**
+    * Provides a formatted prompt with the specified locale, then reads a
+    * single line of text from the console.
+    *
+    * @param  locale
+    *         The {@linkplain java.util.Locale locale} to apply during
+    *         formatting. If {@code locale} is {@code null} then no localization
+    *         is applied.
+    *
+    * @param  format
+    *         A format string as described in <a
+    *         href="../util/Formatter.html#syntax">Format string syntax</a>.
+    *
+    * @param  args
+    *         Arguments referenced by the format specifiers in the format
+    *         string.
+    *
+    * @throws  java.util.IllegalFormatException
+    *          If a format string contains an illegal syntax, a format
+    *          specifier that is incompatible with the given arguments,
+    *          insufficient arguments given the format string, or other
+    *          illegal conditions.
+    *
+    * @throws IOError
+    *         If an I/O error occurs.
+    *
+    * @return  A string containing the line read from the console, not
+    *          including any line-termination characters, or {@code null}
+    *          if an end of stream has been reached.
+    *
+    * @since 23
+    */
+    public String readLine(Locale locale, String format, Object ... args) {
+        // The locale-less overload is the one that now delegates, rather than the other way
+        // round: the body below is where both locks and the prompt are, and having it twice is
+        // how the two drift apart.
+        String fmt = format;
         String line = null;
         synchronized (writeLock) {
             synchronized(readLock) {
                 if (fmt.length() != 0)
-                    pw.format(fmt, args);
+                    pw.format(locale, fmt, args);
                 try {
                     char[] ca = readline(false);
                     if (ca != null)
@@ -306,6 +412,43 @@ public final class Console implements Flushable
     *          or <tt>null</tt> if an end of stream has been reached.
     */
     public char[] readPassword(String fmt, Object ... args) {
+        return readPassword(null, fmt, args);
+    }
+
+   /**
+    * Provides a formatted prompt with the specified locale, then reads a
+    * password or passphrase from the console with echoing disabled.
+    *
+    * @param  locale
+    *         The {@linkplain java.util.Locale locale} to apply during
+    *         formatting. If {@code locale} is {@code null} then no localization
+    *         is applied.
+    *
+    * @param  format
+    *         A format string as described in <a
+    *         href="../util/Formatter.html#syntax">Format string syntax</a>.
+    *
+    * @param  args
+    *         Arguments referenced by the format specifiers in the format
+    *         string.
+    *
+    * @throws  java.util.IllegalFormatException
+    *          If a format string contains an illegal syntax, a format
+    *          specifier that is incompatible with the given arguments,
+    *          insufficient arguments given the format string, or other
+    *          illegal conditions.
+    *
+    * @throws IOError
+    *         If an I/O error occurs.
+    *
+    * @return  A character array containing the password or passphrase read
+    *          from the console, not including any line-termination characters,
+    *          or {@code null} if an end of stream has been reached.
+    *
+    * @since 23
+    */
+    public char[] readPassword(Locale locale, String format, Object ... args) {
+        String fmt = format;
         char[] passwd = null;
         synchronized (writeLock) {
             synchronized(readLock) {
@@ -317,7 +460,7 @@ public final class Console implements Flushable
                 IOError ioe = null;
                 try {
                     if (fmt.length() != 0)
-                        pw.format(fmt, args);
+                        pw.format(locale, fmt, args);
                     passwd = readline(true);
                 } catch (IOException x) {
                     ioe = new IOError(x);
@@ -532,6 +675,38 @@ public final class Console implements Flushable
     private Console() {
     // BEGIN Android-changed: Support custom in/out streams for testing.
       this(new FileInputStream(FileDescriptor.in), new FileOutputStream(FileDescriptor.out));
+    }
+
+   /**
+    * Returns the {@link java.nio.charset.Charset Charset} object used for
+    * the {@code Console}.
+    *
+    * @return a {@link java.nio.charset.Charset Charset} object used for the
+    *          {@code Console}
+    * @since 17
+    */
+    public Charset charset() {
+        // The field the reader and the writer were both built on, so this is the charset in use
+        // and not a second answer to the same question. It is settled in the constructor from
+        // encoding(), which is native, and falls back to the default.
+        return cs;
+    }
+
+   /**
+    * {@return {@code true} if the {@code Console} instance is a terminal}
+    *
+    * <p>This method returns {@code true} if the console device, associated with the
+    * current Java virtual machine, is a terminal, typically referred to as a
+    * console or command line window.
+    *
+    * @since 22
+    */
+    public boolean isTerminal() {
+        // Always true where a Console exists at all in this runtime: System.console() answers
+        // null unless istty(), which is the older arrangement and the one this fork still has.
+        // JDK 22 separated the two so that a redirected console is still a Console; saying so
+        // here would be claiming a distinction this library does not make.
+        return istty();
     }
 
     // Constructor for tests

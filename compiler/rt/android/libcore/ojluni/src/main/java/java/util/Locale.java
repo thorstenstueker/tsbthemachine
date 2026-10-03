@@ -48,6 +48,7 @@ import java.io.ObjectOutputStream;
 import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.text.MessageFormat;
+import java.util.stream.Stream;
 import libcore.icu.ICU;
 
 import sun.util.locale.BaseLocale;
@@ -692,6 +693,71 @@ public final class Locale implements Cloneable, Serializable {
     static final long serialVersionUID = 9149081749638150636L;
 
     /**
+     * Enum for specifying the type defined in ISO 3166. This enum is used to
+     * retrieve the two-letter ISO3166-1 alpha-2, three-letter ISO3166-1
+     * alpha-3, four-letter ISO3166-3 country codes.
+     *
+     * @see #getISOCountries(Locale.IsoCountryCode)
+     * @since 9
+     */
+    public static enum IsoCountryCode {
+        /**
+         * PART1_ALPHA2 is used to represent the ISO3166-1 alpha-2 two letter
+         * country codes.
+         */
+        PART1_ALPHA2 {
+            @Override
+            Set<String> createCountryCodeSet() {
+                // Android-changed: getISOCountries() comes from ICU here rather than from
+                // LocaleISOData, which is why this reads the method and not the table.
+                return Set.of(Locale.getISOCountries());
+            }
+        },
+
+        /**
+         *
+         * PART1_ALPHA3 is used to represent the ISO3166-1 alpha-3 three letter
+         * country codes.
+         */
+        PART1_ALPHA3 {
+            @Override
+            Set<String> createCountryCodeSet() {
+                return LocaleISOData.computeISO3166_1Alpha3Countries();
+            }
+        },
+
+        /**
+         * PART3 is used to represent the ISO3166-3 four letter country codes.
+         */
+        PART3 {
+            @Override
+            Set<String> createCountryCodeSet() {
+                return Set.of(LocaleISOData.ISO3166_3);
+            }
+        };
+
+        /**
+         * Concrete implementation of this method attempts to compute value
+         * for iso3166CodesMap for each IsoCountryCode type key.
+         */
+        abstract Set<String> createCountryCodeSet();
+
+        /**
+         * Map to hold country codes for each ISO3166 part.
+         */
+        private static final Map<IsoCountryCode, Set<String>> iso3166CodesMap =
+                new java.util.concurrent.ConcurrentHashMap<>();
+
+        /**
+         * This method is called from Locale class to retrieve country code set
+         * for getISOCountries(type)
+         */
+        static Set<String> retrieveISOCountryCodes(IsoCountryCode type) {
+            return iso3166CodesMap.computeIfAbsent(type, IsoCountryCode::createCountryCodeSet);
+        }
+    }
+
+    /**
      * Display types for retrieving localized names from the name providers.
      */
     private static final int DISPLAY_LANGUAGE = 0;
@@ -789,6 +855,68 @@ public final class Locale implements Cloneable, Serializable {
      */
     public Locale(String language) {
         this(language, "", "");
+    }
+
+    /**
+     * Obtains a locale from language, country and variant.
+     * This method normalizes the language value to lowercase and
+     * the country value to uppercase.
+     * @implNote
+     * <ul>
+     * <li>This method does not make any syntactic checks on the input.
+     * Use {@link Locale.Builder} for full syntactic checks with BCP47.
+     * <li>The two cases ("ja", "JP", "JP") and ("th", "TH", "TH") are handled specially,
+     * see <a href="##special_cases_constructor">Special Cases</a> for more information.
+     * <li>Obsolete ISO 639 codes ("iw", "ji", and "in") are mapped to
+     * their current forms. See <a href="##legacy_language_codes">Legacy language
+     * codes</a> for more information.
+     * <li>For backward compatibility reasons, this method does not make
+     * any syntactic checks on the input.
+     * </ul>
+     *
+     * @param language A language code. See the {@code Locale} class description of
+     * <a href="#def_language">language</a> values.
+     * @param country A country code. See the {@code Locale} class description of
+     * <a href="#def_region">country</a> values.
+     * @param variant Any arbitrary value used to indicate a variation of a {@code Locale}.
+     * See the {@code Locale} class description of <a href="#def_variant">variant</a> values.
+     * @throws    NullPointerException thrown if any argument is null.
+     * @return A {@code Locale} object
+     * @since 19
+     */
+    public static Locale of(String language, String country, String variant) {
+        return getInstance(language, "", country, variant, null);
+    }
+
+    /**
+     * Obtains a locale from language and country.
+     * This method normalizes the language value to lowercase and
+     * the country value to uppercase.
+     *
+     * @param language A language code. See the {@code Locale} class description of
+     * <a href="#def_language">language</a> values.
+     * @param country A country code. See the {@code Locale} class description of
+     * <a href="#def_region">country</a> values.
+     * @throws    NullPointerException thrown if either argument is null.
+     * @return A {@code Locale} object
+     * @since 19
+     */
+    public static Locale of(String language, String country) {
+        return getInstance(language, "", country, "", null);
+    }
+
+    /**
+     * Obtains a locale from a language code.
+     * This method normalizes the language value to lowercase.
+     *
+     * @param language A language code. See the {@code Locale} class description of
+     * <a href="#def_language">language</a> values.
+     * @throws    NullPointerException thrown if argument is null.
+     * @return A {@code Locale} object
+     * @since 19
+     */
+    public static Locale of(String language) {
+        return getInstance(language, "", "", "", null);
     }
 
     /**
@@ -1118,6 +1246,24 @@ public final class Locale implements Cloneable, Serializable {
     }
 
     /**
+     * Returns a stream of installed locales. The returned stream represents a snapshot
+     * of the state of the installed locales at the time of the call. The returned
+     * stream is unordered.
+     *
+     * @implNote Unlike {@code getAvailableLocales()}, this method does not
+     * return a defensive copy, as the stream is already a snapshot.
+     *
+     * @return A stream of installed locales.
+     * @since 21
+     */
+    public static Stream<Locale> availableLocales() {
+        // Android-changed: over ICU's list, because that is where getAvailableLocales() reads
+        // from here — OpenJDK streams LocaleServiceProviderPool, which this fork does not have.
+        // The array is already a fresh copy, so streaming it needs no defence of its own.
+        return Arrays.stream(getAvailableLocales());
+    }
+
+    /**
      * Returns a list of all 2-letter country codes defined in ISO 3166.
      * Can be used to create Locales.
      * <p>
@@ -1139,6 +1285,20 @@ public final class Locale implements Cloneable, Serializable {
         return result;
         */
         return ICU.getISOCountries();
+    }
+
+    /**
+     * Returns a {@code Set} of ISO3166 country codes for the specified type.
+     *
+     * @param type {@link Locale.IsoCountryCode} specified ISO code type.
+     * @see java.util.Locale.IsoCountryCode
+     * @throws NullPointerException if type is null
+     * @return a {@code Set} of ISO country codes for the specified type.
+     * @since 9
+     */
+    public static Set<String> getISOCountries(IsoCountryCode type) {
+        Objects.requireNonNull(type);
+        return IsoCountryCode.retrieveISOCountryCodes(type);
     }
 
     /**
@@ -1572,6 +1732,34 @@ public final class Locale implements Cloneable, Serializable {
             }
         }
         return languageTag;
+    }
+
+    /**
+     * Returns a case folded IETF BCP 47 language tag.
+     *
+     * <p>This method formats a language tag into one with case convention
+     * that adheres to section 2.1.1. Formatting of Language Tags of
+     * <a href="https://www.rfc-editor.org/rfc/rfc5646.html#section-2.1.1">RFC5646</a>.
+     * This method does not validate the given language tag, and the
+     * returned value may be an ill-formed language tag, if the given
+     * language tag is ill-formed.
+     *
+     * @param languageTag the IETF BCP 47 language tag.
+     * @throws IllformedLocaleException if {@code languageTag} is not well-formed
+     * @throws NullPointerException if {@code languageTag} is {@code null}
+     * @return a case folded IETF BCP 47 language tag.
+     * @since 21
+     */
+    public static String caseFoldLanguageTag(String languageTag) {
+        // Android-changed: this fork's LanguageTag reports a parse failure through ParseStatus
+        // rather than throwing, so the conversion to IllformedLocaleException happens here. The
+        // exception a caller sees is the one the specification names either way.
+        try {
+            return LanguageTag.caseFoldTag(Objects.requireNonNull(languageTag));
+        } catch (LocaleSyntaxException illformed) {
+            throw new IllformedLocaleException(illformed.getMessage(),
+                                               illformed.getErrorIndex());
+        }
     }
 
     /**

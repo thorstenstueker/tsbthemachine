@@ -746,4 +746,71 @@ public class LanguageTag {
 
         return sb.toString();
     }
+
+    /**
+     * Returns the tag with the case of each subtag made canonical: the language lowercase, a
+     * script in title case, a region uppercase, everything else lowercase.
+     *
+     * <p>Cut out of OpenJDK 25, with one difference forced by this fork. OpenJDK calls
+     * {@code parse(tag, new ParsePosition(0), false)} to reject an ill-formed tag; this
+     * {@code LanguageTag} has the older signature, which reports through a {@link ParseStatus}
+     * instead of throwing. So the rejection is written out rather than inherited.
+     *
+     * <p>What the loop is for, and why it is not simply three rules: a subtag's case depends on
+     * what came before it. After an extension singleton or the private-use prefix, everything is
+     * lowercase whatever it looks like — {@code x-Latn} is not a script, it is private use that
+     * happens to be four letters.
+     *
+     * @throws LocaleSyntaxException if the tag is not well-formed, which the caller turns into
+     *                               {@code IllformedLocaleException}
+     * @since 21
+     */
+    public static String caseFoldTag(String tag) throws LocaleSyntaxException {
+        ParseStatus sts = new ParseStatus();
+        parse(tag, sts);
+        if (sts.isError()) {
+            throw new LocaleSyntaxException(sts.getErrorMessage(), sts.getErrorIndex());
+        }
+
+        // Legacy tags, which this fork still calls grandfathered. They have a preferred spelling
+        // and no structure to fold, so the table answers directly.
+        String potentialLegacy = LocaleUtils.toLowerString(tag);
+        String[] legacy = GRANDFATHERED.get(potentialLegacy);
+        if (legacy != null) {
+            return legacy[0];
+        }
+
+        StringBuilder bldr = new StringBuilder(tag.length());
+        String[] subtags = tag.split("-");
+        boolean privateFound = false;
+        boolean singletonFound = false;
+        boolean privUseVarFound = false;
+        for (int i = 0; i < subtags.length; i++) {
+            String subtag = subtags[i];
+            if (privUseVarFound) {
+                bldr.append(subtag);
+            } else if (i > 0 && isVariant(subtag) && !singletonFound && !privateFound) {
+                bldr.append(subtag);
+            } else if (i > 0 && isRegion(subtag) && !singletonFound && !privateFound) {
+                bldr.append(canonicalizeRegion(subtag));
+            } else if (i > 0 && isScript(subtag) && !singletonFound && !privateFound) {
+                bldr.append(canonicalizeScript(subtag));
+            // If subtag is not 2 letter, 4 letter, or variant
+            // under the right conditions, then it should be lower-case
+            } else {
+                if (isPrivateusePrefix(subtag)) {
+                    privateFound = true;
+                } else if (isExtensionSingleton(subtag)) {
+                    singletonFound = true;
+                } else if (subtag.equals(PRIVUSE_VARIANT_PREFIX)) {
+                    privUseVarFound = true;
+                }
+                bldr.append(LocaleUtils.toLowerString(subtag));
+            }
+            if (i != subtags.length - 1) {
+                bldr.append("-");
+            }
+        }
+        return bldr.toString();
+    }
 }
