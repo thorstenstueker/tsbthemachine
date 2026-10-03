@@ -67,7 +67,22 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
 mkdir -p "$WORK/classes"
-"$JAVAC" -nowarn -bootclasspath "$DIST/lib/robovm-rt.jar" -d "$WORK/classes" "$HERE"/native/*.java
+# Everything except SwitchCheck, which cannot be written in Java 8.
+SOURCES=$(ls "$HERE"/native/*.java | grep -v "SwitchCheck.java")
+"$JAVAC" -nowarn -bootclasspath "$DIST/lib/robovm-rt.jar" -d "$WORK/classes" $SOURCES
+
+# SwitchCheck on its own, because a pattern switch is Java 21 and this javac is 8.
+#
+# Which is the whole point of that check: the construct exists to be read by the AOT compiler, and
+# it cannot be expressed in the language level the rest of these are written at. -bootclasspath is
+# gone from a modern javac as well, so robovm-rt goes on the class path instead — it is only ever
+# compiled against here, and the AOT compiler below is what pins it as the boot path for real.
+JAVAC21=$(/usr/libexec/java_home -v 21 2>/dev/null)/bin/javac
+if [ ! -x "$JAVAC21" ]; then
+    JAVAC21=$(/usr/libexec/java_home 2>/dev/null)/bin/javac
+fi
+"$JAVAC21" -nowarn --release 21 -cp "$DIST/lib/robovm-rt.jar" \
+           -d "$WORK/classes" "$HERE"/native/SwitchCheck.java
 
 # -target console, or the linker asks each target whether it matches and the framework one trips
 # over a null. -os/-arch default from the host, but naming them keeps the failure legible on a

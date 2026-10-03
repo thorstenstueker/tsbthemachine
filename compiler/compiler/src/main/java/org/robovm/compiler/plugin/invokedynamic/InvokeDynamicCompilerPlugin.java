@@ -19,6 +19,37 @@ import java.util.List;
 public class InvokeDynamicCompilerPlugin extends AbstractCompilerPlugin {
 
     /**
+     * {@code -indy:strict=true} turns the fallback's warning into a build failure.
+     *
+     * <p>The fallback plants a {@code NoSuchMethodError} for a bootstrap nothing here understands,
+     * and the build succeeds. That is right while somebody is working — a library with one
+     * unreachable pattern switch should not stop a build — and wrong for anything that ships: the
+     * failure then arrives on a device, in a line that was never run here.
+     *
+     * <p>Default false, so that today's builds behave as they did. A release build should set it;
+     * RapidFX's {@code rfxmobile --release} does.
+     */
+    private static final String ARG_STRICT = "strict";
+
+    private Boolean strict;
+
+    @Override
+    public org.robovm.compiler.plugin.PluginArguments getArguments() {
+        java.util.List<org.robovm.compiler.plugin.PluginArgument> args = new java.util.ArrayList<>();
+        args.add(new org.robovm.compiler.plugin.PluginArgument(ARG_STRICT, "false",
+                "Flag: fail the build on an invokedynamic this compiler cannot resolve, instead of"
+                + " planting a NoSuchMethodError that only fails on the device"));
+        return new org.robovm.compiler.plugin.PluginArguments("indy", args);
+    }
+
+    private boolean isStrict(Config config) {
+        if (strict == null) {
+            strict = argumentValue(parseArguments(config), ARG_STRICT, false);
+        }
+        return strict;
+    }
+
+    /**
      * Delegate for specific bootstrap method handler
      * (specific implementation to be done there)
      */
@@ -44,6 +75,7 @@ public class InvokeDynamicCompilerPlugin extends AbstractCompilerPlugin {
                 new LambdaPlugin(),
                 new StringConcatRewriterPlugin(),
                 new RecordObjectMethodsDelegate(),
+                new org.robovm.compiler.plugin.invokedynamic.switchcase.SwitchBootstrapsDelegate(),
                 new UnrecognizedBootstrapDelegate() // has to be declared last !
         );
     }
@@ -51,6 +83,14 @@ public class InvokeDynamicCompilerPlugin extends AbstractCompilerPlugin {
     @Override
     public void beforeClass(Config config, Clazz clazz, ModuleBuilder moduleBuilder) throws IOException {
         SootClass sootClass = clazz.getSootClass();
+
+        // The strict flag reaches the fallback here rather than through its constructor: the
+        // plugins are built before Soot is initialised and before there is a Config to read.
+        for (Delegate delegate : supportedDynamicInvokes) {
+            if (delegate instanceof UnrecognizedBootstrapDelegate) {
+                ((UnrecognizedBootstrapDelegate) delegate).streng = isStrict(config);
+            }
+        }
 
         // deliver beforeClass notification to allow delegates to initializes
         for (Delegate delegate : supportedDynamicInvokes)
@@ -113,6 +153,9 @@ public class InvokeDynamicCompilerPlugin extends AbstractCompilerPlugin {
     private static class UnrecognizedBootstrapDelegate implements Delegate {
         private int tmpCounter = 0;
 
+        /** Set by the plugin before the first class; see ARG_STRICT. */
+        private boolean streng;
+
         private boolean initialized = false;
         private SootClass java_lang_NoSuchMethodError;
         private SootMethodRef java_lang_NoSuchMethodError_init;
@@ -155,6 +198,14 @@ public class InvokeDynamicCompilerPlugin extends AbstractCompilerPlugin {
             initializeIfRequired();
             String msg = "Unsupported InvokeDynamic to " + invokeExpr.getBootstrapMethodRef().declaringClass().getName() +
                     '.' + invokeExpr.getBootstrapMethodRef().name();
+            if (streng) {
+                // -indy:strict=true. The alternative below is a build that succeeds and a device
+                // that does not, which is the one outcome nobody can act on.
+                throw new CompilerException(msg + " in " + method.getSignature()
+                        + ". The build was asked to be strict about this (-indy:strict=true);"
+                        + " without it a NoSuchMethodError is planted here and thrown on the"
+                        + " device.");
+            }
             config.getLogger().warn("%s in %s: NoSuchMethodError will be thrown at runtime", msg, method.getSignature());
             Jimple jimple = Jimple.v();
             Body body = method.retrieveActiveBody();
