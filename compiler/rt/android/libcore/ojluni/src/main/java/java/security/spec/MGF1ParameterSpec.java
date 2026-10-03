@@ -84,6 +84,51 @@ public class MGF1ParameterSpec implements AlgorithmParameterSpec {
     public static final MGF1ParameterSpec SHA512 =
         new MGF1ParameterSpec("SHA-512");
 
+    // BEGIN tsb-added 03.10.2026: the six digests of Java 11 and 17.
+    //
+    // Constants and nothing else — each is the same constructor with a different name, and the
+    // provider is what decides whether the digest behind it exists. They are here because a library
+    // that mentions MGF1ParameterSpec.SHA3_256 has to link, even in a branch that is never taken:
+    // a missing constant is a build that fails on code nobody would have run.
+
+    /**
+     * The MGF1ParameterSpec which uses SHA-512/224 message digest.
+     * @since 11
+     */
+    public static final MGF1ParameterSpec SHA512_224 =
+        new MGF1ParameterSpec("SHA-512/224");
+    /**
+     * The MGF1ParameterSpec which uses SHA-512/256 message digest.
+     * @since 11
+     */
+    public static final MGF1ParameterSpec SHA512_256 =
+        new MGF1ParameterSpec("SHA-512/256");
+    /**
+     * The MGF1ParameterSpec which uses SHA3-224 message digest.
+     * @since 17
+     */
+    public static final MGF1ParameterSpec SHA3_224 =
+        new MGF1ParameterSpec("SHA3-224");
+    /**
+     * The MGF1ParameterSpec which uses SHA3-256 message digest.
+     * @since 17
+     */
+    public static final MGF1ParameterSpec SHA3_256 =
+        new MGF1ParameterSpec("SHA3-256");
+    /**
+     * The MGF1ParameterSpec which uses SHA3-384 message digest.
+     * @since 17
+     */
+    public static final MGF1ParameterSpec SHA3_384 =
+        new MGF1ParameterSpec("SHA3-384");
+    /**
+     * The MGF1ParameterSpec which uses SHA3-512 message digest.
+     * @since 17
+     */
+    public static final MGF1ParameterSpec SHA3_512 =
+        new MGF1ParameterSpec("SHA3-512");
+    // END tsb-added.
+
     private String mdName;
 
     /**

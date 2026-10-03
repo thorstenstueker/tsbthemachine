@@ -6128,6 +6128,124 @@ class Character implements java.io.Serializable, Comparable<Character> {
     static native boolean isIdeographicImpl(int codePoint);
     // END Android-changed: Reimplement methods natively on top of ICU4C.
 
+    // BEGIN tsb-added 03.10.2026: the seven emoji predicates of Java 21, through ICU4J.
+    //
+    // Through android.icu rather than a native method, which is what every predicate above uses.
+    // Both would work and the difference is a rebuild of the native runtime for seven platform
+    // slices against none at all — so the question was whether ICU4J answers about characters on an
+    // ahead-of-time image, and it is not a question with an obvious answer: ICU4J's time zones were
+    // empty on an iPhone while the native ICU4C had everything, which is what OlsonZoneRulesProvider
+    // exists for.
+    //
+    // Measured on an AOT binary on 03.10.2026, after the locale data went in:
+    //
+    //     ICU4J on Mac OS X aarch64: U+1F600 emoji=true, 'A' emoji=false, 'A' alphabetic=true
+    //
+    // So it answers, and these are a line each. CharacterCheck asks that question on every run and
+    // prints the answer beside the platform, because it is allowed to differ between a host binary
+    // and a phone — and if it ever does, these are the methods that would need the native route.
+
+    /**
+     * Determines if the specified character (Unicode code point) is an Emoji.
+     *
+     * @param codePoint the character (Unicode code point) to be tested
+     * @return {@code true} if the character is an Emoji
+     * @since 21
+     */
+    public static boolean isEmoji(int codePoint) {
+        return android.icu.lang.UCharacter.hasBinaryProperty(
+                codePoint, android.icu.lang.UProperty.EMOJI);
+    }
+
+    /**
+     * Determines if the specified character (Unicode code point) has the Emoji Presentation
+     * property by default.
+     *
+     * @param codePoint the character (Unicode code point) to be tested
+     * @return {@code true} if the character has the Emoji Presentation property
+     * @since 21
+     */
+    public static boolean isEmojiPresentation(int codePoint) {
+        return android.icu.lang.UCharacter.hasBinaryProperty(
+                codePoint, android.icu.lang.UProperty.EMOJI_PRESENTATION);
+    }
+
+    /**
+     * Determines if the specified character (Unicode code point) is an Emoji Modifier.
+     *
+     * @param codePoint the character (Unicode code point) to be tested
+     * @return {@code true} if the character is an Emoji Modifier
+     * @since 21
+     */
+    public static boolean isEmojiModifier(int codePoint) {
+        return android.icu.lang.UCharacter.hasBinaryProperty(
+                codePoint, android.icu.lang.UProperty.EMOJI_MODIFIER);
+    }
+
+    /**
+     * Determines if the specified character (Unicode code point) is an Emoji Modifier Base.
+     *
+     * @param codePoint the character (Unicode code point) to be tested
+     * @return {@code true} if the character is an Emoji Modifier Base
+     * @since 21
+     */
+    public static boolean isEmojiModifierBase(int codePoint) {
+        return android.icu.lang.UCharacter.hasBinaryProperty(
+                codePoint, android.icu.lang.UProperty.EMOJI_MODIFIER_BASE);
+    }
+
+    /**
+     * Determines if the specified character (Unicode code point) is an Emoji Component.
+     *
+     * @param codePoint the character (Unicode code point) to be tested
+     * @return {@code true} if the character is an Emoji Component
+     * @since 21
+     */
+    public static boolean isEmojiComponent(int codePoint) {
+        return android.icu.lang.UCharacter.hasBinaryProperty(
+                codePoint, android.icu.lang.UProperty.EMOJI_COMPONENT);
+    }
+
+    /**
+     * Determines if the specified character (Unicode code point) is an Extended Pictographic.
+     *
+     * @param codePoint the character (Unicode code point) to be tested
+     * @return {@code true} if the character is an Extended Pictographic
+     * @since 21
+     */
+    public static boolean isExtendedPictographic(int codePoint) {
+        return android.icu.lang.UCharacter.hasBinaryProperty(
+                codePoint, android.icu.lang.UProperty.EXTENDED_PICTOGRAPHIC);
+    }
+
+    /**
+     * Returns the code point value of the Unicode character specified by its name.
+     *
+     * <p>Names are matched the way {@code Character.UnicodeScript.forName} matches script names:
+     * the Unicode name, or an alias, and it is an error rather than an answer when neither is
+     * known. "LATIN SMALL LETTER A" is 0x61.
+     *
+     * @param name the character name
+     * @return the code point
+     * @throws IllegalArgumentException if the name is not a valid character name
+     * @since 9
+     */
+    public static int codePointOf(String name) {
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        // ICU answers -1 for a name it does not know, where this method's contract is to throw.
+        // Trimmed and upper-cased first, as the JDK does: the names are upper case and a trailing
+        // space in a configuration file should not be the difference.
+        int found = android.icu.lang.UCharacter.getCharFromName(name.trim().toUpperCase(
+                java.util.Locale.ROOT));
+        if (found < 0) {
+            throw new IllegalArgumentException("Unrecognized character name: " + name);
+        }
+        return found;
+    }
+    // END tsb-added.
+
     // Android-changed: Removed @see tag (target does not exist on Android):
     // @see     javax.lang.model.SourceVersion#isIdentifier(CharSequence)
     /**

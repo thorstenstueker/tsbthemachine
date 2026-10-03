@@ -121,6 +121,15 @@ public final class Float extends Number implements Comparable<Float> {
     public static final int SIZE = 32;
 
     /**
+     * The number of bits in the significand of a {@code float}, including the implicit bit.
+     *
+     * @since 19
+     */
+    // tsb-added 03.10.2026, with float16ToFloat below: both are Java 19/20 and neither needs
+    // anything this runtime has not got.
+    public static final int PRECISION = 24;
+
+    /**
      * The number of bytes used to represent a {@code float} value.
      *
      * @since 1.8
@@ -962,4 +971,109 @@ public final class Float extends Number implements Comparable<Float> {
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     private static final long serialVersionUID = -2671257302660747028L;
+
+    // BEGIN tsb-added 03.10.2026: the binary16 conversions of Java 20.
+    //
+    // Bit arithmetic and nothing else — no table, no native call, no class this runtime lacks. The
+    // code is OpenJDK's and the comments with it: the subnormal case is where a hand-written one
+    // goes wrong, and it is the case a half-precision format spends most of its range in.
+
+    /**
+     * Returns the {@code float} value closest to the numerical value of the argument, a
+     * floating-point binary16 value encoded in a {@code short}.
+     *
+     * @param floatBinary16 a {@code short} value representing a binary16 value
+     * @return the {@code float} value closest to the binary16 value
+     * @since 20
+     */
+    public static float float16ToFloat(short floatBinary16) {
+        int bin16arg = (int) floatBinary16;
+        int bin16SignBit     = 0x8000 & bin16arg;
+        int bin16ExpBits     = 0x7c00 & bin16arg;
+        int bin16SignifBits  = 0x03FF & bin16arg;
+
+        float sign = (bin16SignBit != 0) ? -1.0f : 1.0f;
+
+        if (bin16ExpBits == 0x7c00) {
+            // NaN or infinity, which keep their significand so that a NaN payload survives.
+            if (bin16SignifBits == 0) {
+                return sign * Float.POSITIVE_INFINITY;
+            }
+            return Float.intBitsToFloat((bin16SignBit << 16)
+                                        | 0x7f80_0000
+                                        | (bin16SignifBits << 13));
+        }
+        if (bin16ExpBits == 0) {
+            if (bin16SignifBits == 0) {
+                return sign * 0.0f;
+            }
+            // Subnormal: no implicit leading bit, and the exponent is the minimum one. Multiplying
+            // by 2^-24 is exact in float and is what turns the integer significand into the value.
+            return sign * (0x1p-24f * bin16SignifBits);
+        }
+        // Normal. The exponent bias differs — 15 against 127 — so it is re-biased rather than
+        // copied, and the significand simply moves left by the difference in widths.
+        int exp = (bin16ExpBits >> 10) - 15 + 127;
+        return Float.intBitsToFloat((bin16SignBit << 16)
+                                    | (exp << 23)
+                                    | (bin16SignifBits << 13));
+    }
+
+    /**
+     * Returns the floating-point binary16 value, encoded in a {@code short}, closest in value to
+     * the argument.
+     *
+     * @param f a {@code float} value
+     * @return the nearest binary16 value, round to nearest even
+     * @since 20
+     */
+    public static short floatToFloat16(float f) {
+        int doppel = Float.floatToRawIntBits(f);
+        short sign16 = (short) ((doppel & 0x8000_0000) >> 16);
+        int bits = doppel & 0x7fff_ffff;
+
+        if (bits >= 0x7f80_0000) {
+            // Infinity or NaN. A NaN must stay a NaN: the top significand bit is forced on, because
+            // the shift below could otherwise leave a significand of zero, which is an infinity.
+            if (bits == 0x7f80_0000) {
+                return (short) (sign16 | 0x7c00);
+            }
+            return (short) (sign16 | 0x7c00 | 0x0200 | ((bits >> 13) & 0x03ff));
+        }
+        if (bits >= 0x4780_0000) {       // >= 65536, too large for binary16
+            return (short) (sign16 | 0x7c00);
+        }
+        if (bits >= 0x3880_0000) {       // >= 2^-14, a normal binary16
+            int exp = ((bits >> 23) & 0xff) - 127 + 15;
+            int signif = bits & 0x007f_ffff;
+            // Round to nearest even on the 13 bits being dropped, which is what every other
+            // narrowing in this class does and the only rounding the specification allows.
+            int rest = signif & 0x1fff;
+            signif >>= 13;
+            if (rest > 0x1000 || (rest == 0x1000 && (signif & 1) != 0)) {
+                signif++;
+                if (signif > 0x3ff) {    // the round carried into the exponent
+                    signif = 0;
+                    exp++;
+                    if (exp >= 0x1f) {
+                        return (short) (sign16 | 0x7c00);
+                    }
+                }
+            }
+            return (short) (sign16 | (exp << 10) | signif);
+        }
+        if (bits >= 0x3380_0000) {       // a subnormal binary16, down to 2^-24
+            // Scaled rather than shifted: the shift amount depends on the exponent and getting it
+            // right by hand is where a subnormal conversion usually breaks.
+            float betrag = Float.intBitsToFloat(bits);
+            int signif = Math.round(betrag * 0x1p24f);
+            if (signif > 0x3ff) {        // rounded up into the smallest normal
+                return (short) (sign16 | 0x0400);
+            }
+            return (short) (sign16 | signif);
+        }
+        // Smaller than half of the smallest subnormal: a signed zero.
+        return sign16;
+    }
+    // END tsb-added.
 }

@@ -459,6 +459,36 @@ public final class SplittableRandom {
         return mix64(nextSeed());
     }
 
+    // BEGIN tsb-added 03.10.2026.
+    /**
+     * Fills a user-supplied byte array with generated pseudorandom bytes.
+     *
+     * <p>Eight at a time out of {@link #nextLong}, which is this generator's only primitive — one
+     * call per byte would be eight times the work for the same bytes. The tail is the same loop
+     * with a shift, and it is where a hand-written version writes past the end.
+     *
+     * @param bytes the byte array to fill
+     * @throws NullPointerException if {@code bytes} is null
+     * @since 17
+     */
+    public void nextBytes(byte[] bytes) {
+        int i = 0;
+        int ganze = bytes.length & ~7;        // the part that is a whole number of longs
+        for (; i < ganze; i += 8) {
+            long wert = nextLong();
+            for (int n = 0; n < 8; n++, wert >>>= 8) {
+                bytes[i + n] = (byte) wert;
+            }
+        }
+        if (i < bytes.length) {
+            long wert = nextLong();
+            for (; i < bytes.length; i++, wert >>>= 8) {
+                bytes[i] = (byte) wert;
+            }
+        }
+    }
+    // END tsb-added.
+
     /**
      * Returns a pseudorandom {@code long} value between zero (inclusive)
      * and the specified bound (exclusive).
