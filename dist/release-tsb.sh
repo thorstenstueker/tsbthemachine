@@ -87,6 +87,20 @@ if [ "$DBG" != "0" ]; then
     find compiler/vm/target/binaries -name "*-dbg.a" -delete
 fi
 
+# The runtime, built and installed before it is packaged.
+#
+# dist/package depends on robovm-rt as a Maven artefact, so it takes whatever is in ~/.m2 — and
+# that is whatever somebody last installed, not what this tree says. On 03.10.2026 that published a
+# 27.4.0 whose robovm-rt.jar was two days old and did not contain the fix the release existed for.
+# Nothing reported it: the archive was well-formed, the checksum was correct, and the tag pointed at
+# the right commit. It was found by unzipping the published asset and looking.
+#
+# That is the one thing a release of this kind must not get wrong. The tag is the GPL2
+# correspondence between source and binary; a binary built from somebody's stale ~/.m2 breaks it
+# quietly, which is the only way it can break.
+echo "== building the runtime, so that the archive matches this tree =="
+mvn -q -pl compiler/rt -am install -DskipTests -Dmaven.javadoc.skip=true
+
 echo "== packaging $NAME =="
 mvn -q -pl dist/package clean package -DskipTests -Ddist.name="$NAME"
 cp "dist/package/target/$NAME.tar.gz" "dist/package/target/$ASSET"
@@ -102,11 +116,26 @@ fi
 UNPACKED=$(mktemp -d)
 tar xzf "dist/package/target/$ASSET" -C "$UNPACKED" "$NAME/lib/robovm-rt.jar"
 INSIDE=$(unzip -l "$UNPACKED/$NAME/lib/robovm-rt.jar" | grep -c " [0-9]\.class" || true)
-rm -rf "$UNPACKED"
 if [ "$INSIDE" != "0" ]; then
+    rm -rf "$UNPACKED"
     echo "robovm-rt.jar holds $INSIDE duplicated classes — refusing to publish it." >&2
     exit 1
 fi
+
+# And that it is the jar this tree just built, byte for byte.
+#
+# The install above should make this impossible to fail, which is exactly why it is checked: the
+# failure it guards against is silent and was real. Comparing the bytes needs no knowledge of what
+# changed, which is the property wanted — a check that looked for a particular class would pass the
+# next time somebody's ~/.m2 was stale for a different reason.
+BUILT=$(ls compiler/rt/target/robovm-rt-*.jar 2>/dev/null | grep -v -- "-sources\|-javadoc" | head -1)
+if [ -z "$BUILT" ] || ! cmp -s "$BUILT" "$UNPACKED/$NAME/lib/robovm-rt.jar"; then
+    rm -rf "$UNPACKED"
+    echo "The archive's robovm-rt.jar is not the one this tree built." >&2
+    echo "dist/package takes it from ~/.m2, so it is somebody else's build." >&2
+    exit 1
+fi
+rm -rf "$UNPACKED"
 SHA1=$(shasum -a 1 "dist/package/target/$ASSET" | cut -d' ' -f1)
 SIZE=$(du -h "dist/package/target/$ASSET" | cut -f1)
 
