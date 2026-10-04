@@ -56,4 +56,38 @@ class NoSuchElementException extends RuntimeException {
     public NoSuchElementException(String s) {
         super(s);
     }
+
+    // BEGIN tsb-added: the two causal constructors, Java 15.
+    /**
+     * Constructs a {@code NoSuchElementException} with the specified detail
+     * message and cause.
+     *
+     * @param  s the detail message, which is saved for later retrieval by the
+     *         {@link #getMessage()} method
+     * @param  cause the cause, which is saved for later retrieval by the
+     *         {@link #getCause()} method. A {@code null} value is permitted and
+     *         indicates that the cause is nonexistent or unknown.
+     *
+     * @since 15
+     */
+    public NoSuchElementException(String s, Throwable cause) {
+        super(s, cause);
+    }
+
+    /**
+     * Constructs a {@code NoSuchElementException} with the specified cause.
+     * The detail message is set to {@code cause.toString()} — the behaviour the
+     * two-argument {@code RuntimeException} constructor has always had, and the
+     * reason this cannot simply pass null for the message.
+     *
+     * @param  cause the cause, which is saved for later retrieval by the
+     *         {@link #getCause()} method. A {@code null} value is permitted and
+     *         indicates that the cause is nonexistent or unknown.
+     *
+     * @since 15
+     */
+    public NoSuchElementException(Throwable cause) {
+        super(cause);
+    }
+    // END tsb-added.
 }

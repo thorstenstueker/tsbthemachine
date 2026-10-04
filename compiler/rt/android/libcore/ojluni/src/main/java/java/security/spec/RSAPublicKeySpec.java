@@ -46,6 +46,10 @@ public class RSAPublicKeySpec implements KeySpec {
     private BigInteger modulus;
     private BigInteger publicExponent;
 
+    // tsb-added, Java 11: the key's own parameters, for RSASSA-PSS — where the digest, the MGF
+    // and the salt length belong to the key rather than to each signature.
+    private AlgorithmParameterSpec params;
+
     /**
      * Creates a new RSAPublicKeySpec.
      *
@@ -53,9 +57,25 @@ public class RSAPublicKeySpec implements KeySpec {
      * @param publicExponent the public exponent
      */
     public RSAPublicKeySpec(BigInteger modulus, BigInteger publicExponent) {
+        this(modulus, publicExponent, null);
+    }
+
+    // BEGIN tsb-added.
+    /**
+     * Creates a new RSAPublicKeySpec with additional key parameters.
+     *
+     * @param modulus the modulus
+     * @param publicExponent the public exponent
+     * @param params the parameters associated with this key, may be null
+     * @since 11
+     */
+    public RSAPublicKeySpec(BigInteger modulus, BigInteger publicExponent,
+            AlgorithmParameterSpec params) {
         this.modulus = modulus;
         this.publicExponent = publicExponent;
+        this.params = params;
     }
+    // END tsb-added.
 
     /**
      * Returns the modulus.
@@ -74,4 +94,17 @@ public class RSAPublicKeySpec implements KeySpec {
     public BigInteger getPublicExponent() {
         return this.publicExponent;
     }
+
+    // BEGIN tsb-added.
+    /**
+     * Returns the parameters associated with this key, may be null if not
+     * present.
+     *
+     * @return the parameters associated with this key
+     * @since 11
+     */
+    public AlgorithmParameterSpec getParams() {
+        return this.params;
+    }
+    // END tsb-added.
 }

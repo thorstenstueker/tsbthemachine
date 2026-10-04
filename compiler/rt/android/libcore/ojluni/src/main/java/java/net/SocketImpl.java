@@ -408,4 +408,37 @@ public abstract class SocketImpl implements SocketOptions {
             throw new UnsupportedOperationException("unsupported option");
         }
     }
+
+    // BEGIN tsb-added: supportedOptions, Java 9 — the same reasoning as in DatagramSocketImpl.
+    /**
+     * Returns a set of the socket options supported by this impl.
+     *
+     * <p>Java 25 answers {@code Set.of()} here and leaves it to each concrete impl. That default
+     * would be a lie in this class: the two methods above are not abstract about options, they
+     * translate exactly seven named ones into the legacy {@code SocketOptions} integers and throw
+     * {@code UnsupportedOperationException} for the rest. So this reports the same seven, and the
+     * list cannot drift from what they accept without somebody editing both.
+     *
+     * <p>It is deliberately not narrowed per socket kind. A {@code ServerSocket} has no business
+     * with {@code TCP_NODELAY} and the platform's own {@code ServerSocket} reports a shorter list
+     * — but <em>this</em> impl would accept it and pass it down, so saying otherwise here would
+     * describe a restriction that does not exist. Where the narrowing belongs is a server
+     * socket's own impl, and when one appears it overrides this.
+     *
+     * @return the options this impl accepts
+     *
+     * @since 9
+     */
+    protected java.util.Set<SocketOption<?>> supportedOptions() {
+        java.util.Set<SocketOption<?>> options = new java.util.HashSet<SocketOption<?>>();
+        options.add(StandardSocketOptions.SO_KEEPALIVE);
+        options.add(StandardSocketOptions.SO_SNDBUF);
+        options.add(StandardSocketOptions.SO_RCVBUF);
+        options.add(StandardSocketOptions.SO_REUSEADDR);
+        options.add(StandardSocketOptions.SO_LINGER);
+        options.add(StandardSocketOptions.IP_TOS);
+        options.add(StandardSocketOptions.TCP_NODELAY);
+        return java.util.Collections.unmodifiableSet(options);
+    }
+    // END tsb-added.
 }

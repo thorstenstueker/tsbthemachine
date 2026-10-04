@@ -60,6 +60,25 @@ support = support.replace('package jdk.internal.util;', 'package probe;')
 support = support.replace('class ArraysSupport', 'class ArraysSupportCopy')
 support = support.replace('ArraysSupport()', 'ArraysSupportCopy()')
 (work / 'probe/ArraysSupportCopy.java').write_text(support)
+
+# Integer and Long's compress/expand, added 04.10.2026. Only the added block again, and for a
+# sharper reason than StrictMath's: these two classes are the most deeply wired in java.lang —
+# Integer.java alone has native declarations, a cache, a @IntrinsicCandidate on half its methods
+# and an IntegerCache nested class — and none of that would resolve off a boot class path. The
+# three methods that were added reach nothing outside themselves, which is what makes a
+# transplant possible at all.
+#
+# Hacker's Delight parallel-prefix code is the case for this harness rather than a device check:
+# a transposed shift distance produces numbers that look entirely reasonable, and the only thing
+# that catches it is the JDK's own answer to the same question.
+for name, kind in (('Integer', 'int'), ('Long', 'long')):
+    text = (rt / f'java/lang/{name}.java').read_text(errors='replace')
+    marker = '// BEGIN tsb-added: compress and expand'
+    if marker not in text:
+        sys.exit(f'{name}.java carries no compress/expand block — nothing to check.')
+    added = text[text.index(marker):text.rindex('// END tsb-added.')]
+    (work / f'probe/{name}Bits.java').write_text(
+        f'package probe;\n\npublic final class {name}Bits {{\n' + added + '\n}\n')
 PY
 
 cp "$HERE"/*.java "$WORK/probe/"
@@ -67,3 +86,4 @@ cp "$HERE"/*.java "$WORK/probe/"
 
 "$JDK/bin/java" -cp "$WORK/out" probe.StrictMathCheck
 "$JDK/bin/java" -cp "$WORK/out" probe.ArraysSupportCheck
+"$JDK/bin/java" -cp "$WORK/out" probe.BitsCheck

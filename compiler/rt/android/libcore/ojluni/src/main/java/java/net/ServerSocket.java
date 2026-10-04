@@ -929,4 +929,80 @@ class ServerSocket implements java.io.Closeable {
     public FileDescriptor getFileDescriptor$() {
         return impl.getFileDescriptor();
     }
+
+    // BEGIN tsb-added: the SocketOption family, Java 9.
+    /**
+     * Sets the value of a socket option.
+     *
+     * @param <T> The type of the socket option value
+     * @param name The socket option
+     * @param value The value of the socket option. A value of {@code null} may
+     *              be valid for some options.
+     * @return this ServerSocket
+     *
+     * @throws UnsupportedOperationException if the socket does not support
+     *         the option.
+     * @throws IllegalArgumentException if the value is not valid for the option.
+     * @throws IOException if an I/O error occurs, or if the socket is closed.
+     * @throws NullPointerException if name is {@code null}
+     *
+     * @since 9
+     */
+    public <T> ServerSocket setOption(SocketOption<T> name, T value) throws IOException {
+        // requireNonNull first: the impl compares by identity against the StandardSocketOptions
+        // constants, so a null name would miss every branch and come back as
+        // UnsupportedOperationException — which is what an unimplemented option answers, and
+        // therefore the wrong thing to tell somebody who passed null by accident.
+        java.util.Objects.requireNonNull(name);
+        if (isClosed())
+            throw new SocketException("Socket is closed");
+        getImpl().setOption(name, value);
+        return this;
+    }
+
+    /**
+     * Returns the value of a socket option.
+     *
+     * @param <T> The type of the socket option value
+     * @param name The socket option
+     *
+     * @return The value of the socket option.
+     *
+     * @throws UnsupportedOperationException if the socket does not support
+     *         the option.
+     * @throws IOException if an I/O error occurs, or if the socket is closed.
+     * @throws NullPointerException if name is {@code null}
+     *
+     * @since 9
+     */
+    public <T> T getOption(SocketOption<T> name) throws IOException {
+        java.util.Objects.requireNonNull(name);        // see setOption above
+        if (isClosed())
+            throw new SocketException("Socket is closed");
+        return getImpl().getOption(name);
+    }
+
+    /**
+     * Returns a set of the socket options supported by this socket.
+     *
+     * <p>This method will continue to return the set of options even after the
+     * socket has been closed: what a socket <em>supports</em> does not change
+     * when it shuts, and a caller asking this is usually deciding what to do
+     * rather than doing it.
+     *
+     * @return A set of the socket options supported by this socket. This set
+     *         may be empty if the socket's SocketImpl cannot be created.
+     *
+     * @since 9
+     */
+    public java.util.Set<SocketOption<?>> supportedOptions() {
+        try {
+            return getImpl().supportedOptions();
+        } catch (SocketException noImpl) {
+            // The documented answer when the impl cannot be created: an empty set, because this
+            // method does not declare an exception.
+            return java.util.Collections.emptySet();
+        }
+    }
+    // END tsb-added.
 }

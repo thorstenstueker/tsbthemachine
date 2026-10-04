@@ -1731,4 +1731,110 @@ public final class Long extends Number implements Comparable<Long> {
             throw new NumberFormatException("For input string: \"\"");
         }
     }
+
+    // BEGIN tsb-added: compress and expand, Java 19 (JEP 356's bit-manipulation half).
+    //
+    // Copied verbatim out of OpenJDK 25 rather than retyped. These are Hacker's Delight's
+    // parallel-prefix routines — a transposed shift distance or a missed ~ is undetectable by
+    // eye and produces plausible-looking numbers, which is exactly the fault check.sh exists to
+    // catch. It calls both of these beside the JDK's own over random masks.
+    //
+    // parallelSuffix comes with them: it is private, it is the whole trick, and there is no
+    // version of this that works without it.
+
+    public static long compress(long i, long mask) {
+        // See Hacker's Delight (2nd ed) section 7.4 Compress, or Generalized Extract
+
+        i = i & mask; // Clear irrelevant bits
+        long maskCount = ~mask << 1; // Count 0's to right
+
+        for (int j = 0; j < 6; j++) {
+            // Parallel prefix
+            // Mask prefix identifies bits of the mask that have an odd number of 0's to the right
+            long maskPrefix = parallelSuffix(maskCount);
+            // Bits to move
+            long maskMove = maskPrefix & mask;
+            // Compress mask
+            mask = (mask ^ maskMove) | (maskMove >>> (1 << j));
+            // Bits of i to be moved
+            long t = i & maskMove;
+            // Compress i
+            i = (i ^ t) | (t >>> (1 << j));
+            // Adjust the mask count by identifying bits that have 0 to the right
+            maskCount = maskCount & ~maskPrefix;
+        }
+        return i;
+    }
+
+    public static long expand(long i, long mask) {
+        // Save original mask
+        long originalMask = mask;
+        // Count 0's to right
+        long maskCount = ~mask << 1;
+        long maskPrefix = parallelSuffix(maskCount);
+        // Bits to move
+        long maskMove1 = maskPrefix & mask;
+        // Compress mask
+        mask = (mask ^ maskMove1) | (maskMove1 >>> (1 << 0));
+        maskCount = maskCount & ~maskPrefix;
+
+        maskPrefix = parallelSuffix(maskCount);
+        // Bits to move
+        long maskMove2 = maskPrefix & mask;
+        // Compress mask
+        mask = (mask ^ maskMove2) | (maskMove2 >>> (1 << 1));
+        maskCount = maskCount & ~maskPrefix;
+
+        maskPrefix = parallelSuffix(maskCount);
+        // Bits to move
+        long maskMove3 = maskPrefix & mask;
+        // Compress mask
+        mask = (mask ^ maskMove3) | (maskMove3 >>> (1 << 2));
+        maskCount = maskCount & ~maskPrefix;
+
+        maskPrefix = parallelSuffix(maskCount);
+        // Bits to move
+        long maskMove4 = maskPrefix & mask;
+        // Compress mask
+        mask = (mask ^ maskMove4) | (maskMove4 >>> (1 << 3));
+        maskCount = maskCount & ~maskPrefix;
+
+        maskPrefix = parallelSuffix(maskCount);
+        // Bits to move
+        long maskMove5 = maskPrefix & mask;
+        // Compress mask
+        mask = (mask ^ maskMove5) | (maskMove5 >>> (1 << 4));
+        maskCount = maskCount & ~maskPrefix;
+
+        maskPrefix = parallelSuffix(maskCount);
+        // Bits to move
+        long maskMove6 = maskPrefix & mask;
+
+        long t = i << (1 << 5);
+        i = (i & ~maskMove6) | (t & maskMove6);
+        t = i << (1 << 4);
+        i = (i & ~maskMove5) | (t & maskMove5);
+        t = i << (1 << 3);
+        i = (i & ~maskMove4) | (t & maskMove4);
+        t = i << (1 << 2);
+        i = (i & ~maskMove3) | (t & maskMove3);
+        t = i << (1 << 1);
+        i = (i & ~maskMove2) | (t & maskMove2);
+        t = i << (1 << 0);
+        i = (i & ~maskMove1) | (t & maskMove1);
+
+        // Clear irrelevant bits
+        return i & originalMask;
+    }
+
+    private static long parallelSuffix(long maskCount) {
+        long maskPrefix = maskCount ^ (maskCount << 1);
+        maskPrefix = maskPrefix ^ (maskPrefix << 2);
+        maskPrefix = maskPrefix ^ (maskPrefix << 4);
+        maskPrefix = maskPrefix ^ (maskPrefix << 8);
+        maskPrefix = maskPrefix ^ (maskPrefix << 16);
+        maskPrefix = maskPrefix ^ (maskPrefix << 32);
+        return maskPrefix;
+    }
+    // END tsb-added.
 }

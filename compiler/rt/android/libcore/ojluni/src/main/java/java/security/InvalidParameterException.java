@@ -56,4 +56,33 @@ public class InvalidParameterException extends IllegalArgumentException {
     public InvalidParameterException(String msg) {
         super(msg);
     }
+
+    // BEGIN tsb-added: the two causal constructors, Java 23.
+    /**
+     * Constructs an {@code InvalidParameterException} with the specified
+     * detail message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause. A {@code null} value is permitted and indicates
+     *        that the cause is nonexistent or unknown.
+     *
+     * @since 23
+     */
+    public InvalidParameterException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
+     * Constructs an {@code InvalidParameterException} with the specified cause
+     * and a detail message of {@code (cause == null ? null : cause.toString())}.
+     *
+     * @param cause the cause. A {@code null} value is permitted and indicates
+     *        that the cause is nonexistent or unknown.
+     *
+     * @since 23
+     */
+    public InvalidParameterException(Throwable cause) {
+        super(cause);
+    }
+    // END tsb-added.
 }
