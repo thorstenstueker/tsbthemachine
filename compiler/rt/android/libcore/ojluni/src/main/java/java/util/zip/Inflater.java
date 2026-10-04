@@ -75,7 +75,7 @@ import dalvik.system.CloseGuard;
  *
  */
 public
-class Inflater {
+class Inflater implements AutoCloseable {
     // RoboVM note: invoking registerNatives to initialize missing native elements
     private static native void registerNatives();
     static {
@@ -402,6 +402,26 @@ class Inflater {
             }
         }
     }
+
+    // BEGIN tsb-added: AutoCloseable, Java 25.
+    /**
+     * Closes this {@code Inflater} and discards any unprocessed input.
+     *
+     * <p> This method does the same as {@link #end()}, under the name
+     * try-with-resources needs. {@code end()} has been the way to release an inflater's native
+     * memory since Java 1.1, and Java 25 made the class {@code AutoCloseable} so that the
+     * release can be left to the language instead of to a {@code finally} block.
+     *
+     * <p>Once this method is called, the behaviour of the inflater is undefined. Calling it twice
+     * is harmless: {@code end()} clears the native address and checks it before using it.
+     *
+     * @since 25
+     */
+    @Override
+    public void close() {
+        end();
+    }
+    // END tsb-added.
 
     /**
      * Closes the decompressor when garbage is collected.

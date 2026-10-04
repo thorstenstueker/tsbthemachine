@@ -42,6 +42,27 @@ public abstract class SecureRandomSpi implements java.io.Serializable {
     private static final long serialVersionUID = -2991854161009191830L;
 
     /**
+     * Constructor without a parameter.
+     */
+    public SecureRandomSpi() {
+        // ignored
+    }
+
+    /**
+     * Constructor with a parameter.
+     *
+     * @param params the {@link SecureRandomParameters} object.
+     *               This argument can be {@code null}.
+     * @throws IllegalArgumentException if {@code params} is
+     *         unrecognizable or unsupported by this {@code SecureRandom}
+     *
+     * @since 9
+     */
+    protected SecureRandomSpi(SecureRandomParameters params) {
+        // ignored
+    }
+
+    /**
      * Reseeds this random object. The given seed supplements, rather than
      * replaces, the existing seed. Thus, repeated calls are guaranteed
      * never to reduce randomness.
@@ -63,6 +84,33 @@ public abstract class SecureRandomSpi implements java.io.Serializable {
     protected abstract void engineNextBytes(byte[] bytes);
 
     /**
+     * Generates a user-specified number of random bytes with
+     * additional parameters.
+     *
+     * <p> Some random number generators can only generate a limited amount
+     * of random bytes per invocation. If the size of {@code bytes}
+     * is greater than this limit, the implementation should invoke
+     * its generation process multiple times to completely fill the
+     * buffer before returning from this method.
+     *
+     * @implSpec The default implementation throws
+     * an {@link UnsupportedOperationException}.
+     *
+     * @param bytes the array to be filled in with random bytes
+     * @param params additional parameters
+     * @throws UnsupportedOperationException if the implementation
+     *         has not overridden this method
+     * @throws IllegalArgumentException if {@code params} is {@code null},
+     *         illegal or unsupported by this {@code SecureRandom}
+     *
+     * @since 9
+     */
+    protected void engineNextBytes(
+            byte[] bytes, SecureRandomParameters params) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Returns the given number of seed bytes.  This call may be used to
      * seed other random number generators.
      *
@@ -71,4 +119,55 @@ public abstract class SecureRandomSpi implements java.io.Serializable {
      * @return the seed bytes.
      */
      protected abstract byte[] engineGenerateSeed(int numBytes);
+
+    /**
+     * Reseeds this random object with entropy input read from its
+     * entropy source with additional parameters.
+     *
+     * <p> If this method is called by {@link SecureRandom#reseed()},
+     * {@code params} will be {@code null}.
+     *
+     * <p> Do not override this method if the implementation does not
+     * support reseeding.
+     *
+     * @implSpec The default implementation throws
+     *           an {@link UnsupportedOperationException}.
+     *
+     * @param params extra parameters, can be {@code null}.
+     * @throws UnsupportedOperationException if the implementation
+     *         has not overridden this method
+     * @throws IllegalArgumentException if {@code params} is
+     *         illegal or unsupported by this {@code SecureRandom}
+     *
+     * @since 9
+     */
+    protected void engineReseed(SecureRandomParameters params) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns the effective {@link SecureRandomParameters} for this
+     * {@code SecureRandom} instance.
+     *
+     * @implSpec The default implementation returns {@code null}.
+     *
+     * @return the effective {@link SecureRandomParameters} parameters,
+     * or {@code null} if no parameters were used.
+     *
+     * @since 9
+     */
+    protected SecureRandomParameters engineGetParameters() {
+        return null;
+    }
+
+    /**
+     * Returns a Human-readable string representation of this
+     * {@code SecureRandom}.
+     *
+     * @return the string representation
+     */
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 }

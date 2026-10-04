@@ -303,6 +303,42 @@ public abstract class DatagramSocketImpl implements SocketOptions {
         }
     }
 
+    // BEGIN tsb-added: supportedOptions, Java 9 — and it reports what this class really handles.
+    /**
+     * Returns a set of the socket options supported by this impl.
+     *
+     * <p>Java 25's own {@code DatagramSocketImpl} answers {@code Set.of()} here and expects every
+     * concrete implementation to override it. That default would be a lie in this class, because
+     * this class is not abstract about options: {@link #setOption(SocketOption, Object)} and
+     * {@link #getOption(SocketOption)} above translate seven named options into the legacy
+     * {@code SocketOptions} integers and refuse everything else. Reporting an empty set while
+     * {@code setOption(SO_RCVBUF, …)} works is the kind of disagreement a caller cannot recover
+     * from: the honest answer is the same list those two methods branch on.
+     *
+     * <p>The three multicast options are only in the set for a {@code MulticastSocket}, which is
+     * the condition those two methods apply as well. A plain datagram socket that was told
+     * {@code IP_MULTICAST_TTL} would get {@code UnsupportedOperationException}, so it must not be
+     * promised one.
+     *
+     * @return the options this impl accepts
+     *
+     * @since 9
+     */
+    protected java.util.Set<SocketOption<?>> supportedOptions() {
+        java.util.Set<SocketOption<?>> options = new java.util.HashSet<SocketOption<?>>();
+        options.add(StandardSocketOptions.SO_SNDBUF);
+        options.add(StandardSocketOptions.SO_RCVBUF);
+        options.add(StandardSocketOptions.SO_REUSEADDR);
+        options.add(StandardSocketOptions.IP_TOS);
+        if (getDatagramSocket() instanceof MulticastSocket) {
+            options.add(StandardSocketOptions.IP_MULTICAST_IF);
+            options.add(StandardSocketOptions.IP_MULTICAST_TTL);
+            options.add(StandardSocketOptions.IP_MULTICAST_LOOP);
+        }
+        return java.util.Collections.unmodifiableSet(options);
+    }
+    // END tsb-added.
+
     /**
      * Gets the datagram socket file descriptor.
      * @return a {@code FileDescriptor} object representing the datagram socket

@@ -395,6 +395,188 @@ public class SecureRandom extends java.util.Random {
             instance.provider, algorithm);
     }
 
+    // BEGIN tsb-added: the SecureRandomParameters family, Java 9 (JEP 273).
+    /**
+     * Returns a {@code SecureRandom} object that implements the specified
+     * Random Number Generator (RNG) algorithm and supports the specified
+     * {@code SecureRandomParameters} request.
+     *
+     * @param algorithm the name of the RNG algorithm.
+     * @param params the {@code SecureRandomParameters}
+     *               the newly created {@code SecureRandom} object must support.
+     * @return the new {@code SecureRandom} object
+     * @throws IllegalArgumentException if the specified params is
+     *         {@code null}
+     * @throws NoSuchAlgorithmException if no Provider supports a
+     *         {@code SecureRandomSpi} implementation for the specified
+     *         algorithm and parameters
+     * @throws NullPointerException if {@code algorithm} is {@code null}
+     *
+     * @since 9
+     */
+    public static SecureRandom getInstance(
+            String algorithm, SecureRandomParameters params)
+            throws NoSuchAlgorithmException {
+        Objects.requireNonNull(algorithm, "null algorithm name");
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        Instance instance = GetInstance.getInstance("SecureRandom",
+                SecureRandomSpi.class, algorithm, params);
+        return new SecureRandom((SecureRandomSpi)instance.impl,
+                instance.provider, algorithm);
+    }
+
+    /**
+     * Returns a {@code SecureRandom} object that implements the specified
+     * Random Number Generator (RNG) algorithm and supports the specified
+     * {@code SecureRandomParameters} request, from the specified provider.
+     *
+     * @param algorithm the name of the RNG algorithm.
+     * @param params the {@code SecureRandomParameters}
+     *               the newly created {@code SecureRandom} object must support.
+     * @param provider the name of the provider.
+     * @return the new {@code SecureRandom} object
+     * @throws IllegalArgumentException if the specified provider is
+     *         {@code null} or empty, or params is {@code null}
+     * @throws NoSuchAlgorithmException if the specified provider does not
+     *         support a {@code SecureRandomSpi} implementation for the
+     *         specified algorithm and parameters
+     * @throws NoSuchProviderException if the specified provider is not
+     *         registered in the security provider list
+     * @throws NullPointerException if {@code algorithm} is {@code null}
+     *
+     * @since 9
+     */
+    public static SecureRandom getInstance(String algorithm,
+            SecureRandomParameters params, String provider)
+            throws NoSuchAlgorithmException, NoSuchProviderException {
+        Objects.requireNonNull(algorithm, "null algorithm name");
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        Instance instance = GetInstance.getInstance("SecureRandom",
+                SecureRandomSpi.class, algorithm, params, provider);
+        return new SecureRandom((SecureRandomSpi)instance.impl,
+                instance.provider, algorithm);
+    }
+
+    /**
+     * Returns a {@code SecureRandom} object that implements the specified
+     * Random Number Generator (RNG) algorithm and supports the specified
+     * {@code SecureRandomParameters} request, from the specified
+     * {@code Provider} object.
+     *
+     * @param algorithm the name of the RNG algorithm.
+     * @param params the {@code SecureRandomParameters}
+     *               the newly created {@code SecureRandom} object must support.
+     * @param provider the provider.
+     * @return the new {@code SecureRandom} object
+     * @throws IllegalArgumentException if the specified provider or params
+     *         is {@code null}
+     * @throws NoSuchAlgorithmException if the specified provider does not
+     *         support a {@code SecureRandomSpi} implementation for the
+     *         specified algorithm and parameters
+     * @throws NullPointerException if {@code algorithm} is {@code null}
+     *
+     * @since 9
+     */
+    public static SecureRandom getInstance(String algorithm,
+            SecureRandomParameters params, Provider provider)
+            throws NoSuchAlgorithmException {
+        Objects.requireNonNull(algorithm, "null algorithm name");
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        Instance instance = GetInstance.getInstance("SecureRandom",
+                SecureRandomSpi.class, algorithm, params, provider);
+        return new SecureRandom((SecureRandomSpi)instance.impl,
+                instance.provider, algorithm);
+    }
+
+    /**
+     * Returns the effective {@link SecureRandomParameters} for this
+     * {@code SecureRandom} instance.
+     *
+     * @return the effective {@link SecureRandomParameters} parameters,
+     * or {@code null} if no parameters were used.
+     *
+     * @since 9
+     */
+    public SecureRandomParameters getParameters() {
+        return secureRandomSpi.engineGetParameters();
+    }
+
+    /**
+     * Generates a user-specified number of random bytes with
+     * additional parameters.
+     *
+     * @param bytes the array to be filled in with random bytes
+     * @param params additional parameters
+     * @throws NullPointerException if {@code bytes} is {@code null}
+     * @throws UnsupportedOperationException if the underlying provider
+     *         implementation has not overridden this method
+     * @throws IllegalArgumentException if {@code params} is {@code null},
+     *         illegal or unsupported by this {@code SecureRandom}
+     *
+     * @since 9
+     */
+    public void nextBytes(byte[] bytes, SecureRandomParameters params) {
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        secureRandomSpi.engineNextBytes(
+                Objects.requireNonNull(bytes), params);
+    }
+
+    /**
+     * Reseeds this {@code SecureRandom} with entropy input read from its
+     * entropy source.
+     *
+     * @throws UnsupportedOperationException if the underlying provider
+     *         implementation has not overridden this method.
+     *
+     * @since 9
+     */
+    public void reseed() {
+        secureRandomSpi.engineReseed(null);
+    }
+
+    /**
+     * Reseeds this {@code SecureRandom} with entropy input read from its
+     * entropy source with additional parameters.
+     *
+     * <p> Note that entropy is obtained from an entropy source. While
+     * some data in {@code params} may contain entropy, its main usage is to
+     * provide diversity.
+     *
+     * @param params extra parameters
+     * @throws UnsupportedOperationException if the underlying provider
+     *         implementation has not overridden this method.
+     * @throws IllegalArgumentException if {@code params} is {@code null},
+     *         illegal or unsupported by this {@code SecureRandom}
+     *
+     * @since 9
+     */
+    public void reseed(SecureRandomParameters params) {
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+        secureRandomSpi.engineReseed(params);
+    }
+
+    /**
+     * Returns a Human-readable string representation of this
+     * {@code SecureRandom}.
+     *
+     * @return the string representation
+     */
+    @Override
+    public String toString() {
+        return secureRandomSpi.toString();
+    }
+    // END tsb-added.
+
     /**
      * Returns the SecureRandomSpi of this SecureRandom object.
      */

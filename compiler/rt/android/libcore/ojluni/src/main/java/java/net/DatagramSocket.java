@@ -1359,4 +1359,172 @@ class DatagramSocket implements java.io.Closeable {
         return impl.fd;
     }
 
+    // BEGIN tsb-added: the SocketOption family (Java 9) and the SocketAddress multicast
+    // operations (Java 17).
+    //
+    // Written against this class's own structure and not against JDK 25's. Since JDK 17 the
+    // platform's DatagramSocket is a thin shell over a delegate(); this one still holds its
+    // DatagramSocketImpl directly, as libcore's does, so these five go through getImpl() like
+    // every other method here. Copying the delegate() form would not have compiled, and more to
+    // the point would have been a second architecture inside one class.
+    /**
+     * Sets the value of a socket option.
+     *
+     * @param <T> The type of the socket option value
+     * @param name The socket option
+     * @param value The value of the socket option. A value of {@code null}
+     *              may be valid for some options.
+     * @return this DatagramSocket
+     *
+     * @throws UnsupportedOperationException if the datagram socket
+     *         does not support the option.
+     * @throws IllegalArgumentException if the value is not valid for
+     *         the option.
+     * @throws IOException if an I/O error occurs, or if the socket is closed.
+     * @throws NullPointerException if name is {@code null}
+     *
+     * @since 9
+     */
+    public <T> DatagramSocket setOption(SocketOption<T> name, T value)
+        throws IOException
+    {
+        // Before the closed check and before the impl: the impl branches on identity against the
+        // StandardSocketOptions constants and would answer a null name with
+        // UnsupportedOperationException — which is what this method does for an option nobody
+        // implements, and a caller who passed null by accident would read it as exactly that.
+        // Measured against JDK 25, which answers NullPointerException here.
+        java.util.Objects.requireNonNull(name);
+        if (isClosed())
+            throw new SocketException("Socket is closed");
+        getImpl().setOption(name, value);
+        return this;
+    }
+
+    /**
+     * Returns the value of a socket option.
+     *
+     * @param <T> The type of the socket option value
+     * @param name The socket option
+     *
+     * @return The value of the socket option.
+     *
+     * @throws UnsupportedOperationException if the datagram socket
+     *         does not support the option.
+     * @throws IOException if an I/O error occurs, or if the socket is closed.
+     * @throws NullPointerException if name is {@code null}
+     *
+     * @since 9
+     */
+    public <T> T getOption(SocketOption<T> name) throws IOException {
+        java.util.Objects.requireNonNull(name);        // see setOption above
+        if (isClosed())
+            throw new SocketException("Socket is closed");
+        return getImpl().getOption(name);
+    }
+
+    /**
+     * Returns a set of the socket options supported by this socket.
+     *
+     * This method will continue to return the set of options even after
+     * the socket has been closed.
+     *
+     * @return A set of the socket options supported by this socket. This set
+     *         may be empty if the socket's DatagramSocketImpl cannot be created.
+     *
+     * @since 9
+     */
+    public java.util.Set<SocketOption<?>> supportedOptions() {
+        // Deliberately not guarded by isClosed(): the contract says this keeps answering after
+        // the socket is closed, because what a socket *supports* does not change when it shuts.
+        // A caller asking this is usually deciding what to do, not doing it.
+        try {
+            return getImpl().supportedOptions();
+        } catch (SocketException noImpl) {
+            // The documented answer when the impl cannot be created: an empty set rather than an
+            // exception, because this method does not declare one.
+            return java.util.Collections.emptySet();
+        }
+    }
+
+    /**
+     * Joins a multicast group.
+     *
+     * @param  mcastaddr indicates the multicast address to join.
+     * @param  netIf specifies the local interface to receive multicast
+     *         datagram packets, or {@code null} to defer to the interface set
+     *         for outgoing multicast datagrams.
+     * @throws IOException if there is an error joining, or when the address
+     *         is not a multicast address, or the platform does not support
+     *         multicasting
+     * @throws SecurityException if a security manager exists and its
+     *         {@code checkMulticast} method does not allow the join
+     * @throws IllegalArgumentException if mcastaddr is {@code null} or is a
+     *         SocketAddress subclass not supported by this socket
+     *
+     * @since 17
+     */
+    public void joinGroup(SocketAddress mcastaddr, NetworkInterface netIf)
+        throws IOException
+    {
+        if (isClosed())
+            throw new SocketException("Socket is closed");
+
+        if (!(mcastaddr instanceof InetSocketAddress))
+            throw new IllegalArgumentException("Unsupported address type");
+
+        InetAddress group = ((InetSocketAddress) mcastaddr).getAddress();
+        checkAddress(group, "joinGroup");
+        SecurityManager security = System.getSecurityManager();
+        if (security != null) {
+            security.checkMulticast(group);
+        }
+
+        if (!group.isMulticastAddress()) {
+            throw new SocketException("Not a multicast address");
+        }
+
+        getImpl().joinGroup(mcastaddr, netIf);
+    }
+
+    /**
+     * Leaves a multicast group on a specified local interface.
+     *
+     * @param  mcastaddr is the multicast address to leave. This should
+     *         contain the same IP address than that used for joining
+     *         the group.
+     * @param  netIf specifies the local interface or {@code null} to defer
+     *         to the interface set for outgoing multicast datagrams.
+     * @throws IOException if there is an error leaving or when the address
+     *         is not a multicast address, or the socket is closed
+     * @throws SecurityException if a security manager exists and its
+     *         {@code checkMulticast} method does not allow the operation
+     * @throws IllegalArgumentException if mcastaddr is {@code null} or is a
+     *         SocketAddress subclass not supported by this socket
+     *
+     * @since 17
+     */
+    public void leaveGroup(SocketAddress mcastaddr, NetworkInterface netIf)
+        throws IOException
+    {
+        if (isClosed())
+            throw new SocketException("Socket is closed");
+
+        if (!(mcastaddr instanceof InetSocketAddress))
+            throw new IllegalArgumentException("Unsupported address type");
+
+        InetAddress group = ((InetSocketAddress) mcastaddr).getAddress();
+        checkAddress(group, "leaveGroup");
+        SecurityManager security = System.getSecurityManager();
+        if (security != null) {
+            security.checkMulticast(group);
+        }
+
+        if (!group.isMulticastAddress()) {
+            throw new SocketException("Not a multicast address");
+        }
+
+        getImpl().leaveGroup(mcastaddr, netIf);
+    }
+    // END tsb-added.
+
 }

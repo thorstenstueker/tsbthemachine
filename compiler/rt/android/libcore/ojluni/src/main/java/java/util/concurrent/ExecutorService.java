@@ -139,7 +139,7 @@ import java.util.List;
  * @since 1.5
  * @author Doug Lea
  */
-public interface ExecutorService extends Executor {
+public interface ExecutorService extends Executor, AutoCloseable {
 
     /**
      * Initiates an orderly shutdown in which previously submitted
@@ -357,4 +357,59 @@ public interface ExecutorService extends Executor {
     <T> T invokeAny(Collection<? extends Callable<T>> tasks,
                     long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException;
+
+    // BEGIN tsb-added: AutoCloseable and close(), Java 19.
+    /**
+     * Initiates an orderly shutdown in which previously submitted tasks are
+     * executed, but no new tasks will be accepted. This method waits until all
+     * tasks have completed execution and the executor has terminated.
+     *
+     * <p> If interrupted while waiting, this method stops all executing tasks as
+     * if by invoking {@link #shutdownNow()}. It then continues to wait until all
+     * actively executing tasks have completed. Tasks that were awaiting
+     * execution are not executed. The interrupt status will be re-asserted
+     * before this method returns.
+     *
+     * <p> If already terminated, invoking this method has no effect.
+     *
+     * @implSpec
+     * The default implementation invokes {@code isTerminated()} and returns
+     * immediately if it returns {@code true}. Otherwise, invokes
+     * {@code shutdown()} and then waits for the executor to terminate with
+     * {@code awaitTermination(1L, TimeUnit.DAYS)}. On interrupt it invokes
+     * {@code shutdownNow()} and continues waiting.
+     *
+     * @throws SecurityException if a security manager exists and
+     *         shutting down this ExecutorService may manipulate
+     *         threads that the caller is not permitted to modify
+     *
+     * @since 19
+     */
+    @Override
+    default void close() {
+        boolean terminated = isTerminated();
+        if (!terminated) {
+            shutdown();
+            boolean interrupted = false;
+            while (!terminated) {
+                try {
+                    terminated = awaitTermination(1L, TimeUnit.DAYS);
+                } catch (InterruptedException e) {
+                    // Not re-thrown and not swallowed: the interrupt is remembered and
+                    // re-asserted at the end. close() is called from a try-with-resources, which
+                    // cannot handle a checked exception that the resource's own body did not
+                    // declare — so the only honest choices are to finish the job and pass the
+                    // interrupt on, or to leave threads running. This finishes the job.
+                    if (!interrupted) {
+                        shutdownNow();
+                        interrupted = true;
+                    }
+                }
+            }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+    // END tsb-added.
 }
