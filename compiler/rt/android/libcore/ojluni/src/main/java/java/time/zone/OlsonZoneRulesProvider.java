@@ -67,16 +67,16 @@ import libcore.util.BasicLruCache;
  * exact — which matters more than it sounds, because a date in 1978 in Berlin was an hour off from
  * what a naive conversion gives.
  *
- * <p>What is <b>not</b> carried over is the trailing rule: a POSIX {@code TZ} string at the end of
- * an Olson file states how daylight saving continues after the last explicit transition.
- * {@link ZoneInfoData} does not expose it, so the rules here end where the file's transitions end
- * — 2037 in the files shipped with Apple's systems. Beyond that the last offset applies for ever,
- * which means a date in 2038 in a zone with daylight saving can be an hour out.
+ * <p>After the last transition — 2037 in the files Apple's systems ship, where a 32-bit
+ * {@code time_t} ends — the rule at the end of the file applies, and {@link TrailingPosixRule}
+ * reads it. That was missing until 06.10.2026, and the consequence was that a date in 2038 in a
+ * zone with daylight saving was an hour out for half the year: the last offset in the table simply
+ * continued. {@link ZoneInfoData} does not expose the string, so it is read out of the file again
+ * there, and cross-checked against the standard offset this table ends with.
  *
- * <p>That is stated rather than hidden, and it is the right trade for now: the alternative is to
- * parse the POSIX string ourselves out of a file {@code ZoneInfoData} has already read and thrown
- * away, and until a form is doing arithmetic on dates past 2037 it buys nothing. A business form
- * computing a delivery date is not that form.
+ * <p>Two ways the POSIX string can state a rule {@link ZoneOffsetTransitionRule} cannot hold are
+ * refused rather than approximated — see that class. For the zones concerned the behaviour is what
+ * it was before, which is to say the old defect, for a handful of zones instead of two hundred.
  */
 final class OlsonZoneRulesProvider extends ZoneRulesProvider {
 
@@ -187,10 +187,12 @@ final class OlsonZoneRulesProvider extends ZoneRulesProvider {
             previousWall = wall;
         }
 
-        // No trailing rules — see the note on this class. The last offset applies from the last
-        // transition onwards.
+        // And after the last transition, the rule at the end of the file — which is why
+        // previousStandard is handed over: it is what the trailing rule has to agree with for the
+        // two halves to be one zone. Where there is no rule to be had the list is empty and the
+        // last offset applies for ever, which is what this did before.
         return ZoneRules.of(baseStandard, baseWall, standardMoves, wallMoves,
-                            Collections.<ZoneOffsetTransitionRule>emptyList());
+                            TrailingPosixRule.forZone(zoneId, previousStandard));
     }
 
     /**
