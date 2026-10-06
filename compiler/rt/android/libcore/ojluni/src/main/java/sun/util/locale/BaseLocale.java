@@ -72,20 +72,61 @@ public final class BaseLocale {
 
     public static BaseLocale getInstance(String language, String script,
                                          String region, String variant) {
-        // JDK uses deprecated ISO639.1 language codes for he, yi and id
-        if (language != null) {
-            if (LocaleUtils.caseIgnoreMatch(language, "he")) {
-                language = "iw";
-            } else if (LocaleUtils.caseIgnoreMatch(language, "yi")) {
-                language = "ji";
-            } else if (LocaleUtils.caseIgnoreMatch(language, "id")) {
-                language = "in";
-            }
-        }
+        language = convertOldISOCodes(language);
 
         Key key = new Key(language, script, region, variant);
         BaseLocale baseLocale = CACHE.get(key);
         return baseLocale;
+    }
+
+    /**
+     * Whether a {@code Locale} stores the obsolete ISO 639 code or the current one.
+     *
+     * <p>Hebrew, Yiddish and Indonesian changed code in 1989 — {@code iw}, {@code ji} and
+     * {@code in} became {@code he}, {@code yi} and {@code id} — and Java stored the old one for
+     * thirty years, because {@code getLanguage()} had already been shipped answering it. This
+     * runtime did the same until 06.10.2026 and now stores the current code, as JDK 17 and later
+     * do.
+     *
+     * <p>{@code -Djava.locale.useOldISOCodes=true} puts it back, for the same reason the JDK has
+     * that switch: a program that compares {@code getLanguage()} against the literal {@code "iw"}
+     * is not wrong to have done so, it was reading the specification of the day, and it needs a way
+     * to keep working. Read once, because a {@code Locale} created before the property changed
+     * would not agree with one created after it.
+     */
+    public static final boolean OLD_ISO_CODES =
+            "true".equalsIgnoreCase(System.getProperty("java.locale.useOldISOCodes", "false"));
+
+    /**
+     * The language code as it is stored, which is the current one unless asked otherwise.
+     *
+     * <p>Both codes are accepted everywhere a language is given; this decides which of the two the
+     * locale then <em>is</em>. It has to be one place and not three, because the answer is a cache
+     * key: two routes that normalise differently produce two locales that are not equal and both
+     * claim to be Hebrew.
+     */
+    public static String convertOldISOCodes(String language) {
+        if (language == null) {
+            return null;
+        }
+        if (OLD_ISO_CODES) {
+            if (LocaleUtils.caseIgnoreMatch(language, "he")) {
+                return "iw";
+            } else if (LocaleUtils.caseIgnoreMatch(language, "yi")) {
+                return "ji";
+            } else if (LocaleUtils.caseIgnoreMatch(language, "id")) {
+                return "in";
+            }
+        } else {
+            if (LocaleUtils.caseIgnoreMatch(language, "iw")) {
+                return "he";
+            } else if (LocaleUtils.caseIgnoreMatch(language, "ji")) {
+                return "yi";
+            } else if (LocaleUtils.caseIgnoreMatch(language, "in")) {
+                return "id";
+            }
+        }
+        return language;
     }
 
     public String getLanguage() {

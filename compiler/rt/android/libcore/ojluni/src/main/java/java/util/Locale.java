@@ -782,7 +782,8 @@ public final class Locale implements Cloneable, Serializable {
      * <ul>
      * <li>ISO 639 is not a stable standard; some of the language codes it defines
      * (specifically "iw", "ji", and "in") have changed.  This constructor accepts both the
-     * old codes ("iw", "ji", and "in") and the new codes ("he", "yi", and "id"), but all other
+     * old codes ("iw", "ji", and "in") and the new codes ("he", "yi", and "id") and stores the
+     * new one, but all other
      * API on Locale will return only the OLD codes.
      * <li>For backward compatibility reasons, this constructor does not make
      * any syntactic checks on the input.
@@ -816,7 +817,8 @@ public final class Locale implements Cloneable, Serializable {
      * <ul>
      * <li>ISO 639 is not a stable standard; some of the language codes it defines
      * (specifically "iw", "ji", and "in") have changed.  This constructor accepts both the
-     * old codes ("iw", "ji", and "in") and the new codes ("he", "yi", and "id"), but all other
+     * old codes ("iw", "ji", and "in") and the new codes ("he", "yi", and "id") and stores the
+     * new one, but all other
      * API on Locale will return only the OLD codes.
      * <li>For backward compatibility reasons, this constructor does not make
      * any syntactic checks on the input.
@@ -841,7 +843,8 @@ public final class Locale implements Cloneable, Serializable {
      * <ul>
      * <li>ISO 639 is not a stable standard; some of the language codes it defines
      * (specifically "iw", "ji", and "in") have changed.  This constructor accepts both the
-     * old codes ("iw", "ji", and "in") and the new codes ("he", "yi", and "id"), but all other
+     * old codes ("iw", "ji", and "in") and the new codes ("he", "yi", and "id") and stores the
+     * new one, but all other
      * API on Locale will return only the OLD codes.
      * <li>For backward compatibility reasons, this constructor does not make
      * any syntactic checks on the input.
@@ -1347,16 +1350,18 @@ public final class Locale implements Cloneable, Serializable {
      * Returns the language code of this Locale.
      *
      * <p><b>Note:</b> ISO 639 is not a stable standard&mdash; some languages' codes have changed.
-     * Locale's constructor recognizes both the new and the old codes for the languages
-     * whose codes have changed, but this function always returns the old code.  If you
-     * want to check for a specific language whose code has changed, don't do
+     * Both the new and the old codes are recognized wherever a language is given, and this method
+     * returns the <b>new</b> code: {@code he}, {@code yi} and {@code id} for Hebrew, Yiddish and
+     * Indonesian. It returned the old code ({@code iw}, {@code ji}, {@code in}) until 06.10.2026.
+     * {@code -Djava.locale.useOldISOCodes=true} restores that for a program that compares against
+     * the old literal.
      * <pre>
-     * if (locale.getLanguage().equals("he")) // BAD!
+     * if (locale.getLanguage().equals("he"))     // right, and now also true
      *    ...
      * </pre>
-     * Instead, do
+     * The form that works either way, and the one to write where the property might be set:
      * <pre>
-     * if (locale.getLanguage().equals(new Locale("he").getLanguage()))
+     * if (locale.getLanguage().equals(Locale.of("he").getLanguage()))
      *    ...
      * </pre>
      * @return The language code, or the empty string if none is defined.
@@ -1774,9 +1779,11 @@ public final class Locale implements Cloneable, Serializable {
      *
      * <li>The language code "und" is mapped to language "".
      *
-     * <li>The language codes "he", "yi", and "id" are mapped to "iw",
-     * "ji", and "in" respectively. (This is the same canonicalization
-     * that's done in Locale's constructors.)
+     * <li>The obsolete language codes "iw", "ji", and "in" are mapped to
+     * "he", "yi", and "id" respectively. (This is the same canonicalization
+     * that's done in Locale's constructors. It went the other way until
+     * 06.10.2026 and still does under
+     * {@code -Djava.locale.useOldISOCodes=true}.)
      *
      * <li>The portion of a private use subtag prefixed by "lvariant",
      * if any, is removed and appended to the variant field in the
@@ -2864,19 +2871,15 @@ public final class Locale implements Cloneable, Serializable {
 
     private static volatile String[] isoCountries = null;
 
+    /**
+     * Both codes are accepted and the current one is stored — see
+     * {@link BaseLocale#convertOldISOCodes}, which is where the rule lives so that this route and
+     * {@code BaseLocale.getInstance} cannot disagree. Interned here because the callers compare
+     * the result with {@code ==}.
+     */
     private static String convertOldISOCodes(String language) {
-        // we accept both the old and the new ISO codes for the languages whose ISO
-        // codes have changed, but we always store the OLD code, for backward compatibility
-        language = LocaleUtils.toLowerString(language).intern();
-        if (language == "he") {
-            return "iw";
-        } else if (language == "yi") {
-            return "ji";
-        } else if (language == "id") {
-            return "in";
-        } else {
-            return language;
-        }
+        return BaseLocale.convertOldISOCodes(
+                LocaleUtils.toLowerString(language).intern()).intern();
     }
 
     private static LocaleExtensions getCompatibilityExtensions(String language,
