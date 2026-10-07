@@ -6,7 +6,7 @@
 # What comes out:
 #   tag      tsbthemachine-<version>              on the current HEAD (must be pushed)
 #   asset    tsbthemachine-dist-<version>.tar.gz  unpacks to tsbthemachine-<version>/
-#   notes    the SHA-1 of the asset, to be written into TheMachine.java of both projects
+#   notes    the SHA-256 of the asset, to be written into TheMachine.java of both projects
 #
 # Why a release and not Sonatype: this is GPL2, and whoever hosts the binary owes the corresponding
 # source. A release tagged on the commit it was built from is that correspondence, in one place and
@@ -136,7 +136,14 @@ if [ -z "$BUILT" ] || ! cmp -s "$BUILT" "$UNPACKED/$NAME/lib/robovm-rt.jar"; the
     exit 1
 fi
 rm -rf "$UNPACKED"
+# Both digests, and SHA-256 is the one that is pinned.
+#
+# RapidFX's TheMachine.DIST_SHA256 went to SHA-256 on 06.10.2026 and this script still reported
+# only SHA-1, which left whoever published a release to work the real number out afterwards — the
+# step at which a pin gets copied from the wrong place. SHA-1 stays in the notes because releases
+# in circulation are named by it, and because a second statement about one file costs nothing.
 SHA1=$(shasum -a 1 "dist/package/target/$ASSET" | cut -d' ' -f1)
+SHA256=$(shasum -a 256 "dist/package/target/$ASSET" | cut -d' ' -f1)
 SIZE=$(du -h "dist/package/target/$ASSET" | cut -f1)
 
 echo "== release $TAG on $COMMIT =="
@@ -154,6 +161,7 @@ Android compiles ahead of time, not just the VM core. A Java file becomes an arm
 A fork of RoboVM/MobiVM for our own purposes — see NOTICE for the origin and the licence.
 
     asset   $ASSET ($SIZE)
+    sha256  $SHA256
     sha1    $SHA1
     commit  $COMMIT
 
@@ -164,4 +172,10 @@ EOF
 echo
 echo "Now write into TheMachine.java (RapidFX and RapidJ):"
 echo "    MACHINE_VERSION = \"$VERSION\""
-echo "    SHA1            = \"$SHA1\""
+echo "    DIST_SHA256     = \"$SHA256\""
+echo
+echo "Hold it against the server's own word before committing the pin:"
+echo "    gh api repos/thorstenstueker/tsbthemachine/releases/tags/$TAG --jq '.assets[].digest'"
+echo
+echo "The two have to agree. A digest read from the API alone is the server's word about the"
+echo "server's file; this one was measured here, on the archive this tree just built."
