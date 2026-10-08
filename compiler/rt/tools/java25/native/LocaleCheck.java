@@ -9,30 +9,33 @@ import java.util.Set;
  *
  * <h2>What is worth pinning</h2>
  *
- * <b>The obsolete ISO 639 codes go the other way here than in JDK 25, and that is not this
- * change's doing.</b> Measured 03.10.2026, every route:
+ * <b>The obsolete ISO 639 codes were turned round on 06.10.2026, and this check is what noticed
+ * that it had happened.</b> Until then every route here stored the pre-1989 code, and the seven
+ * assertions below asserted exactly that. The run after the change failed on all seven — "got he,
+ * wanted iw" — which is the result a pinned contract is for: the library moved and said so.
  *
  * <pre>
- *                            this library   JDK 25
- *   new Locale("he")              iw          he
- *   Locale.of("he")               iw          he
- *   forLanguageTag("he")          iw          he
- *   forLanguageTag("iw")          iw          he
- *   Builder.setLanguage("he")     iw          he
+ *                            before 06.10.   now, and JDK 25
+ *   new Locale("he")              iw              he
+ *   Locale.of("he")               iw              he
+ *   forLanguageTag("he")          iw              he
+ *   forLanguageTag("iw")          iw              he
+ *   Builder.setLanguage("he")     iw              he
  *   new Locale("he").toLanguageTag()
- *                                 he          he
+ *                                 he              he
  * </pre>
  *
  * Hebrew, Yiddish and Indonesian changed ISO code in 1989 and Java stored the old one — "iw", "ji",
- * "in" — for compatibility. OpenJDK has since turned that round and normalises to the modern code
- * everywhere; this fork still stores the old one, in {@code BaseLocale.getInstance}, which every
- * route goes through.
+ * "in" — for compatibility. OpenJDK turned that round in 17 and normalises to the modern code
+ * everywhere, and {@code BaseLocale.convertOldISOCodes} now does the same here. The rule is in one
+ * place on purpose: it is a cache key, and two routes that normalise differently produce two
+ * locales that are not equal and both claim to be Hebrew.
  *
- * <p>So {@code of} is held to the fork's behaviour here rather than to JDK 25's, deliberately.
- * Making the factory alone modern would leave {@code Locale.of("he").equals(new Locale("he"))}
- * false, which is true nowhere and would be a trap of our own making. Turning the whole conversion
- * round is a separate piece of work: it reaches serialisation, {@code toString} and every stored
- * locale, and it is written up under <i>Known faults</i> in RapidFX's {@code docs/OPEN.md}.
+ * <p><b>{@code -Djava.locale.useOldISOCodes=true} restores the old behaviour</b>, as it does in the
+ * JDK, for a program that compares {@code getLanguage()} against the literal {@code "iw"}. It
+ * cannot be exercised from inside this program — the flag is read once at class initialisation and
+ * {@code BaseLocale} has long since initialised by the time {@code main} runs — so what is asserted
+ * below is the default, and the flag is named here so that the next reader knows it is there.
  *
  * <b>{@code of} hands back a shared instance.</b> The constructor makes a new object every time;
  * the factory goes through the cache. {@code ==} is therefore true for two calls with the same
@@ -117,16 +120,37 @@ public class LocaleCheck {
         // The country is upper-cased and the language lower-cased, as the constructor does.
         eq("of normalises case", Locale.of("DE", "de"), "de_DE");
 
-        // The obsolete ISO 639 codes, and this is where the fork and JDK 25 part company —
-        // measured, not assumed, and bigger than these three lines. See the note at the top.
-        eq("of(he)", Locale.of("he").getLanguage(), "iw");
-        eq("new Locale(he)", new Locale("he").getLanguage(), "iw");
-        eq("of(yi)", Locale.of("yi").getLanguage(), "ji");
-        eq("of(id)", Locale.of("id").getLanguage(), "in");
-        eq("forLanguageTag(he)", Locale.forLanguageTag("he").getLanguage(), "iw");
-        eq("forLanguageTag(iw)", Locale.forLanguageTag("iw").getLanguage(), "iw");
+        // The obsolete ISO 639 codes. Both the old and the new are accepted and the NEW one is
+        // stored, since 06.10.2026 — see the note at the top, which these lines contradicted until
+        // then and which is why the change was visible at all.
+        eq("of(he)", Locale.of("he").getLanguage(), "he");
+        eq("new Locale(he)", new Locale("he").getLanguage(), "he");
+        eq("of(yi)", Locale.of("yi").getLanguage(), "yi");
+        eq("of(id)", Locale.of("id").getLanguage(), "id");
+        eq("forLanguageTag(he)", Locale.forLanguageTag("he").getLanguage(), "he");
+        eq("forLanguageTag(iw)", Locale.forLanguageTag("iw").getLanguage(), "he");
         eq("Builder.setLanguage(he)",
-           new Locale.Builder().setLanguage("he").build().getLanguage(), "iw");
+           new Locale.Builder().setLanguage("he").build().getLanguage(), "he");
+        // The other direction, which is the half that makes it a normalisation rather than a
+        // rename: the old code given, the new one stored.
+        eq("of(iw)", Locale.of("iw").getLanguage(), "he");
+        eq("of(ji)", Locale.of("ji").getLanguage(), "yi");
+        eq("of(in)", Locale.of("in").getLanguage(), "id");
+        eq("new Locale(iw)", new Locale("iw").getLanguage(), "he");
+        // Case does not matter, because caseIgnoreMatch is what decides.
+        eq("of(IW)", Locale.of("IW").getLanguage(), "he");
+        eq("of(He)", Locale.of("He").getLanguage(), "he");
+        // toString and the region go with it, which is the part that reaches stored locales.
+        eq("of(iw,IL).toString", Locale.of("iw", "IL").toString(), "he_IL");
+        // And the two inputs land on ONE locale, which is the whole reason the rule is in one
+        // place. Two routes that normalised differently would give two locales that are not equal
+        // and both claim to be Hebrew.
+        ok("iw and he are the same locale", Locale.of("iw").equals(Locale.of("he")));
+        ok("iw and he are the same instance", Locale.of("iw") == Locale.of("he"));
+        // getISO3Language keeps working either way: LocaleISOData carries both two-letter codes
+        // against the same three-letter one.
+        eq("getISO3Language of he", Locale.of("he").getISO3Language(), "heb");
+        eq("getISO3Language of iw", Locale.of("iw").getISO3Language(), "heb");
         // And the limit of the difference, which is worth as much as the difference itself:
         // toLanguageTag answers "he" either way. BCP 47 requires the modern code, so the tag is
         // converted on the way out even though the field holds the old one. A form that talks to
@@ -135,10 +159,14 @@ public class LocaleCheck {
         eq("toLanguageTag of he", new Locale("he").toLanguageTag(), "he");
         eq("toLanguageTag of of(he)", Locale.of("he").toLanguageTag(), "he");
 
-        // What matters for the factory itself: it agrees with the constructor. The two differ in
-        // JDK 25 and must not differ here, because here neither of them converts the other way.
+        // What matters for the factory itself: it agrees with the constructor. They go through
+        // one normalisation now, so they agree whichever of the two codes is given.
         ok("of and the constructor agree on he",
            Locale.of("he").equals(new Locale("he")));
+        ok("of and the constructor agree on iw",
+           Locale.of("iw").equals(new Locale("iw")));
+        ok("of(iw) and the constructor on he agree",
+           Locale.of("iw").equals(new Locale("he")));
 
         // Shared, where the constructor allocates.
         ok("of returns the cached instance", Locale.of("de", "DE") == Locale.of("de", "DE"));

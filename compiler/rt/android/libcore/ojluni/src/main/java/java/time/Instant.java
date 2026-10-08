@@ -1133,6 +1133,31 @@ public final class Instant
      * @throws UnsupportedTemporalTypeException if the unit is not supported
      * @throws ArithmeticException if numeric overflow occurs
      */
+    // BEGIN tsb-added: until(Instant), Java 23.
+    //
+    // Cut out of OpenJDK 25. Duration.between(a, b) has always said the same thing; this is the
+    // form that reads the way the rest of java.time does — a.until(b) — and reaches the fields
+    // directly rather than through the TemporalUnit machinery below.
+    /**
+     * Returns a {@code Duration} representing the amount of time between this instant
+     * and the specified instant.
+     * <p>
+     * This calculates the duration between this instant and the end instant.
+     * If this instant is after the end instant, the duration will be negative.
+     *
+     * @param endExclusive  the end instant, exclusive, not null
+     * @return the {@code Duration} between this instant and the end instant, not null
+     * @throws ArithmeticException if numeric overflow occurs
+     * @since 23
+     */
+    public Duration until(Instant endExclusive) {
+        Objects.requireNonNull(endExclusive, "endExclusive");
+        long secsDiff = Math.subtractExact(endExclusive.seconds, seconds);
+        int nanosDiff = endExclusive.nanos - nanos;
+        return Duration.ofSeconds(secsDiff, nanosDiff);
+    }
+    // END tsb-added.
+
     @Override
     public long until(Temporal endExclusive, TemporalUnit unit) {
         Instant end = Instant.from(endExclusive);

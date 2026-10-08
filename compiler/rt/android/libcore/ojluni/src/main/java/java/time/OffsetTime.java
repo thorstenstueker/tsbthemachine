@@ -1326,6 +1326,34 @@ public final class OffsetTime
      * @param obj  the object to check, null returns false
      * @return true if this is equal to the other time
      */
+    // BEGIN tsb-added: toEpochSecond(LocalDate), Java 9.
+    //
+    // Cut out of OpenJDK 25. A time with an offset is not a point in time until a date is named,
+    // which is exactly what this takes — and it is the member that turns an OffsetTime into
+    // something a database or a wire protocol can hold.
+    /**
+     * Converts this {@code OffsetTime} to the number of seconds since the epoch
+     * of 1970-01-01T00:00:00Z.
+     * <p>
+     * This combines this offset time with the specified date to calculate the
+     * epoch-second value, which is the number of elapsed seconds from
+     * 1970-01-01T00:00:00Z.
+     * Instants on the time-line after the epoch are positive, earlier
+     * are negative.
+     *
+     * @param date the localdate, not null
+     * @return the number of seconds since the epoch of 1970-01-01T00:00:00Z, may be negative
+     * @since 9
+     */
+    public long toEpochSecond(LocalDate date) {
+        Objects.requireNonNull(date, "date");
+        long epochDay = date.toEpochDay();
+        long secs = epochDay * 86400 + time.toSecondOfDay();
+        secs -= offset.getTotalSeconds();
+        return secs;
+    }
+    // END tsb-added.
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

@@ -286,6 +286,26 @@ public final class MinguoChronology extends AbstractChronology implements Serial
      * @param prolepticYear  the proleptic-year to check, not validated for range
      * @return true if the year is a leap year
      */
+    // BEGIN tsb-added: isIsoBased, Java 19.
+    //
+    // Minguo counts years from 1912 and is otherwise ISO, which is what this answers for.
+    //
+    // Cut out of OpenJDK 25. Chronology's new default answers false; these three override it,
+    // and IsoChronology does too.
+    /**
+     * Checks if this chronology is ISO based.
+     * <p>
+     * Returns {@code true} as this chronology is ISO based.
+     *
+     * @return {@code true} as this chronology is ISO based
+     * @since 19
+     */
+    @Override
+    public boolean isIsoBased() {
+        return true;
+    }
+    // END tsb-added.
+
     @Override
     public boolean isLeapYear(long prolepticYear) {
         return IsoChronology.INSTANCE.isLeapYear(prolepticYear + YEARS_DIFFERENCE);

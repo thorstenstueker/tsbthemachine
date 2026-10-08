@@ -83,6 +83,7 @@ import java.io.Serializable;
 import java.time.chrono.ChronoLocalDate;
 import java.time.chrono.Era;
 import java.time.chrono.IsoChronology;
+import java.time.chrono.IsoEra;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
@@ -718,10 +719,22 @@ public final class LocalDate
      *
      * @return the {@code IsoChronology} era constant applicable at this date, not null
      */
-    @Override // override for Javadoc
-    public Era getEra() {
-        return ChronoLocalDate.super.getEra();
+    // BEGIN tsb-added: getEra narrowed to IsoEra, Java 22.
+    //
+    // This member was NOT absent — it was here returning Era and delegating to the interface
+    // default, which is what it did before Java 22. What ApiDelta reported missing is the
+    // descriptor ()Ljava/time/chrono/IsoEra;, and the first attempt at this added a second method
+    // and did not compile: "getEra() is already defined". So the existing one is narrowed rather
+    // than a new one written, which is also what OpenJDK 22 did.
+    //
+    // Narrowing a return type is safe here for one reason worth stating: this overrides
+    // ChronoLocalDate.getEra(), which returns Era, so javac emits a bridge with the old
+    // descriptor. Anything compiled against the old signature still links.
+    @Override
+    public IsoEra getEra() {
+        return (getYear() >= 1 ? IsoEra.CE : IsoEra.BCE);
     }
+    // END tsb-added.
 
     /**
      * Gets the year field.

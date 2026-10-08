@@ -67,6 +67,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.ResolverStyle;
 import java.time.format.TextStyle;
@@ -703,6 +704,87 @@ public interface Chronology extends Comparable<Chronology> {
      */
     default ChronoPeriod period(int years, int months, int days) {
         return new ChronoPeriodImpl(this, years, months, days);
+    }
+
+    // BEGIN tsb-added: epochSecond, Java 9, and isIsoBased, Java 19.
+    //
+    // All three are DEFAULT methods, which is what makes them safe to add to an interface here.
+    // OPEN.md records the finding that replacing an interface wholesale does not work — a
+    // sun.nio.ch.Interruptible that gained an abstract method broke implementors across the tree
+    // that nobody had touched. A default method is inherited by every one of them instead.
+    //
+    // Cut out of OpenJDK 25. ChronoField is qualified rather than static-imported, because this
+    // file imports the class and not its constants.
+    /**
+     * Gets the number of seconds from the epoch of 1970-01-01T00:00:00Z.
+     * <p>
+     * The number of seconds is calculated using the proleptic-year,
+     * month, day-of-month, hour, minute, second, and zoneOffset.
+     *
+     * @param prolepticYear the chronology proleptic-year
+     * @param month the chronology month-of-year
+     * @param dayOfMonth the chronology day-of-month
+     * @param hour the hour-of-day, from 0 to 23
+     * @param minute the minute-of-hour, from 0 to 59
+     * @param second the second-of-minute, from 0 to 59
+     * @param zoneOffset the zone offset, not null
+     * @return the number of seconds relative to 1970-01-01T00:00:00Z, may be negative
+     * @throws DateTimeException if any of the values are out of range
+     * @throws NullPointerException if {@code zoneOffset} is null
+     * @since 9
+     */
+    default long epochSecond(int prolepticYear, int month, int dayOfMonth,
+                                    int hour, int minute, int second, ZoneOffset zoneOffset) {
+        Objects.requireNonNull(zoneOffset, "zoneOffset");
+        ChronoField.HOUR_OF_DAY.checkValidValue(hour);
+        ChronoField.MINUTE_OF_HOUR.checkValidValue(minute);
+        ChronoField.SECOND_OF_MINUTE.checkValidValue(second);
+        long daysInSec = Math.multiplyExact(date(prolepticYear, month, dayOfMonth).toEpochDay(), 86400);
+        long timeinSec = (hour * 60 + minute) * 60 + second;
+        return Math.addExact(daysInSec, timeinSec - zoneOffset.getTotalSeconds());
+    }
+
+    /**
+     * Gets the number of seconds from the epoch of 1970-01-01T00:00:00Z.
+     * <p>
+     * The number of seconds is calculated using the era, year-of-era,
+     * month, day-of-month, hour, minute, second, and zoneOffset.
+     *
+     * @param era  the era of the correct type for the chronology, not null
+     * @param yearOfEra the chronology year-of-era
+     * @param month the chronology month-of-year
+     * @param dayOfMonth the chronology day-of-month
+     * @param hour the hour-of-day, from 0 to 23
+     * @param minute the minute-of-hour, from 0 to 59
+     * @param second the second-of-minute, from 0 to 59
+     * @param zoneOffset the zone offset, not null
+     * @return the number of seconds relative to 1970-01-01T00:00:00Z, may be negative
+     * @throws DateTimeException if any of the values are out of range
+     * @throws NullPointerException if {@code era} or {@code zoneOffset} is null
+     * @since 9
+     */
+    default long epochSecond(Era era, int yearOfEra, int month, int dayOfMonth,
+                                    int hour, int minute, int second, ZoneOffset zoneOffset) {
+        Objects.requireNonNull(era, "era");
+        return epochSecond(prolepticYear(era, yearOfEra), month, dayOfMonth, hour, minute, second, zoneOffset);
+    }
+
+    /**
+     * Checks if this chronology is ISO based.
+     * <p>
+     * An ISO based chronology has the same basic structure as the {@link IsoChronology
+     * ISO chronology}, i.e., the chronology has the same number of months, the number
+     * of days in each month, and day-of-year and leap years are the same as ISO chronology.
+     * It also supports the concept of week-based-year of ISO chronology.
+     *
+     * @implSpec
+     * The default implementation returns {@code false}.
+     *
+     * @return {@code true} only if all the calendar systems of the chronology are ISO based
+     * @since 19
+     */
+    default boolean isIsoBased() {
+        return false;
     }
 
     //-----------------------------------------------------------------------

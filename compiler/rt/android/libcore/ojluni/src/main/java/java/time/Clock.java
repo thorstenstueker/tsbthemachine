@@ -276,6 +276,39 @@ public abstract class Clock {
      *  divisible into one second
      * @throws ArithmeticException if the duration is too large to be represented as nanos
      */
+    // BEGIN tsb-added: tickMillis, Java 9.
+    //
+    // The third member of the tick family — tickSeconds and tickMinutes were already here and
+    // this one was not, which is the member a form is most likely to want: a clock whose
+    // milliseconds are whole is what makes a timestamp comparable with one that came out of a
+    // database column of millisecond precision.
+    //
+    // Cut out of OpenJDK 25. NANOS_PER_MILLI is already in LocalTime next door.
+    /**
+     * Obtains a clock that returns the current instant ticking in whole milliseconds
+     * using best available system clock.
+     * <p>
+     * This clock will always have the nano-of-second field truncated to milliseconds.
+     * This ensures that the visible time ticks in whole milliseconds.
+     * The underlying clock is the best available system clock, equivalent to
+     * using {@link #system(ZoneId)}.
+     * <p>
+     * Implementations may use a caching strategy for performance reasons.
+     * As such, it is possible that the start of the millisecond observed via this
+     * clock will be later than that observed directly via the underlying clock.
+     * <p>
+     * The returned implementation is immutable, thread-safe and {@code Serializable}.
+     * It is equivalent to {@code tick(system(zone), Duration.ofMillis(1))}.
+     *
+     * @param zone  the time-zone to use to convert the instant to date-time, not null
+     * @return a clock that ticks in whole milliseconds using the specified zone, not null
+     * @since 9
+     */
+    public static Clock tickMillis(ZoneId zone) {
+        return new TickClock(system(zone), java.time.LocalTime.NANOS_PER_MILLI);
+    }
+    // END tsb-added.
+
     public static Clock tick(Clock baseClock, Duration tickDuration) {
         Objects.requireNonNull(baseClock, "baseClock");
         Objects.requireNonNull(tickDuration, "tickDuration");
