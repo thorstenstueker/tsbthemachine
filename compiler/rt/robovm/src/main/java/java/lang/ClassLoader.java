@@ -218,6 +218,208 @@ public abstract class ClassLoader {
         parent = parentLoader;
     }
 
+    // BEGIN tsb-added: seven of ClassLoader's twelve, 11.10.2026.
+    //
+    // THE FIRST DRAFT OF THIS BLOCK BROKE THE VIRTUAL MACHINE, and the warning was thirty lines
+    // above it in this very file: "If the order of fields is changed or if fields are added/removed
+    // the ClassLoader struct in types.h must also be changed accordingly".
+    //
+    // getName() and ClassLoader(String, ClassLoader) are Java 9's named class loader, and a name
+    // has to be stored somewhere. One added field — `private final String name` — and every
+    // ahead-of-time binary built from the result aborted before reaching main:
+    //
+    //     [ERROR] android.JniConstants: failed to find class 'com/android/icu/charset/CharsetICU'
+    //     Abort trap: 6
+    //
+    // A class this VM reads natively by field offset cannot grow a field from the Java side alone.
+    // The fix is not difficult and it is not small: the struct in the VM's own headers, and then a
+    // rebuild of the native runtime for every platform slice a release carries. For a name that
+    // shows up in a stack trace, that is the wrong trade today — so the two members stay absent and
+    // this comment is what the next person will find instead of the same abort.
+    //
+    // Measured rather than reasoned: with the field removed and everything else in this block
+    // kept, the same binary runs and AtomicArrayCheck's 67 assertions pass.
+    //
+    // The three other absent members are named at the end of the block.
+
+    /**
+     * Returns a {@code Package} of the given name that has been defined by this class loader.
+     *
+     * @param  name the package name
+     * @return the {@code Package} of the given name defined by this class loader, or null
+     * @throws NullPointerException if {@code name} is null
+     * @since 9
+     */
+    public final Package getDefinedPackage(String name) {
+        if (name == null) {
+            throw new NullPointerException("name cannot be null");
+        }
+        synchronized (packages) {
+            return packages.get(name);
+        }
+    }
+
+    /**
+     * Returns all of the {@code Package}s defined by this class loader.
+     *
+     * @return the array of {@code Package} objects defined by this class loader; or a zero
+     *         length array if no package has been defined by this class loader
+     * @since 9
+     */
+    public final Package[] getDefinedPackages() {
+        return getPackages();
+    }
+
+    /**
+     * Returns a stream whose elements are the URLs of all the resources with the given name.
+     *
+     * <p>The search order is the one {@link #getResources} uses, and the stream is lazy: a
+     * {@code getResources} that fails part way through surfaces as an
+     * {@link java.io.UncheckedIOException} while the stream is being consumed.
+     *
+     * @param  name the resource name
+     * @return a stream of resource {@link URL} objects
+     * @throws NullPointerException if {@code name} is null
+     * @since 9
+     */
+    public java.util.stream.Stream<URL> resources(String name) {
+        if (name == null) {
+            throw new NullPointerException("name");
+        }
+        final int characteristics = java.util.Spliterator.NONNULL | java.util.Spliterator.IMMUTABLE;
+        java.util.function.Supplier<java.util.Spliterator<URL>> si =
+                new java.util.function.Supplier<java.util.Spliterator<URL>>() {
+            @Override
+            public java.util.Spliterator<URL> get() {
+                try {
+                    return java.util.Spliterators.spliteratorUnknownSize(
+                            getResources(name).asIterator(), characteristics);
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            }
+        };
+        return java.util.stream.StreamSupport.stream(si, characteristics, false);
+    }
+
+    /**
+     * Finds the class with the given binary name in a module defined to this class loader.
+     *
+     * <p>The default implementation, which this is, attempts to find the class by its name alone
+     * when no module is named, and answers null otherwise — this runtime has no module system, so
+     * a named module is a thing no loader here defines.
+     *
+     * @param  moduleName the module name; or null to find the class in the unnamed module
+     * @param  name the binary name of the class
+     * @return the resulting {@code Class} object, or null if not found
+     * @since 9
+     */
+    protected Class<?> findClass(String moduleName, String name) {
+        if (moduleName == null) {
+            try {
+                return findClass(name);
+            } catch (ClassNotFoundException ignore) {
+                // The specified behaviour: not found is null here, not an exception.
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns a URL to a resource in a module defined to this class loader.
+     *
+     * @param  moduleName the module name; or null to find a resource in the unnamed module
+     * @param  name the resource name
+     * @return a URL to the resource; null if the resource could not be found, or the invoker
+     *         does not have the permission to get the resource
+     * @throws IOException if I/O errors occur
+     * @since 9
+     */
+    protected URL findResource(String moduleName, String name) throws IOException {
+        if (moduleName == null) {
+            return findResource(name);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the lock object for class loading operations.
+     *
+     * <p>Faithful to the specification for a loader that is <em>not</em> registered as parallel
+     * capable, which is every loader here: the answer is this loader itself, so class loading is
+     * serialised per loader rather than per class name. See
+     * {@link #registerAsParallelCapable()} for why that is the honest answer rather than a
+     * shortcut.
+     *
+     * @param  className the name of the to-be-loaded class
+     * @return the lock for class loading operations
+     * @throws NullPointerException if the named class loader is not parallel capable and
+     *         {@code className} is null
+     * @since 7
+     */
+    protected Object getClassLoadingLock(String className) {
+        if (className == null) {
+            throw new NullPointerException("className");
+        }
+        return this;
+    }
+
+    /**
+     * Returns whether this class loader is registered as parallel capable.
+     *
+     * <p>Always false here, and that is a statement about this runtime rather than about the
+     * caller: {@link #registerAsParallelCapable()} does nothing, so nothing is ever registered.
+     * A loader reading this gets the truth and can serialise its own loading accordingly, which
+     * is what the method is for.
+     *
+     * @return true if this class loader is parallel capable, otherwise false
+     * @since 9
+     */
+    public final boolean isRegisteredAsParallelCapable() {
+        return false;
+    }
+
+    /**
+     * Returns the platform class loader.
+     *
+     * <p>OpenJDK's hierarchy is boot &rarr; platform &rarr; system, with the boot loader
+     * represented by null. This runtime's is {@code BootClassLoader} &rarr; the system loader,
+     * and {@code BootClassLoader} has exactly the shape the platform loader is specified to
+     * have: it is a real loader, its own parent is null, and it is the one that provides the
+     * platform's classes and nothing of the application's. So that is what this answers.
+     *
+     * @return the platform {@code ClassLoader}
+     * @since 9
+     */
+    public static ClassLoader getPlatformClassLoader() {
+        return BootClassLoader.getInstance();
+    }
+
+    // WHAT IS STILL ABSENT FROM THIS CLASS, so that the next person to count does not have to
+    // work it out again:
+    //
+    //   getName(), ClassLoader(String, ClassLoader)
+    //                                 Java 9's named loader. Needs a field, and a field here
+    //                                 needs the VM's struct and a native rebuild — see the top of
+    //                                 this block, where it is measured.
+    //
+    //   getUnnamedModule()            returns java.lang.Module. There is no module system in an
+    //                                 ahead-of-time image and java.lang.module is on gap.py's
+    //                                 ignorable list for that reason; a Module type whose every
+    //                                 query is meaningless is worse than the absence.
+    //
+    //   registerAsParallelCapable()   exists, and returns void where OpenJDK returns boolean
+    //                                 since Java 7. Changing the return type is the easy part;
+    //                                 what it would then have to answer is the question. Returning
+    //                                 true would claim per-name locking that this loader does not
+    //                                 do — loadClass here is not written for it — and a loader
+    //                                 that believes it may load in parallel when it may not is a
+    //                                 deadlock nobody can reproduce. Returning false would be
+    //                                 honest and would still be a changed descriptor, so it waits
+    //                                 for the day somebody wants parallel loading for real.
+    // END tsb-added.
+
     /**
      * Constructs a new class from an array of bytes containing a class
      * definition in class file format.

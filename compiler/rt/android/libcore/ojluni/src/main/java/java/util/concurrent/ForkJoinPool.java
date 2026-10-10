@@ -2854,6 +2854,70 @@ public class ForkJoinPool extends AbstractExecutorService {
         }
     }
 
+    // BEGIN tsb-added: invokeAllUninterruptibly, 11.10.2026 — one of this class's twelve.
+    //
+    // THE OTHER ELEVEN ARE NOT HERE, AND THAT IS A MEASUREMENT RATHER THAN A SHRUG. Seven of them
+    // — schedule x2, scheduleAtFixedRate, scheduleWithFixedDelay, cancelDelayedTasksOnShutdown,
+    // getDelayedTaskCount and submitWithTimeout — are JDK 25 making ForkJoinPool a
+    // ScheduledExecutorService. Upstream that is a DelayScheduler of its own plus forty-six touch
+    // points inside a 4422-line class; this one is 3582 lines, declares only
+    // AbstractExecutorService, and carries neither keepAlive nor saturate, so it predates even the
+    // Java 9 constructor that is also on the list. setParallelism, lazySubmit and
+    // externalSubmit(ForkJoinTask) likewise reach internals this version does not have.
+    //
+    // Grafting them would be replacing the class, and this tree has already measured what that
+    // costs: 81 classes were tried that way, every one compiled in isolation, and the real build
+    // then failed in files nobody had touched. ForkJoinPool is the worst possible candidate for
+    // it — its correctness lives in the interaction between ctl, the work queues, scan and
+    // awaitWork. So the number stays here until somebody wants scheduled execution for real, and
+    // what to do then is a port of the newer class WITH ForkJoinTask and ForkJoinWorkerThread,
+    // not a member at a time.
+    //
+    // One thing was found by reading rather than by counting, and it is worth having: this
+    // version's invokeAll joins with quietlyJoin, which does not throw InterruptedException — so
+    // invokeAll here is ALREADY uninterruptible, where JDK 25's invokeAll is interruptible and
+    // invokeAllUninterruptibly is the explicit alternative. The method below is therefore right,
+    // and invokeAll's interruption behaviour is a separate, older divergence. It is written down
+    // rather than quietly changed: making invokeAll interruptible is a behaviour change for every
+    // existing caller and belongs to whoever asks for it.
+
+    /**
+     * Invokes all of the given tasks, returning a list of Futures holding their results and
+     * status when all complete, ignoring interrupts.
+     *
+     * @param tasks the collection of tasks
+     * @param <T> the type of the values returned from the tasks
+     * @return a list of Futures representing the tasks, in the same sequential order as produced
+     *         by the iterator for the given task list, each of which has completed
+     * @throws NullPointerException if tasks or any of its elements are null
+     * @throws RejectedExecutionException if any task cannot be scheduled for execution
+     * @since 22
+     */
+    public <T> List<Future<T>> invokeAllUninterruptibly(Collection<? extends Callable<T>> tasks) {
+        ArrayList<Future<T>> futures = new ArrayList<>(tasks.size());
+        try {
+            for (Callable<T> t : tasks) {
+                ForkJoinTask<T> f = new ForkJoinTask.AdaptedCallable<T>(t);
+                futures.add(f);
+                externalSubmit(f);
+            }
+            for (int i = 0, size = futures.size(); i < size; i++) {
+                ((ForkJoinTask<?>)futures.get(i)).quietlyJoin();
+            }
+            return futures;
+        } catch (Throwable t) {
+            // cancel(true) here, where this class's invokeAll uses cancel(false): that is
+            // upstream's choice for this method, and the difference is deliberate. A caller who
+            // asked for the uninterruptible form and then saw a submission rejected wants the
+            // tasks already running stopped.
+            for (int i = 0, size = futures.size(); i < size; i++) {
+                futures.get(i).cancel(true);
+            }
+            throw t;
+        }
+    }
+    // END tsb-added.
+
     /**
      * Returns the factory used for constructing new workers.
      *

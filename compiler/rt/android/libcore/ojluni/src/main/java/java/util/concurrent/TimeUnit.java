@@ -35,6 +35,9 @@
 
 package java.util.concurrent;
 
+// tsb-added: for convert(Duration), toChronoUnit() and of(ChronoUnit) — see the block at the end.
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
@@ -392,14 +395,80 @@ public enum TimeUnit {
         }
     }
 
-    // BEGIN Android-removed: OpenJDK 9 ChronoUnit related code.
-    /*
+    // BEGIN tsb-added: the java.time bridge, 11.10.2026.
+    //
+    // The two ChronoUnit methods below were not written here — they were sitting in this file,
+    // commented out, under "Android-removed: OpenJDK 9 ChronoUnit related code". Android removed
+    // them because this library had no java.time to bridge to. B1 brought java.time in, and
+    // nothing came back to collect them. They are OpenJDK's code, uncommented and otherwise
+    // untouched.
+    //
+    // convert(Duration) could NOT be copied, and that is why this block has a comment at all.
+    // OpenJDK 25's TimeUnit is a rewritten enum carrying scale, secRatio, maxSecs and
+    // SECOND_SCALE as fields; this one is the older shape, where each constant overrides
+    // convert(long, TimeUnit) and no such fields exist. So the body is written against what this
+    // class has, and the saturation is the part to read twice: a Duration reaches eleven orders
+    // of magnitude beyond what a long of nanoseconds holds, and the specification says the answer
+    // saturates at Long.MIN_VALUE or Long.MAX_VALUE rather than wrapping.
+
+    /**
+     * Converts the given time duration to this unit.
+     *
+     * <p>For any TimeUnit {@code unit},
+     * {@code unit.convert(Duration.ofNanos(n))}
+     * is equivalent to
+     * {@code unit.convert(n, NANOSECONDS)}, and
+     * {@code unit.convert(Duration.of(n, unit.toChronoUnit()))}
+     * is equivalent to {@code n} (in the absence of overflow).
+     *
+     * @param duration the time duration
+     * @return the converted duration in this unit,
+     *         or {@code Long.MIN_VALUE} if conversion would negatively overflow,
+     *         or {@code Long.MAX_VALUE} if it would positively overflow
+     * @throws NullPointerException if {@code duration} is null
+     * @since 11
+     */
+    public long convert(Duration duration) {
+        Objects.requireNonNull(duration, "duration");
+        long secs = duration.getSeconds();
+        int nano = duration.getNano();
+        if (secs < 0 && nano > 0) {
+            // A Duration keeps a non-negative nano adjustment to a possibly negative second
+            // count, and integer division wants both parts pulling the same way, so the carry is
+            // done by hand. OpenJDK's own comment on this line reads "use representation
+            // compatible with integer division"; getting it wrong costs one unit of the result
+            // for every negative duration with a fraction.
+            secs++;
+            nano -= 1000000000;
+        }
+
+        // The seconds and the fraction are converted separately and added. convert(long, TimeUnit)
+        // saturates, so the first half already answers MIN_VALUE or MAX_VALUE for a duration out
+        // of range — and in that case the fraction cannot change the answer.
+        long fromSeconds = convert(secs, SECONDS);
+        if (fromSeconds == Long.MAX_VALUE || fromSeconds == Long.MIN_VALUE) {
+            return fromSeconds;
+        }
+        // Zero for every unit of a second or coarser, which is what OpenJDK's early returns for
+        // SECONDS and the coarser units amount to: a fraction of a second is not expressible
+        // there and is dropped rather than rounded.
+        long fromNanos = convert(nano, NANOSECONDS);
+        long total = fromSeconds + fromNanos;
+        // The one case the saturation above cannot catch: both halves in range and the sum not.
+        // After the carry both parts have the same sign, so a sum whose sign differs from both
+        // operands overflowed.
+        if (((fromSeconds ^ total) & (fromNanos ^ total)) < 0) {
+            return fromSeconds > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
+        return total;
+    }
+
     /**
      * Converts this {@code TimeUnit} to the equivalent {@code ChronoUnit}.
      *
      * @return the converted equivalent ChronoUnit
      * @since 9
-     *
+     */
     public ChronoUnit toChronoUnit() {
         switch (this) {
         case NANOSECONDS:  return ChronoUnit.NANOS;
@@ -422,7 +491,7 @@ public enum TimeUnit {
      *         equivalent TimeUnit
      * @throws NullPointerException if {@code chronoUnit} is null
      * @since 9
-     *
+     */
     public static TimeUnit of(ChronoUnit chronoUnit) {
         switch (Objects.requireNonNull(chronoUnit, "chronoUnit")) {
         case NANOS:   return TimeUnit.NANOSECONDS;
@@ -437,7 +506,6 @@ public enum TimeUnit {
                 "No TimeUnit equivalent for " + chronoUnit);
         }
     }
-    */
-    // END Android-removed: OpenJDK 9 ChronoUnit related code.
+    // END tsb-added.
 
 }

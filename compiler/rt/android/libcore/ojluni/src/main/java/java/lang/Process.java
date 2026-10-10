@@ -203,6 +203,203 @@ public abstract class Process {
         return false;
     }
 
+    // BEGIN tsb-added: the character half of a process's three streams, and waitFor(Duration).
+    //
+    // Added 11.10.2026, cut out of OpenJDK 25. These seven are the part of Process's Java 9-to-20
+    // additions that stands on its own: six of them are readers and writers over the three streams
+    // this class already has, and the seventh delegates to waitFor(long, TimeUnit) above.
+    //
+    // THE OTHER SEVEN ARE NOT HERE AND THE REASON IS NOT EFFORT. pid(), info(), onExit(),
+    // toHandle(), supportsNormalTermination(), children() and descendants() all return or require
+    // java.lang.ProcessHandle, a class this runtime does not have at all — and one that needs a
+    // native way to ask the operating system about a process it did not start. On iOS there is no
+    // such question to ask: an application cannot spawn a child process, so a ProcessHandle there
+    // would be a type whose every method throws. Half of Process is reachable and the half that is
+    // not is marked by something larger than a missing member.
+    //
+    // Repeated calls hand back the same reader, which is why the fields are here rather than in
+    // the implementation subclass: the second call with a *different* charset is an error, and a
+    // class that forgot which charset it used could not say so.
+
+    /** Readers and Writers created for this process, so repeated calls return the same object. */
+    private BufferedWriter outputWriter;
+    private java.nio.charset.Charset outputCharset;
+    private BufferedReader inputReader;
+    private java.nio.charset.Charset inputCharset;
+    private BufferedReader errorReader;
+    private java.nio.charset.Charset errorCharset;
+
+    /**
+     * Returns a {@link BufferedWriter BufferedWriter} connected to the normal input of the process
+     * using the native encoding if possible.
+     *
+     * <p>This method delegates to {@link #outputWriter(java.nio.charset.Charset)} using the
+     * {@link java.nio.charset.Charset} named by the {@code native.encoding} system property,
+     * falling back to {@link java.nio.charset.Charset#defaultCharset()}.
+     *
+     * @return a {@code BufferedWriter} to the standard input of the process
+     * @since 17
+     */
+    public final BufferedWriter outputWriter() {
+        return outputWriter(CharsetHolder.nativeCharset());
+    }
+
+    /**
+     * Returns a {@link BufferedWriter BufferedWriter} connected to the normal input of the process
+     * using a {@code Charset}.
+     *
+     * <p>The first call creates the writer; a later call with the same charset returns the same
+     * writer, and a later call with a different one is an error.
+     *
+     * @param charset the {@code Charset} to encode characters to bytes
+     * @return a {@code BufferedWriter} to the standard input of the process
+     * @throws NullPointerException if the {@code charset} is {@code null}
+     * @throws IllegalStateException if called more than once with different charset arguments
+     * @since 17
+     */
+    public final BufferedWriter outputWriter(java.nio.charset.Charset charset) {
+        java.util.Objects.requireNonNull(charset, "charset");
+        synchronized (this) {
+            if (outputWriter == null) {
+                outputCharset = charset;
+                outputWriter = new BufferedWriter(
+                        new OutputStreamWriter(getOutputStream(), charset));
+            } else {
+                if (!outputCharset.equals(charset)) {
+                    throw new IllegalStateException(
+                            "BufferedWriter was created with charset: " + outputCharset);
+                }
+            }
+            return outputWriter;
+        }
+    }
+
+    /**
+     * Returns a {@link BufferedReader BufferedReader} connected to the standard output of the
+     * process using the native encoding if possible.
+     *
+     * @return a {@code BufferedReader} for the standard output of the process
+     * @since 17
+     */
+    public final BufferedReader inputReader() {
+        return inputReader(CharsetHolder.nativeCharset());
+    }
+
+    /**
+     * Returns a {@link BufferedReader BufferedReader} connected to the standard output of the
+     * process using a {@code Charset}.
+     *
+     * @param charset the {@code Charset} used to decode bytes to characters
+     * @return a {@code BufferedReader} for the standard output of the process
+     * @throws NullPointerException if the {@code charset} is {@code null}
+     * @throws IllegalStateException if called more than once with different charset arguments
+     * @since 17
+     */
+    public final BufferedReader inputReader(java.nio.charset.Charset charset) {
+        java.util.Objects.requireNonNull(charset, "charset");
+        synchronized (this) {
+            if (inputReader == null) {
+                inputCharset = charset;
+                inputReader = new BufferedReader(new InputStreamReader(getInputStream(), charset));
+            } else {
+                if (!inputCharset.equals(charset)) {
+                    throw new IllegalStateException(
+                            "BufferedReader was created with charset: " + inputCharset);
+                }
+            }
+            return inputReader;
+        }
+    }
+
+    /**
+     * Returns a {@link BufferedReader BufferedReader} connected to the standard error of the
+     * process using the native encoding if possible.
+     *
+     * @return a {@code BufferedReader} for the standard error of the process
+     * @since 17
+     */
+    public final BufferedReader errorReader() {
+        return errorReader(CharsetHolder.nativeCharset());
+    }
+
+    /**
+     * Returns a {@link BufferedReader BufferedReader} connected to the standard error of the
+     * process using a {@code Charset}.
+     *
+     * @param charset the {@code Charset} used to decode bytes to characters
+     * @return a {@code BufferedReader} for the standard error of the process
+     * @throws NullPointerException if the {@code charset} is {@code null}
+     * @throws IllegalStateException if called more than once with different charset arguments
+     * @since 17
+     */
+    public final BufferedReader errorReader(java.nio.charset.Charset charset) {
+        java.util.Objects.requireNonNull(charset, "charset");
+        synchronized (this) {
+            if (errorReader == null) {
+                errorCharset = charset;
+                errorReader = new BufferedReader(new InputStreamReader(getErrorStream(), charset));
+            } else {
+                if (!errorCharset.equals(charset)) {
+                    throw new IllegalStateException(
+                            "BufferedReader was created with charset: " + errorCharset);
+                }
+            }
+            return errorReader;
+        }
+    }
+
+    /**
+     * Causes the current thread to wait, if necessary, until the process represented by this
+     * {@code Process} object has terminated, or the specified duration elapses.
+     *
+     * @param duration the maximum duration to wait; if not positive, the method returns at once
+     *                 with whether the process has already exited
+     * @return {@code true} if the process has exited and {@code false} if the waiting time
+     *         elapsed before the process has exited
+     * @throws InterruptedException if the current thread is interrupted while waiting
+     * @throws NullPointerException if duration is null
+     * @since 20
+     */
+    public boolean waitFor(java.time.Duration duration) throws InterruptedException {
+        java.util.Objects.requireNonNull(duration, "duration");
+        // Not final, which is what upstream has: unlike the six readers and writers above, a
+        // subclass is expected to override this with something better than polling exitValue().
+        //
+        // TimeUnit.convert(Duration) is this line's prerequisite and was absent from this runtime
+        // too — it went in beside the two ChronoUnit methods that had been sitting in TimeUnit
+        // commented out since before this library had java.time.
+        return waitFor(TimeUnit.NANOSECONDS.convert(duration), TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * The native encoding, worked out once.
+     *
+     * <p>OpenJDK reads this from {@code jdk.internal.util.StaticProperty.nativeEncoding()}, which
+     * this runtime does not have. The property itself is what that method reads, so it is read
+     * here — and an absent or unsupported value falls back to the default charset, which is what
+     * the specification of {@link #inputReader()} says happens.
+     */
+    private static class CharsetHolder {
+        private static final java.nio.charset.Charset nativeCharset;
+        static {
+            java.nio.charset.Charset cs = null;
+            try {
+                String named = System.getProperty("native.encoding");
+                if (named != null) {
+                    cs = java.nio.charset.Charset.forName(named);
+                }
+            } catch (RuntimeException ignored) {
+                // An unsupported or illegal name is the documented fallback case, not a failure.
+            }
+            nativeCharset = cs != null ? cs : java.nio.charset.Charset.defaultCharset();
+        }
+
+        static java.nio.charset.Charset nativeCharset() {
+            return nativeCharset;
+        }
+    }
+    // END tsb-added.
+
     /**
      * Returns the exit value for the subprocess.
      *
