@@ -348,6 +348,97 @@ public final class ICU {
       return dtpg.getBestPattern(skeleton);
   }
 
+  /**
+   * The best pattern for a skeleton in a locale's <em>named calendar</em>.
+   *
+   * <p>Added 11.10.2026 for {@code DateTimeFormatterBuilder.getLocalizedDateTimePattern(String,
+   * Chronology, Locale)}, which is Java 19's skeleton route into the localized formats. The
+   * existing two-argument method cannot serve it: a {@code Chronology} decides which calendar's
+   * patterns are wanted, and the generator is per-locale — a Japanese-calendar date wants
+   * {@code Gy} to come back as the era pattern that calendar states, not the Gregorian one.
+   *
+   * <p>The calendar travels as a keyword on the locale, which is how
+   * {@link #getExtendedCalendar(Locale, String)} already does it: ICU resolves
+   * {@code -u-ca-japanese} itself, so nothing here has to know what a calendar type implies.
+   *
+   * @param calendarType LDML-defined legacy calendar type — {@code Chronology.getCalendarType()}
+   */
+  public static String getBestDateTimePattern(String skeleton, Locale locale,
+                                              String calendarType) {
+    if (calendarType == null) {
+      return getBestDateTimePattern(skeleton, locale);
+    }
+    // Cached separately from the two-argument form: the same skeleton and locale with another
+    // calendar is another answer, and sharing the key would hand out the first one asked for.
+    String key = skeleton + "\t" + locale.toLanguageTag() + "\t" + calendarType;
+    synchronized (CACHED_PATTERNS) {
+      String pattern = CACHED_PATTERNS.get(key);
+      if (pattern == null) {
+        pattern = DateTimePatternGenerator.getInstance(withCalendar(locale, calendarType))
+                .getBestPattern(skeleton);
+        CACHED_PATTERNS.put(key, pattern);
+      }
+      return pattern;
+    }
+  }
+
+  /**
+   * A locale carrying a calendar, in the form the pattern generator actually resolves.
+   *
+   * <p>Both halves of this were measured on 11.10.2026, natively, against this runtime's own ICU
+   * data — and both corrected a first draft that looked obviously right.
+   *
+   * <p><b>The keyword has to travel as a BCP 47 extension.</b>
+   * {@code ULocale.forLocale(locale).setKeywordValue("calendar", "gregory")} produces
+   * {@code en_US@calendar=gregory}, and {@code DateTimePatternGenerator} answers that with
+   * <em>root</em> data: {@code yMMM} comes back as {@code y ├'month': MMM┤}, which is ICU's
+   * append-item fallback with its debug brackets in it. The same request as
+   * {@code en-US-u-ca-gregory} answers {@code MMM y}. A pattern with {@code ├} in it would have
+   * reached a form as a date.
+   *
+   * <p><b>And {@code iso8601} is not a calendar ICU has patterns for.</b> It is what
+   * {@code IsoChronology.getCalendarType()} answers, and it falls into root for the same reason —
+   * so it is mapped to {@code gregory}, which is the calendar the ISO chronology <em>is</em> for
+   * the purpose of a date pattern. The two differ in week numbering, which no date or time pattern
+   * expresses.
+   */
+  private static ULocale withCalendar(Locale locale, String calendarType) {
+    String type = "iso8601".equals(calendarType) ? "gregory" : calendarType;
+    String tag = locale.toLanguageTag();
+    if (tag.indexOf("-u-") >= 0 || "und".equals(tag)) {
+      // The locale already carries Unicode extensions (possibly a calendar of its own) or is the
+      // root locale, where a language tag cannot be extended by concatenation. Ask ICU to merge
+      // it, and accept the legacy form: it is the lesser of two wrongs, and a caller who has put
+      // a calendar on the locale has already said which one they mean.
+      return ULocale.forLocale(locale).setKeywordValue("calendar", type);
+    }
+    return ULocale.forLanguageTag(tag + "-u-ca-" + type);
+  }
+
+  /**
+   * The zone an LDML short identifier stands for — {@code "uslax"} to {@code America/Los_Angeles}.
+   *
+   * <p>Added 11.10.2026 for {@code DateTimeFormatter.localizedBy(Locale)}, which has to honour a
+   * {@code -u-tz-} extension on the locale it is given. OpenJDK answers this from
+   * {@code sun.util.locale.provider.TimeZoneNameUtility.convertLDMLShortID}, which this runtime
+   * does not have; ICU holds the same CLDR mapping in its key-type data and
+   * {@link ULocale#toLegacyType} is the way in.
+   *
+   * @return the Olson identifier, or null when the short id is not one ICU knows — the caller
+   *         keeps whatever zone it had, which is what {@code convertLDMLShortID} means by an
+   *         empty answer
+   */
+  public static String convertLDMLShortTimeZoneID(String shortId) {
+    if (shortId == null) {
+      return null;
+    }
+    String legacy = ULocale.toLegacyType("tz", shortId);
+    // toLegacyType hands the input back unchanged when it recognises nothing. An Olson id always
+    // has a '/' or is one of a handful of single-word zones, and a short id never does — so an
+    // answer equal to the question means "not known", not "already canonical".
+    return legacy == null || legacy.equals(shortId) ? null : legacy;
+  }
+
   @UnsupportedAppUsage
   private static String getBestDateTimePatternNative(String skeleton, String languageTag) {
     return getBestDateTimePattern0(skeleton, Locale.forLanguageTag(languageTag));

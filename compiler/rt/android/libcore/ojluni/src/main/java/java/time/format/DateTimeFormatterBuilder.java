@@ -90,6 +90,7 @@ import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.chrono.ChronoLocalDate;
@@ -122,6 +123,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 
 /**
  * Builder to create date-time formatters.
@@ -228,6 +230,65 @@ public final class DateTimeFormatterBuilder {
         pattern = ICU.transformIcuDateTimePattern_forJavaTime(pattern);
         // END Android-changed: get format string from ICU.
         return pattern;
+    }
+
+    /**
+     * Gets the formatting pattern for the requested template for a locale and chronology.
+     * The locale and chronology are used to lookup the locale specific format
+     * for the requested template.
+     * <p>
+     * If the locale contains the "rg" (region override)
+     * <a href="../../util/Locale.html#def_locale_extension">Unicode extensions</a>,
+     * the formatting pattern is overridden with the one appropriate for the region.
+     * <p>
+     * Refer to {@link #appendLocalized(String)} for the detail of {@code requestedTemplate}
+     * argument.
+     *
+     * @param requestedTemplate the requested template, not null
+     * @param chrono  the Chronology, non-null
+     * @param locale  the locale, non-null
+     * @return the locale and Chronology specific formatting pattern
+     * @throws IllegalArgumentException if {@code requestedTemplate} is invalid
+     * @throws NullPointerException if either {@code requestedTemplate} or {@code chrono} or
+     *      {@code locale} is null
+     * @see #appendLocalized(String)
+     * @since 19
+     */
+    public static String getLocalizedDateTimePattern(String requestedTemplate,
+                                                     Chronology chrono, Locale locale) {
+        Objects.requireNonNull(requestedTemplate, "requestedTemplate");
+        Objects.requireNonNull(chrono, "chrono");
+        Objects.requireNonNull(locale, "locale");
+        if (!VALID_TEMPLATE_PATTERN.matcher(requestedTemplate).matches()) {
+            throw new IllegalArgumentException("Requested template is invalid: " + requestedTemplate);
+        }
+
+        // BEGIN Android-changed: resolve the skeleton with ICU rather than with a CLDR bundle.
+        //
+        // Locale override = CalendarDataUtility.findRegionOverride(locale);
+        // LocaleProviderAdapter adapter = LocaleProviderAdapter.getAdapter(
+        //         JavaTimeDateTimePatternProvider.class, override);
+        // return adapter.getJavaTimeDateTimePatternProvider()
+        //         .getJavaTimeDateTimePattern(requestedTemplate, chrono.getCalendarType(), override);
+        //
+        // A skeleton resolver is exactly what ICU's DateTimePatternGenerator is, and it is already
+        // in the image — so this is the same CLDR rule (availableFormats with appendItems glue)
+        // applied by the implementation whose data this runtime actually carries, rather than a
+        // second one written here against resources it does not have. The "rg" extension needs no
+        // code of its own either: ICU resolves it while building the generator for the locale.
+        String pattern = ICU.getBestDateTimePattern(requestedTemplate, locale,
+                chrono.getCalendarType());
+        // The same transformation the style route above applies, and for the same reason: this
+        // formatter cannot parse 'B'. It only removes the symbol where the pattern is 24-hour, so
+        // a template that asks for a day period in a 12-hour locale comes back carrying 'B' and
+        // appendPattern refuses it by name. That is deliberate, and the alternative was worse:
+        // answering "AM" where JDK 25 answers "in the morning" is a wrong value rather than a
+        // refusal, and this runtime has paid for a silent wrong answer once already — see the
+        // --check-classes defect of 06.10.2026. appendDayPeriodText is what closes it, and it is
+        // its own piece of work: this runtime's Parsed and DateTimeParseContext know nothing about
+        // day periods, where JDK 25's Parsed names them eleven times.
+        return ICU.transformIcuDateTimePattern_forJavaTime(pattern);
+        // END Android-changed: resolve the skeleton with ICU rather than with a CLDR bundle.
     }
 
     /**
@@ -1215,6 +1276,72 @@ public final class DateTimeFormatterBuilder {
 
     //-----------------------------------------------------------------------
     /**
+     * Appends the generic time-zone name, such as 'Pacific Time', to the formatter.
+     * <p>
+     * This appends an instruction to format/parse the generic textual
+     * name of the zone to the builder. The generic name is the same throughout the whole
+     * year, ignoring any daylight saving changes. For example, 'Pacific Time' is the
+     * generic name, whereas 'Pacific Standard Time' and 'Pacific Daylight Time' are the
+     * specific names, see {@link #appendZoneText(TextStyle)}.
+     * <p>
+     * During formatting, the zone is obtained using a mechanism equivalent
+     * to querying the temporal with {@link TemporalQueries#zoneId()}.
+     * If the zone is a {@code ZoneOffset} it will be printed using the
+     * result of {@link ZoneOffset#getId()}.
+     * If the zone is not an offset, the textual name will be looked up
+     * for the locale set in the {@link DateTimeFormatter}.
+     * If the lookup for text does not find any suitable result, then the
+     * {@link ZoneId#getId() ID} will be printed.
+     * If the zone cannot be obtained then an exception is thrown unless the
+     * section of the formatter is optional.
+     * <p>
+     * During parsing, either the textual zone name, the zone ID or the offset
+     * is accepted. Many textual zone names are not unique, such as CST can be
+     * for both "Central Standard Time" and "China Standard Time". In this
+     * situation, the zone id will be determined by the region information from
+     * formatter's  {@link DateTimeFormatter#getLocale() locale} and the standard
+     * zone id for that area, for example, America/New_York for the America Eastern zone.
+     * The {@link #appendGenericZoneText(TextStyle, Set)} may be used
+     * to specify a set of preferred {@link ZoneId} in this situation.
+     *
+     * @param textStyle  the text style to use, not null
+     * @return this, for chaining, not null
+     * @since 9
+     */
+    public DateTimeFormatterBuilder appendGenericZoneText(TextStyle textStyle) {
+        appendInternal(new ZoneTextPrinterParser(textStyle, null, true));
+        return this;
+    }
+
+    /**
+     * Appends the generic time-zone name, such as 'Pacific Time', to the formatter.
+     * <p>
+     * This appends an instruction to format/parse the generic textual
+     * name of the zone to the builder. The generic name is the same throughout the whole
+     * year, ignoring any daylight saving changes. For example, 'Pacific Time' is the
+     * generic name, whereas 'Pacific Standard Time' and 'Pacific Daylight Time' are the
+     * specific names, see {@link #appendZoneText(TextStyle)}.
+     * <p>
+     * This method also allows a set of preferred {@link ZoneId} to be
+     * specified for parsing. The matched preferred zone id will be used if the
+     * textural zone name being parsed is not unique.
+     * <p>
+     * See {@link #appendGenericZoneText(TextStyle)} for details about
+     * formatting and parsing.
+     *
+     * @param textStyle  the text style to use, not null
+     * @param preferredZones  the set of preferred zone ids, not null
+     * @return this, for chaining, not null
+     * @since 9
+     */
+    public DateTimeFormatterBuilder appendGenericZoneText(TextStyle textStyle,
+                                                          Set<ZoneId> preferredZones) {
+        appendInternal(new ZoneTextPrinterParser(textStyle, preferredZones, true));
+        return this;
+    }
+
+    //-----------------------------------------------------------------------
+    /**
      * Appends the chronology ID, such as 'ISO' or 'ThaiBuddhist', to the formatter.
      * <p>
      * This appends an instruction to format/parse the chronology ID to the builder.
@@ -1287,6 +1414,83 @@ public final class DateTimeFormatterBuilder {
             throw new IllegalArgumentException("Either the date or time style must be non-null");
         }
         appendInternal(new LocalizedPrinterParser(dateStyle, timeStyle));
+        return this;
+    }
+
+    //-----------------------------------------------------------------------
+    // RegEx pattern for skeleton validity checking
+    private static final Pattern VALID_TEMPLATE_PATTERN = Pattern.compile(
+        "G{0,5}" +        // Era
+        "y*" +            // Year
+        "Q{0,5}" +        // Quarter
+        "M{0,5}" +        // Month
+        "w*" +            // Week of Week Based Year
+        "E{0,5}" +        // Day of Week
+        "d{0,2}" +        // Day of Month
+        "B{0,5}" +        // Period/AmPm of Day
+        "[hHjC]{0,2}" +   // Hour of Day/AmPm
+        "m{0,2}" +        // Minute of Hour
+        "s{0,2}" +        // Second of Minute
+        "[vz]{0,4}");     // Zone
+    /**
+     * Appends a localized pattern to the formatter using the requested template.
+     * <p>
+     * This appends a localized section to the builder, suitable for outputting
+     * a date, time or date-time combination. The format of the localized
+     * section is lazily looked up based on four items:
+     * <ul>
+     * <li>the {@code requestedTemplate} specified to this method
+     * <li>the {@code Locale} of the {@code DateTimeFormatter}
+     * <li>the {@code Chronology}, selecting the calendar system
+     * <li>the localization data of the runtime this is executing on
+     * </ul>
+     * During formatting, the chronology is obtained from the temporal object
+     * being formatted, which may have been overridden by
+     * {@link DateTimeFormatter#withChronology(Chronology)}.
+     * <p>
+     * The requested template is a series of typical pattern
+     * symbols in canonical order from the largest date or time unit to the smallest,
+     * which can be expressed with the following regular expression:
+     * {@snippet :
+     *      "G{0,5}" +        // Era
+     *      "y*" +            // Year
+     *      "Q{0,5}" +        // Quarter
+     *      "M{0,5}" +        // Month
+     *      "w*" +            // Week of Week Based Year
+     *      "E{0,5}" +        // Day of Week
+     *      "d{0,2}" +        // Day of Month
+     *      "B{0,5}" +        // Period/AmPm of Day
+     *      "[hHjC]{0,2}" +   // Hour of Day/AmPm (refer to LDML for 'j' and 'C')
+     *      "m{0,2}" +        // Minute of Hour
+     *      "s{0,2}" +        // Second of Minute
+     *      "[vz]{0,4}"       // Zone
+     * }
+     * All pattern symbols are optional, and each pattern symbol represents a field,
+     * for example, 'M' represents the Month field. The number of the pattern symbol letters follows the
+     * same presentation, such as "number" or "text" as in the
+     * <a href="./DateTimeFormatter.html#patterns">Patterns for Formatting and Parsing</a> section.
+     * Other pattern symbols in the requested template are invalid.
+     * <p>
+     * The mapping of the requested template to the closest of the available localized formats
+     * is defined by the
+     * <a href="https://www.unicode.org/reports/tr35/tr35-dates.html#availableFormats_appendItems">
+     * Unicode LDML specification</a>. For example, the formatter created from the requested template
+     * {@code yMMM} will format the date '2020-06-16' to 'Jun 2020' in the {@link Locale#US US locale}.
+     *
+     * @param requestedTemplate the requested template to use, not null
+     * @return this, for chaining, not null
+     * @throws IllegalArgumentException if {@code requestedTemplate} is invalid
+     *
+     * @spec https://www.unicode.org/reports/tr35 Unicode Locale Data Markup Language (LDML)
+     * @see #appendPattern(String)
+     * @since 19
+     */
+    public DateTimeFormatterBuilder appendLocalized(String requestedTemplate) {
+        Objects.requireNonNull(requestedTemplate, "requestedTemplate");
+        if (!VALID_TEMPLATE_PATTERN.matcher(requestedTemplate).matches()) {
+            throw new IllegalArgumentException("Requested template is invalid: " + requestedTemplate);
+        }
+        appendInternal(new LocalizedPrinterParser(requestedTemplate));
         return this;
     }
 
@@ -1630,6 +1834,14 @@ public final class DateTimeFormatterBuilder {
                         throw new IllegalArgumentException("Pattern letter count must be 2: " + cur);
                     }
                     appendZoneId();
+                } else if (cur == 'v') {
+                    if (count == 1) {
+                        appendGenericZoneText(TextStyle.SHORT);
+                    } else if (count == 4) {
+                        appendGenericZoneText(TextStyle.FULL);
+                    } else {
+                        throw new IllegalArgumentException("Wrong number of pattern letters: " + cur);
+                    }
                 } else if (cur == 'Z') {
                     if (count < 4) {
                         appendOffset("+HHMM", "+0000");
@@ -3638,9 +3850,20 @@ public final class DateTimeFormatterBuilder {
         /** The preferred zoneid map */
         private Set<String> preferredZones;
 
+        /** Whether the name wanted is the one that holds all year, ignoring daylight saving. */
+        private final boolean isGeneric;
+
         ZoneTextPrinterParser(TextStyle textStyle, Set<ZoneId> preferredZones) {
+            this(textStyle, preferredZones, false);
+        }
+
+        ZoneTextPrinterParser(TextStyle textStyle, Set<ZoneId> preferredZones, boolean isGeneric) {
+            // The description says "ZoneText" for the generic form too. Measured against JDK 25
+            // rather than assumed: the first draft here prefixed "Generic", which reads better and
+            // is not what a formatter built with appendGenericZoneText answers upstream.
             super(TemporalQueries.zone(), "ZoneText(" + textStyle + ")");
             this.textStyle = Objects.requireNonNull(textStyle, "textStyle");
+            this.isGeneric = isGeneric;
             if (preferredZones != null && preferredZones.size() != 0) {
                 this.preferredZones = new HashSet<>();
                 for (ZoneId id : preferredZones) {
@@ -3758,11 +3981,36 @@ public final class DateTimeFormatterBuilder {
             String zname = zone.getId();
             if (!(zone instanceof ZoneOffset)) {
                 TemporalAccessor dt = context.getTemporal();
-                String name = getDisplayName(zname,
-                                             dt.isSupported(ChronoField.INSTANT_SECONDS)
-                                             ? (zone.getRules().isDaylightSavings(Instant.from(dt)) ? DST : STD)
-                                             : GENERIC,
-                                             context.getLocale());
+                // BEGIN Android-changed: the generic name is asked for by the caller as well.
+                //
+                // Until appendGenericZoneText existed, GENERIC was only what a temporal that
+                // cannot say when it is fell back to. It is now also what 'v' and
+                // appendGenericZoneText ask for outright, which is the whole point of them: a
+                // name that holds all year rather than one that depends on the instant.
+                //
+                // The two branches below are OpenJDK 25's and replace a single
+                // INSTANT_SECONDS test. The second one matters without being generic at all: a
+                // temporal that knows its local date and time but not its instant — a
+                // LocalDateTime formatted through withZone — can still be asked whether daylight
+                // saving is in force, as long as the local time is not inside a transition. It
+                // used to answer with the generic name there.
+                int type = GENERIC;
+                if (!isGeneric) {
+                    if (dt.isSupported(ChronoField.INSTANT_SECONDS)) {
+                        type = zone.getRules().isDaylightSavings(Instant.from(dt)) ? DST : STD;
+                    } else if (dt.isSupported(ChronoField.EPOCH_DAY)
+                            && dt.isSupported(ChronoField.NANO_OF_DAY)) {
+                        LocalDate date = LocalDate.ofEpochDay(dt.getLong(ChronoField.EPOCH_DAY));
+                        LocalTime time = LocalTime.ofNanoOfDay(dt.getLong(ChronoField.NANO_OF_DAY));
+                        LocalDateTime ldt = date.atTime(time);
+                        if (zone.getRules().getTransition(ldt) == null) {
+                            type = zone.getRules().isDaylightSavings(ldt.atZone(zone).toInstant())
+                                    ? DST : STD;
+                        }
+                    }
+                }
+                String name = getDisplayName(zname, type, context.getLocale());
+                // END Android-changed: the generic name is asked for by the caller as well.
                 if (name != null) {
                     zname = name;
                 }
@@ -4446,6 +4694,7 @@ public final class DateTimeFormatterBuilder {
 
         private final FormatStyle dateStyle;
         private final FormatStyle timeStyle;
+        private final String requestedTemplate;
 
         /**
          * Constructor.
@@ -4457,6 +4706,19 @@ public final class DateTimeFormatterBuilder {
             // validated by caller
             this.dateStyle = dateStyle;
             this.timeStyle = timeStyle;
+            this.requestedTemplate = null;
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param requestedTemplate the requested template to use, not null
+         */
+        LocalizedPrinterParser(String requestedTemplate) {
+            // validated by caller
+            this.dateStyle = null;
+            this.timeStyle = null;
+            this.requestedTemplate = requestedTemplate;
         }
 
         @Override
@@ -4483,10 +4745,14 @@ public final class DateTimeFormatterBuilder {
          * @throws IllegalArgumentException if the formatter cannot be found
          */
         private DateTimeFormatter formatter(Locale locale, Chronology chrono) {
-            String key = chrono.getId() + '|' + locale.toString() + '|' + dateStyle + timeStyle;
+            String key = chrono.getId() + '|' + locale.toString() + '|'
+                    + (requestedTemplate != null ? requestedTemplate
+                       : Objects.toString(dateStyle) + timeStyle);
             DateTimeFormatter formatter = FORMATTER_CACHE.get(key);
             if (formatter == null) {
-                String pattern = getLocalizedDateTimePattern(dateStyle, timeStyle, chrono, locale);
+                String pattern = requestedTemplate != null
+                        ? getLocalizedDateTimePattern(requestedTemplate, chrono, locale)
+                        : getLocalizedDateTimePattern(dateStyle, timeStyle, chrono, locale);
                 formatter = new DateTimeFormatterBuilder().appendPattern(pattern).toFormatter(locale);
                 DateTimeFormatter old = FORMATTER_CACHE.putIfAbsent(key, formatter);
                 if (old != null) {
@@ -4498,8 +4764,9 @@ public final class DateTimeFormatterBuilder {
 
         @Override
         public String toString() {
-            return "Localized(" + (dateStyle != null ? dateStyle : "") + "," +
-                (timeStyle != null ? timeStyle : "") + ")";
+            return "Localized(" + (requestedTemplate != null ? requestedTemplate
+                : (dateStyle != null ? dateStyle : "") + ","
+                  + (timeStyle != null ? timeStyle : "")) + ")";
         }
     }
 
