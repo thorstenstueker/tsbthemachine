@@ -35,7 +35,17 @@
 #include <stdlib.h>
 #include <string.h>
 #if !defined(__APPLE__) // RoboVM Note: not available at Darwin
+#if defined(__linux__) && !defined(__ANDROID__)
+// glibc ships no <sys/capability.h> (that is libcap's); the kernel header has the types and
+// capget/capset are plain system calls.
+#include <linux/capability.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+static inline int capget(cap_user_header_t h, cap_user_data_t d) { return syscall(SYS_capget, h, d); }
+static inline int capset(cap_user_header_t h, const cap_user_data_t d) { return syscall(SYS_capset, h, d); }
+#else
 #include <sys/capability.h>
+#endif
 #endif
 #include <sys/ioctl.h>
 #include <sys/mman.h>

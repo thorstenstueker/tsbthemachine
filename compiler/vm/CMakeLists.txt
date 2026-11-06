@@ -290,6 +290,11 @@ if(LINUX OR BIONIC)
   # can say so with __ANDROID__, which the NDK's clang predefines, so no second flag is needed
   # here and none is invented.
   add_definitions(-DLINUX)
+  if(LINUX)
+    # glibc declares pread64, mmap64 and off64_t only on request, and current glibc no longer
+    # implies the request; zip_util.c uses all three. Bionic has them unconditionally.
+    add_definitions(-D_LARGEFILE64_SOURCE)
+  endif()
 elseif(DARWIN)
   if(MACOSX)
     add_definitions(-DMACOSX)
@@ -353,6 +358,12 @@ endif()
 set(EXTGC_C_FLAGS "${C_CXX_FLAGS} -DGC_DISABLE_INCREMENTAL -DGC_DISCOVER_TASK_THREADS -DGC_FORCE_UNMAP_ON_GCOLLECT -DMARK_DESCR_OFFSET=${EXTGC_MARK_DESCR_OFFSET}")
 # disable errors on clang clang-1500.3.9.4
 set(EXTGC_C_FLAGS "${EXTGC_C_FLAGS} -Wno-error=incompatible-function-pointer-types -Wno-error=int-conversion")
+if(LINUX)
+  # The pinned bdwgc defines GC_jmp_buf in a header, which only links under the old -fcommon
+  # default; GCC 10 and clang 11 switched to -fno-common and the Linux link then fails with
+  # "multiple definition of GC_jmp_buf" in every object of libgc.a.
+  set(EXTGC_C_FLAGS "${EXTGC_C_FLAGS} -fcommon")
+endif()
 set(EXTGC_LD_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 if(DARWIN)
   set(EXTGC_C_FLAGS "${EXTGC_C_FLAGS} -DGC_MAX_MACH_THREADS=1024 -DNO_DYLD_BIND_FULLY_IMAGE --sysroot=${SYSROOT}")

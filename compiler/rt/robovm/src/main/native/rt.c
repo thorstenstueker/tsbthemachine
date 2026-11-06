@@ -153,7 +153,7 @@ jboolean rvmRTInit(Env* env) {
 }
 
 jboolean rvmRTOnLoad(Env* env) {
-    net_JNI_OnLoad(env->vm, NULL);
+    net_JNI_OnLoad((JavaVM*)env->vm, NULL);
     if (rvmExceptionCheck(env)) FALSE;
     return TRUE;
 }

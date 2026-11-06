@@ -16,6 +16,7 @@
 
 #define LOG_TAG "Log"
 
+#include <functional>
 #include <memory>
 
 #include "jni.h"

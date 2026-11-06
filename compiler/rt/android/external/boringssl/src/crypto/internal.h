@@ -774,7 +774,7 @@ static inline void *OPENSSL_memchr(const void *s, int c, size_t n) {
     return NULL;
   }
 
-  return memchr(s, c, n);
+  return (void *)memchr(s, c, n);
 }
 
 #endif  // __cplusplus
