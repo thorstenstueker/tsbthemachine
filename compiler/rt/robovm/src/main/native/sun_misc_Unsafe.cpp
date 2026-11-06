@@ -344,6 +344,10 @@ jlong Java_sun_misc_Unsafe_allocateMemory(Env* env, jobject ob, jlong bytes) {
   return PTR_TO_LONG(rvmAllocateMemoryUncollectable(env, bytes));
 }
 
+jlong Java_sun_misc_Unsafe_reallocateMemory(Env* env, jobject ob, jlong address, jlong bytes) {
+  return PTR_TO_LONG(rvmReallocateMemoryUncollectable(env, LONG_TO_PTR(address), bytes));
+}
+
 void Java_sun_misc_Unsafe_freeMemory(Env* env, jobject ob, jlong address) {
   rvmFreeMemoryUncollectable(env, LONG_TO_PTR(address));
 }

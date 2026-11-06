@@ -32,6 +32,7 @@ extern void* rvmAllocateMemoryUncollectable(Env* env, size_t size);
 extern void* rvmAllocateMemoryAtomic(Env* env, size_t size);
 extern void* rvmAllocateMemoryAtomicUncollectable(Env* env, size_t size);
 extern void rvmFreeMemoryUncollectable(Env* env, void* m);
+extern void* rvmReallocateMemoryUncollectable(Env* env, void* m, size_t size);
 extern void rvmGCCollect(Env* env);
 extern jboolean rvmInitRefTable(Env* env, RefTable* refTable, jint size);
 extern jboolean rvmAddGlobalRef(Env* env, Object* object);

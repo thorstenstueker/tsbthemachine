@@ -1046,6 +1046,22 @@ void* rvmAllocateMemoryUncollectable(Env* env, size_t size) {
     return m;
 }
 
+void* rvmReallocateMemoryUncollectable(Env* env, void* m, size_t size) {
+    // GC_REALLOC keeps the kind of the object it is given, so uncollectable stays uncollectable.
+    // Like realloc: a NULL pointer allocates, a size of 0 frees.
+    if (!m) return rvmAllocateMemoryUncollectable(env, size);
+    if (size == 0) {
+        rvmFreeMemoryUncollectable(env, m);
+        return NULL;
+    }
+    void* r = GC_REALLOC(m, size);
+    if (!r) {
+        rvmThrowOutOfMemoryError(env);
+        return NULL;
+    }
+    return r;
+}
+
 void* rvmAllocateMemoryAtomic(Env* env, size_t size) {
     void* m = gcAllocateAtomic(size);
     if (!m) {

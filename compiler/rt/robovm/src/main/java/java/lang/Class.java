@@ -1151,6 +1151,17 @@ public final class Class<T> implements Serializable, AnnotatedElement, GenericDe
     }
 
     /**
+     * Returns the module of this class: always the unnamed module of its class loader, because an
+     * ahead-of-time compiled program is linked from a class path. See {@link Module}.
+     */
+    public Module getModule() {
+        if (isPrimitive()) {
+            return Module.unnamedOf(null);
+        }
+        return Module.unnamedOf(getClassLoaderImpl());
+    }
+
+    /**
      * Returns the {@code Package} of which the class represented by this
      * {@code Class} is a member. Returns {@code null} if no {@code Package}
      * object was created by the class loader of the class.

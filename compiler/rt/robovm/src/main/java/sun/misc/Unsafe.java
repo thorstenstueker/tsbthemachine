@@ -35,6 +35,17 @@ public final class Unsafe {
     private static final Unsafe theUnsafe = THE_ONE;
     public static final int INVALID_FIELD_OFFSET   = -1;
 
+    // The element sizes, as constants: OpenJFX's Marlin renderer reads ARRAY_INT_INDEX_SCALE in a
+    // static initialiser. They are what the VM's arrays use and cannot differ between targets.
+    public static final int ARRAY_BOOLEAN_INDEX_SCALE = 1;
+    public static final int ARRAY_BYTE_INDEX_SCALE    = 1;
+    public static final int ARRAY_SHORT_INDEX_SCALE   = 2;
+    public static final int ARRAY_CHAR_INDEX_SCALE    = 2;
+    public static final int ARRAY_INT_INDEX_SCALE     = 4;
+    public static final int ARRAY_LONG_INDEX_SCALE    = 8;
+    public static final int ARRAY_FLOAT_INDEX_SCALE   = 4;
+    public static final int ARRAY_DOUBLE_INDEX_SCALE  = 8;
+
     /**
      * This class is only privately instantiable.
      */
@@ -430,6 +441,9 @@ public final class Unsafe {
     public native int pageSize();
 
     public native long allocateMemory(long bytes);
+
+    /** Resizes a block from {@link #allocateMemory}; the contents up to the smaller size are kept. */
+    public native long reallocateMemory(long address, long bytes);
 
     public native void freeMemory(long address);
 

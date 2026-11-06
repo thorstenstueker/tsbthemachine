@@ -1915,4 +1915,190 @@ public final class System {
     }
 
     private static native void log(char type, String message, Throwable th);
+
+    // ---- System.Logger (Java 9) -------------------------------------------------------------
+    //
+    // Added 06.11.2026 (tsb) for OpenJFX, whose PlatformLogger and binding errors log through it.
+    // The default finder hands out loggers backed by java.util.logging, which is what the JDK's
+    // default finder does when java.logging is present; a LoggerFinder registered as a service
+    // takes precedence, as on the JDK.
+
+    /** A logger, as in Java 9. */
+    public interface Logger {
+
+        /** The levels, with the JDK's names and severities. */
+        enum Level {
+            ALL(Integer.MIN_VALUE), TRACE(400), DEBUG(500), INFO(800), WARNING(900), ERROR(1000),
+            OFF(Integer.MAX_VALUE);
+
+            private final int severity;
+
+            Level(int severity) {
+                this.severity = severity;
+            }
+
+            public final String getName() {
+                return name();
+            }
+
+            public final int getSeverity() {
+                return severity;
+            }
+        }
+
+        String getName();
+
+        boolean isLoggable(Level level);
+
+        default void log(Level level, String msg) {
+            log(level, (java.util.ResourceBundle) null, msg, (Object[]) null);
+        }
+
+        default void log(Level level, java.util.function.Supplier<String> msgSupplier) {
+            java.util.Objects.requireNonNull(msgSupplier);
+            if (isLoggable(java.util.Objects.requireNonNull(level))) {
+                log(level, (java.util.ResourceBundle) null, msgSupplier.get(), (Object[]) null);
+            }
+        }
+
+        default void log(Level level, Object obj) {
+            java.util.Objects.requireNonNull(obj);
+            if (isLoggable(java.util.Objects.requireNonNull(level))) {
+                log(level, (java.util.ResourceBundle) null, obj.toString(), (Object[]) null);
+            }
+        }
+
+        default void log(Level level, String msg, Throwable thrown) {
+            log(level, null, msg, thrown);
+        }
+
+        default void log(Level level, java.util.function.Supplier<String> msgSupplier, Throwable thrown) {
+            java.util.Objects.requireNonNull(msgSupplier);
+            if (isLoggable(java.util.Objects.requireNonNull(level))) {
+                log(level, null, msgSupplier.get(), thrown);
+            }
+        }
+
+        default void log(Level level, String format, Object... params) {
+            log(level, null, format, params);
+        }
+
+        void log(Level level, java.util.ResourceBundle bundle, String msg, Throwable thrown);
+
+        void log(Level level, java.util.ResourceBundle bundle, String format, Object... params);
+    }
+
+    /** Creates loggers, as in Java 9. */
+    public static abstract class LoggerFinder {
+
+        protected LoggerFinder() {
+        }
+
+        public abstract Logger getLogger(String name, Module module);
+
+        public Logger getLocalizedLogger(String name, java.util.ResourceBundle bundle, Module module) {
+            return getLogger(name, module);
+        }
+
+        public static LoggerFinder getLoggerFinder() {
+            return LoggerFinderHolder.INSTANCE;
+        }
+    }
+
+    private static final class LoggerFinderHolder {
+        static final LoggerFinder INSTANCE = find();
+
+        private static LoggerFinder find() {
+            try {
+                for (LoggerFinder f : java.util.ServiceLoader.load(LoggerFinder.class)) {
+                    return f;
+                }
+            } catch (Throwable ignored) {
+                // a broken service registration must not take logging down with it
+            }
+            return new JulLoggerFinder();
+        }
+    }
+
+    /** The default: one java.util.logging logger per name. */
+    private static final class JulLoggerFinder extends LoggerFinder {
+        @Override
+        public Logger getLogger(String name, Module module) {
+            return new JulLogger(java.util.logging.Logger.getLogger(java.util.Objects.requireNonNull(name)));
+        }
+    }
+
+    private static final class JulLogger implements Logger {
+        private final java.util.logging.Logger jul;
+
+        JulLogger(java.util.logging.Logger jul) {
+            this.jul = jul;
+        }
+
+        private static java.util.logging.Level toJul(Level level) {
+            switch (level) {
+                case ALL:     return java.util.logging.Level.ALL;
+                case TRACE:   return java.util.logging.Level.FINER;
+                case DEBUG:   return java.util.logging.Level.FINE;
+                case INFO:    return java.util.logging.Level.INFO;
+                case WARNING: return java.util.logging.Level.WARNING;
+                case ERROR:   return java.util.logging.Level.SEVERE;
+                default:      return java.util.logging.Level.OFF;
+            }
+        }
+
+        @Override
+        public String getName() {
+            return jul.getName();
+        }
+
+        @Override
+        public boolean isLoggable(Level level) {
+            return jul.isLoggable(toJul(java.util.Objects.requireNonNull(level)));
+        }
+
+        private static String localized(java.util.ResourceBundle bundle, String msg) {
+            if (bundle != null && msg != null) {
+                try {
+                    return bundle.getString(msg);
+                } catch (java.util.MissingResourceException ignored) {
+                    // the key is the message, as on the JDK
+                }
+            }
+            return msg;
+        }
+
+        @Override
+        public void log(Level level, java.util.ResourceBundle bundle, String msg, Throwable thrown) {
+            java.util.logging.Level l = toJul(java.util.Objects.requireNonNull(level));
+            if (jul.isLoggable(l)) {
+                jul.log(l, localized(bundle, msg), thrown);
+            }
+        }
+
+        @Override
+        public void log(Level level, java.util.ResourceBundle bundle, String format, Object... params) {
+            java.util.logging.Level l = toJul(java.util.Objects.requireNonNull(level));
+            if (jul.isLoggable(l)) {
+                String text = localized(bundle, format);
+                if (params != null && params.length > 0 && text != null) {
+                    text = java.text.MessageFormat.format(text, params);
+                }
+                jul.log(l, text);
+            }
+        }
+    }
+
+    /** The logger called {@code name}, from the {@link LoggerFinder}. */
+    @CallerSensitive
+    public static Logger getLogger(String name) {
+        java.util.Objects.requireNonNull(name);
+        return LoggerFinder.getLoggerFinder().getLogger(name, Object.class.getModule());
+    }
+
+    @CallerSensitive
+    public static Logger getLogger(String name, java.util.ResourceBundle bundle) {
+        java.util.Objects.requireNonNull(name);
+        return LoggerFinder.getLoggerFinder().getLocalizedLogger(name, bundle, Object.class.getModule());
+    }
 }
